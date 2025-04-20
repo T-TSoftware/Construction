@@ -1,0 +1,70 @@
+import { Request, Response } from "express";
+import {
+  createProjectQuantity,
+  getProjectQuantities,
+} from "../services/projectQuantity.service";
+
+export const postProjectQuantityHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  try {
+    const { projectId } = req.params;
+    const { quantityItemCode, quantity, unit, description, category } =
+      req.body;
+
+    if (!quantityItemCode || !quantity || !unit) {
+      res.status(400).json({ error: "Gerekli alanlar eksik." });
+      return;
+    }
+
+    const userId = req.user.userId.toString();
+
+    const newRecord = await createProjectQuantity(
+      {
+        projectId,
+        quantityItemCode,
+        quantity,
+        unit,
+        description,
+        category,
+      },
+      { userId }
+    );
+
+    res.status(201).json({
+      message: "Metraj başarıyla eklendi.",
+      id: newRecord.id,
+    });
+  } catch (error) {
+    console.error("❌ POST project quantity error:", error);
+    res.status(500).json({ error: "Metraj kaydı oluşturulamadı." });
+    return;
+  }
+};
+
+export const getProjectQuantitiesHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { projectId } = req.params;
+
+    if (!projectId) {
+      res.status(400).json({ error: "projectId parametresi zorunludur." });
+      return;
+    }
+
+    const result = await getProjectQuantities(projectId);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("❌ GET project quantities error:", error);
+    res.status(500).json({ error: "Metrajlar alınamadı." });
+    return;
+  }
+};
