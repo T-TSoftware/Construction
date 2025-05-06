@@ -14,6 +14,7 @@ import { ProjectEstimatedCost } from "./ProjectEstimatedCost";
 import { ProjectSupplier } from "./ProjectSupplier";
 import { ProjectSubcontractor } from "./ProjectSubcontractor";
 import { ProjectQuantity } from "./ProjectQuantity";
+import { ProjectCurrent } from "./ProjectCurrent";
 
 @Entity({ name: "companyprojects" })
 export class CompanyProject {
@@ -84,4 +85,7 @@ export class CompanyProject {
 
   @OneToMany(() => ProjectQuantity, (quantity) => quantity.project)
   quantities!: ProjectQuantity[];
+
+  @OneToMany(() => ProjectCurrent, (current) => current.project)
+  currents!: ProjectCurrent[];
 }

@@ -89,6 +89,7 @@ export const getProjectQuantities = async (projectId: string) => {
   });
 
   return items.map((item) => ({
+    id:item.id,
     code: item.code ?? null,
     quantityItemCode: item.quantityItem.code,
     quantityItemName: item.quantityItem.name,

@@ -14,6 +14,7 @@ import subcontractorRoutes from "./routes/projectSubcontractor.routes";
 import quantityItemRoutes from "./routes/quantityItem.routes";
 import projectQuantityRoutes from "./routes/projectQuantity.routes";
 import projectCostSummaryRoutes from "./routes/projectCostSummary.routes";
+import projectCurrentRoutes from "./routes/projectCurrent.routes"
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use("/api", supplierRoutes);
 app.use("/api", subcontractorRoutes);
 app.use("/api", projectQuantityRoutes);
 app.use("/api", projectCostSummaryRoutes);
+app.use("/api", projectCurrentRoutes);
 
 const PORT = process.env.PORT;
 

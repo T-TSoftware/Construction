@@ -13,6 +13,7 @@ import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectQuantity } from "../entities/ProjectQuantity";
+import { ProjectCurrent } from "../entities/ProjectCurrent";
 
 dotenv.config();
 
@@ -37,7 +38,8 @@ export const AppDataSource = new DataSource({
     QuantityItem,
     ProjectQuantity,
     ProjectCostSummary,
-    CompanyBalanceView
+    CompanyBalanceView,
+    ProjectCurrent
   ],
   migrations: ["src/migrations/*.ts"],
   subscribers: [],

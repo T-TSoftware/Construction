@@ -64,6 +64,7 @@ export const getCompanyProjects = async (companyId: string) => {
   });
 
   return projects.map((project) => ({
+    id: project.id,
     code: project.code,
     name: project.name,
     site: project.site,
