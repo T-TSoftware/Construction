@@ -15,6 +15,6 @@ export class CompanyBalanceView {
   @ViewColumn() updatedBy!: string;
   @ViewColumn() createdatetime!: Date;
   @ViewColumn() updatedatetime!: Date;*/
-  @ViewColumn({ name: "companyId" }) companyId!: string;
+  @ViewColumn({ name: "companyid" }) companyId!: string;
   //@ViewColumn({ name: "companyname" }) companyName!: string;
 }

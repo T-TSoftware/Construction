@@ -4,8 +4,9 @@ import {
   getProjectSuppliers,
   updateProjectSupplier,
 } from "../services/projectSupplier.service";
+import { AppDataSource } from "../config/data-source"; // transaction için gerekli
 
-export const postProjectSupplierHandler = async (
+/*export const postProjectSupplierHandler = async (
   req: Request,
   res: Response
 ) => {
@@ -59,6 +60,78 @@ export const postProjectSupplierHandler = async (
     res.status(500).json({ error: "Tedarikçi oluşturulamadı." });
     return;
   }
+};*/
+
+export const postProjectSupplierHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction(); // 🔁 transaction başlatılır
+
+  try {
+    const { projectId } = req.params;
+    const userId = req.user!.userId.toString();
+
+    // 🔁 Artık her zaman array geleceği için döngüyle ilerliyoruz
+    const results = [];
+
+    for (const body of req.body) {
+      const {
+        quantityItemCode,
+        category,
+        companyName,
+        unit,
+        unitPrice,
+        quantity,
+        contractAmount,
+        paidAmount,
+        status,
+        description,
+      } = body;
+
+      // ❗ Her item için zorunlu alan kontrolü
+      /*if (!quantityItemCode || !category || !unit || !status) {
+        res.status(400).json({ error: "Zorunlu alanlar eksik." });
+        return;
+      }*/
+      if (!quantityItemCode || !category || !unit || !status) {
+        throw new Error("Zorunlu alanlar eksik."); // ❌ Hata fırlat → transaction rollback
+      }
+
+      const newSupplier = await createProjectSupplier(
+        {
+          projectId,
+          quantityItemCode,
+          category,
+          companyName,
+          unit,
+          unitPrice,
+          quantity,
+          contractAmount,
+          paidAmount,
+          status,
+          description,
+        },
+        { userId }
+      );
+
+      results.push(newSupplier);
+    }
+    await queryRunner.commitTransaction(); // ✅ Hepsi başarılıysa commit
+    res.status(201).json(results);
+  } catch (error) {
+    await queryRunner.rollbackTransaction(); // ❌ Hata varsa tüm kayıtlar geri alınır
+    console.error("❌ POST project supplier error:", error);
+    res.status(500).json({ error: "Tedarikçi oluşturulamadı." });
+    return;
+  }
 };
 
 export const getProjectSuppliersHandler = async (
@@ -106,3 +179,5 @@ export const patchProjectSupplierHandler = async (
     return;
   }
 };
+
+// multiple patch will be added according to business needs...
