@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { validateSupplierArrayBody } from "../middlewares/requestMiddleware";
 import {
   postProjectSupplierHandler,
   getProjectSuppliersHandler,
@@ -10,7 +11,11 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.post("/projects/:projectId/suppliers", postProjectSupplierHandler);
+router.post(
+  "/projects/:projectId/suppliers",
+  validateSupplierArrayBody,
+  postProjectSupplierHandler
+);
 
 router.get("/projects/:projectId/suppliers", getProjectSuppliersHandler);
 

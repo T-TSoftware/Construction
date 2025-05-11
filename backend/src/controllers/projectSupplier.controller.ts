@@ -101,9 +101,9 @@ export const postProjectSupplierHandler = async (
         res.status(400).json({ error: "Zorunlu alanlar eksik." });
         return;
       }*/
-      if (!quantityItemCode || !category || !unit || !status) {
+      /*if (!quantityItemCode || !category || !unit || !status) {
         throw new Error("Zorunlu alanlar eksik."); // ❌ Hata fırlat → transaction rollback
-      }
+      }*/
 
       const newSupplier = await createProjectSupplier(
         {
