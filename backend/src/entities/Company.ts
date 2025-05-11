@@ -8,6 +8,7 @@ import {
 } from "typeorm";
 import { CompanyBalance } from "./CompanyBalance";
 import { CompanyProject } from "./CompanyProject";
+import { CompanyStock } from "./CompanyStock";
 
 @Entity({ name: "company" })
 export class Company {
@@ -45,4 +46,7 @@ export class Company {
 
   @OneToMany(() => CompanyProject, (project) => project.company)
   projects!: CompanyProject[];
+
+  @OneToMany(() => CompanyStock, (stock) => stock.company)
+  stocks!: CompanyStock[];
 }

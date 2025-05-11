@@ -1,20 +1,24 @@
-// src/index.ts
 import express from "express";
 import cors from "cors";
-import { AppDataSource } from "./config/data-source";
 import dotenv from "dotenv";
+
+import { AppDataSource } from "./config/data-source";
 
 import companyRoutes from "./routes/company.routes";
 import companyBalanceRoutes from "./routes/companyBalance.routes";
-import authRoutes from "./routes/auth.routes";
 import companyProjectRoutes from "./routes/companyProject.routes";
-import estimatedCostRoutes from "./routes/projectEstimatedCost.routes";
-import supplierRoutes from "./routes/projectSupplier.routes";
-import subcontractorRoutes from "./routes/projectSubcontractor.routes";
-import quantityItemRoutes from "./routes/quantityItem.routes";
+import companyStockRoutes from "./routes/companyStock.routes";
+
+import projectEstimatedCostRoutes from "./routes/projectEstimatedCost.routes";
+import projectSupplierRoutes from "./routes/projectSupplier.routes";
+import projectSubcontractorRoutes from "./routes/projectSubcontractor.routes";
 import projectQuantityRoutes from "./routes/projectQuantity.routes";
 import projectCostSummaryRoutes from "./routes/projectCostSummary.routes";
-import projectCurrentRoutes from "./routes/projectCurrent.routes"
+import projectCurrentRoutes from "./routes/projectCurrent.routes";
+
+import authRoutes from "./routes/auth.routes";
+
+import quantityItemRoutes from "./routes/quantityItem.routes";
 
 dotenv.config();
 
@@ -29,19 +33,23 @@ app.use(
 );
 
 app.use(express.json());
-
-app.use("/api/companies", companyRoutes);
-app.use("/api/balances", companyBalanceRoutes);
 app.use("/api/auth", authRoutes);
+// Company Related
+app.use("/api/companies", companyRoutes);
 app.use("/api/projects", companyProjectRoutes);
-app.use("/api/quantity-items", quantityItemRoutes);
+app.use("/api/stocks", companyStockRoutes);
+app.use("/api/balances", companyBalanceRoutes);
 
-app.use("/api", estimatedCostRoutes);
-app.use("/api", supplierRoutes);
-app.use("/api", subcontractorRoutes);
+// Project Related
+app.use("/api", projectEstimatedCostRoutes);
+app.use("/api", projectSupplierRoutes);
+app.use("/api", projectSubcontractorRoutes);
 app.use("/api", projectQuantityRoutes);
 app.use("/api", projectCostSummaryRoutes);
 app.use("/api", projectCurrentRoutes);
+
+// Masterdata Related
+app.use("/api/quantity-items", quantityItemRoutes);
 
 const PORT = process.env.PORT;
 

@@ -14,6 +14,7 @@ import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { ProjectCurrent } from "../entities/ProjectCurrent";
+import { CompanyStock } from "../entities/CompanyStock";
 
 dotenv.config();
 
@@ -28,18 +29,37 @@ export const AppDataSource = new DataSource({
   synchronize: false, // Auto create table (Prod :false)
   logging: false,
   entities: [
+    /*-------------------------*/
+    // Company Related
     Company,
     CompanyBalance,
-    User,
     CompanyProject,
+    CompanyStock,
+
+    /*-------------------------*/
+
+    // Project Related
     ProjectEstimatedCost,
     ProjectSupplier,
     ProjectSubcontractor,
-    QuantityItem,
     ProjectQuantity,
+    ProjectCurrent,
+
+    /*-------------------------*/
+
+    // User
+    User,
+
+    /*-------------------------*/
+
+    // Master
+    QuantityItem,
+
+    /*-------------------------*/
+
+    //View
     ProjectCostSummary,
     CompanyBalanceView,
-    ProjectCurrent
   ],
   migrations: ["src/migrations/*.ts"],
   subscribers: [],
