@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
-import { createCompanyStock } from "../services/companyStock.service";
+import {
+  createCompanyStock,
+  getCompanyStocks,
+  updateCompanyStock,
+} from "../services/companyStock.service";
 
 export const postCompanyStockHandler = async (req: Request, res: Response) => {
   // 🔐 Yalnızca superadmin işlem yapabilir
@@ -63,5 +67,47 @@ export const postCompanyStockHandler = async (req: Request, res: Response) => {
     return;
   } finally {
     await queryRunner.release();
+  }
+};
+
+export const patchCompanyStockHandler = async (req: Request, res: Response) => {
+  // ✅ Sadece superadmin güncelleme yapabilir
+  if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlemi yapabilir." });
+    return;
+  }
+
+  try {
+    const { code } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const updatedStock = await updateCompanyStock(code, req.body, {
+      userId,
+      companyId,
+    });
+
+    res.status(200).json(updatedStock);
+  } catch (error: any) {
+    console.error("❌ PATCH company stock error:", error);
+    const status = error.message === "Stok kaydı bulunamadı." ? 404 : 500;
+    res.status(status).json({ errorMessage: error.message });
+    return;
+  }
+};
+
+export const getCompanyStocksHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const companyId = req.user!.companyId;
+    const stocks = await getCompanyStocks(companyId);
+    res.status(200).json(stocks);
+  } catch (error) {
+    console.error("❌ GET company stocks error:", error);
+    res.status(500).json({ errorMessage: "Stok listesi alınamadı." });
   }
 };
