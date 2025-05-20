@@ -28,3 +28,13 @@ export const stockSchema = z.object({
   stockDate: z.coerce.date().optional(),
   projectId: z.string().uuid().optional(),
 });
+
+export const stockItemSchema = z.object({
+  name: z.string().min(1, "Stok adı zorunludur."),
+  category: z.string().min(1, "Kategori zorunludur."),
+  unit: z.string().min(1, "Birim zorunludur."),
+  description: z.string().optional(),
+});
+
+// ✅ PATCH için ayrı ve esnek şema
+export const stockItemPatchSchema = stockItemSchema.partial();

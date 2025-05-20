@@ -15,6 +15,7 @@ import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { ProjectCurrent } from "../entities/ProjectCurrent";
 import { CompanyStock } from "../entities/CompanyStock";
+import { StockItem } from "../entities/StockItem";
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ export const AppDataSource = new DataSource({
 
     // Master
     QuantityItem,
+    StockItem,
 
     /*-------------------------*/
 
@@ -62,5 +64,6 @@ export const AppDataSource = new DataSource({
     CompanyBalanceView,
   ],
   migrations: ["src/migrations/*.ts"],
+  //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
   subscribers: [],
 });

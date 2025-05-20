@@ -1,3 +1,6 @@
+import { AppDataSource } from "../config/data-source";
+import { StockItem } from "../entities/StockItem";
+
 export function generateNextCompanyCode(
   latestCode: string | null,
   name: string
@@ -91,3 +94,19 @@ export function generateNextEntityCode(
 
   return `${fullPrefix}${nextNum}`;
 }
+export const generateStockCode = async (category: string): Promise<string> => {
+  const stockItemRepo = AppDataSource.getRepository(StockItem);
+
+  const prefix = `STK-${category.toUpperCase()}`;
+  const latest = await stockItemRepo
+    .createQueryBuilder("item")
+    .where("item.code LIKE :prefix", { prefix: `${prefix}-%` })
+    .orderBy("item.code", "DESC")
+    .getOne();
+
+  const lastNumber = latest ? parseInt(latest.code.split("-")[2]) : 0;
+
+  const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
+
+  return `${prefix}-${nextNumber}`;
+};

@@ -19,6 +19,7 @@ import projectCurrentRoutes from "./routes/projectCurrent.routes";
 import authRoutes from "./routes/auth.routes";
 
 import quantityItemRoutes from "./routes/quantityItem.routes";
+import stockItemRoutes from "./routes/stockItem.routes";
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use("/api", projectCurrentRoutes);
 
 // Masterdata Related
 app.use("/api/quantity-items", quantityItemRoutes);
+app.use("/api/stock-items", stockItemRoutes);
 
 const PORT = process.env.PORT;
 

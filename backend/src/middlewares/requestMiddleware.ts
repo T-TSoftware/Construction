@@ -85,3 +85,24 @@ export const validateArrayBody =
       return;
     }
   };
+
+export const validateBody =
+  (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const item = req.body;
+      schema.parse(item);
+
+      next();
+    } catch (error: any) {
+      console.error("📛 Validation error:", error);
+
+      if (error instanceof ZodError) {
+        const errMessage = error.errors[0]?.message || "Geçersiz veri";
+        res.status(400).json({ errorMessage: errMessage });
+        return;
+      }
+
+      res.status(500).json({ errorMessage: "Sunucu hatası" });
+      return;
+    }
+  };
