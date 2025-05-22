@@ -51,7 +51,7 @@ export const createCompanyStock = async (
   if (existing) {
     throw new Error(`${data.category} - ${data.name} stoğu zaten mevcut.`);
   }
-  const code = await generateStockCode(data.category);
+  const code = await generateStockCode(data.category, manager);
 
   const stock = stockRepo.create({
     ...data,

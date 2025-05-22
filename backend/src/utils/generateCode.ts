@@ -1,5 +1,7 @@
 import { AppDataSource } from "../config/data-source";
 import { CompanyStock } from "../entities/CompanyStock";
+import { EntityManager } from "typeorm";
+
 export function generateNextCompanyCode(
   latestCode: string | null,
   name: string
@@ -93,11 +95,15 @@ export function generateNextEntityCode(
 
   return `${fullPrefix}${nextNum}`;
 }
-export const generateStockCode = async (category: string): Promise<string> => {
-  const compaynStockRepo = AppDataSource.getRepository(CompanyStock);
 
+export const generateStockCode = async (
+  category: string,
+  manager: EntityManager = AppDataSource.manager
+): Promise<string> => {
+  //const compaynStockRepo = AppDataSource.getRepository(CompanyStock);
+  const stockRepo = manager.getRepository(CompanyStock);
   const prefix = `STK-${category.toUpperCase()}`;
-  const latest = await compaynStockRepo
+  const latest = await stockRepo
     .createQueryBuilder("item")
     .where("item.code LIKE :prefix", { prefix: `${prefix}-%` })
     .orderBy("item.code", "DESC")
