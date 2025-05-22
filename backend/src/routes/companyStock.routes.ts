@@ -7,6 +7,7 @@ import {
   postCompanyStockHandler,
   patchCompanyStockHandler,
   getCompanyStocksHandler,
+  patchCompanyStocksHandler,
 } from "../controllers/companyStock.controller";
 
 const router = Router();
@@ -17,6 +18,6 @@ router.use(authMiddleware);
 router.post("/", validateArrayBody(stockSchema), postCompanyStockHandler);
 
 router.patch("/:code", patchCompanyStockHandler);
-
+router.patch("/", patchCompanyStocksHandler);
 router.get("/", getCompanyStocksHandler);
 export default router;

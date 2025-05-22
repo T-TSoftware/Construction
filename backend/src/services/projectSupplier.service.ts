@@ -78,7 +78,7 @@ export const getProjectSuppliers = async (projectId: string) => {
   return suppliers.map((s) => ({
     code: s.code,
     category: s.category,
-    quantityItem: s.quantityItem.code,
+    quantityItemCode: s.quantityItem.code,
     //quantityItem: s.quantityItem?.code ?? null,
     companyName: s.companyName,
     unit: s.unit,

@@ -14,7 +14,7 @@ export const supplierSchema = z.object({
 });
 
 export const stockSchema = z.object({
-  code: z.string().min(1, "Stok kodu zorunludur."),
+  //code: z.string().min(1, "Stok kodu zorunludur."),
   name: z.string().min(1, "Stok adı zorunludur."),
   category: z.string().min(1, "Kategori zorunludur."),
   unit: z.string().min(1, "Birim zorunludur."),

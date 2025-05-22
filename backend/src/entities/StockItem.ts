@@ -4,9 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique
 } from "typeorm";
 
 @Entity({ name: "stockitems" })
+@Unique(["category", "name"]) // ✅ Bileşik benzersizlik tanımı
 export class StockItem {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -23,7 +25,7 @@ export class StockItem {
   @Column()
   unit!: string; // örnek: kg, ton, adet
 
-  @Column({ unique: true })
+  @Column()
   category!: string; // örnek: demir, kalıp, beton
 
   @Column({ name: "stockableyn", default: "Y" })

@@ -55,7 +55,7 @@ export const AppDataSource = new DataSource({
 
     // Master
     QuantityItem,
-    StockItem,
+    //StockItem,
 
     /*-------------------------*/
 
@@ -67,3 +67,6 @@ export const AppDataSource = new DataSource({
   //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
   subscribers: [],
 });
+
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/CompanystockMasterData --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

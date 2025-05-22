@@ -6,12 +6,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  Unique,
 } from "typeorm";
 import { Company } from "./Company";
 import { CompanyProject } from "./CompanyProject";
 import { User } from "./User";
 
 @Entity({ name: "companystocks" }) // ✅ tablo adı burada verildi
+@Unique(["category", "name"]) // ✅ Bileşik benzersizlik tanımı
 export class CompanyStock {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

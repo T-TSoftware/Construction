@@ -28,7 +28,8 @@ export const postCompanyStockHandler = async (req: Request, res: Response) => {
     for (const body of req.body) {
       const {
         projectId,
-        code,
+        //stockItemId, // ✅ stockItemId artık zorunlu
+        //code,
         name,
         category,
         description,
@@ -42,7 +43,8 @@ export const postCompanyStockHandler = async (req: Request, res: Response) => {
       const newStock = await createCompanyStock(
         {
           projectId,
-          code,
+          //stockItemId, // ✅ stockItemId artık zorunlu
+          //code,
           name,
           category,
           description,
@@ -52,7 +54,8 @@ export const postCompanyStockHandler = async (req: Request, res: Response) => {
           location,
           stockDate,
         },
-        { userId, companyId }
+        { userId, companyId },
+        queryRunner.manager
       );
 
       results.push(newStock);
@@ -60,10 +63,12 @@ export const postCompanyStockHandler = async (req: Request, res: Response) => {
 
     await queryRunner.commitTransaction();
     res.status(201).json(results);
-  } catch (error) {
+  } catch (error: any) {
     await queryRunner.rollbackTransaction();
     console.error("❌ POST company stock error:", error);
-    res.status(500).json({ errorMessage: "Stok kayıtları oluşturulamadı." });
+    res.status(500).json({
+      errorMessage: error.message || "Stok kayıtları oluşturulamadı.",
+    });
     return;
   } finally {
     await queryRunner.release();
@@ -98,10 +103,57 @@ export const patchCompanyStockHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const getCompanyStocksHandler = async (
+export const patchCompanyStocksHandler = async (
   req: Request,
   res: Response
 ) => {
+  if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const results = [];
+
+    for (const body of req.body) {
+      const { code, ...updateFields } = body;
+
+      const updatedStock = await updateCompanyStock(
+        code,
+        updateFields,
+        {
+          userId,
+          companyId,
+        },
+        queryRunner.manager
+      );
+
+      results.push(updatedStock);
+    }
+
+    await queryRunner.commitTransaction();
+    res.status(200).json(results);
+  } catch (error: any) {
+    await queryRunner.rollbackTransaction();
+    console.error("❌ PATCH company stocks error:", error);
+    res
+      .status(400)
+      .json({ errorMessage: error.message || "Stok güncellenemedi." });
+  } finally {
+    await queryRunner.release();
+  }
+};
+
+export const getCompanyStocksHandler = async (req: Request, res: Response) => {
   try {
     const companyId = req.user!.companyId;
     const stocks = await getCompanyStocks(companyId);

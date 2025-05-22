@@ -1,7 +1,9 @@
+import { EntityManager } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { Company } from "../entities/Company";
 import { CompanyProject } from "../entities/CompanyProject";
 import { CompanyStock } from "../entities/CompanyStock";
+import { generateStockCode } from "../utils/generateCode";
 
 const stockRepo = AppDataSource.getRepository(CompanyStock);
 const companyRepo = AppDataSource.getRepository(Company);
@@ -11,7 +13,8 @@ export const createCompanyStock = async (
   data: {
     //companyId: string;
     projectId?: string;
-    code: string;
+    //stockItemId: string; // ✅ yeni alan — bağlı stockItem'ın ID'si
+    //code: string;
     name: string;
     category: string;
     description?: string;
@@ -24,8 +27,13 @@ export const createCompanyStock = async (
   currentUser: {
     userId: string;
     companyId: string;
-  }
+  },
+  manager: EntityManager = AppDataSource.manager
 ) => {
+  const stockRepo = manager.getRepository(CompanyStock);
+  const companyRepo = manager.getRepository(Company);
+  const projectRepo = manager.getRepository(CompanyProject);
+
   const company = await companyRepo.findOneByOrFail({
     id: currentUser.companyId,
   });
@@ -33,8 +41,21 @@ export const createCompanyStock = async (
     ? await projectRepo.findOneByOrFail({ id: data.projectId })
     : null;
 
+  const existing = await stockRepo.findOne({
+    where: {
+      category: data.category,
+      name: data.name,
+    },
+  });
+
+  if (existing) {
+    throw new Error(`${data.category} - ${data.name} stoğu zaten mevcut.`);
+  }
+  const code = await generateStockCode(data.category);
+
   const stock = stockRepo.create({
     ...data,
+    code,
     company: { id: company.id },
     project: project ? { id: data.projectId } : null,
     createdBy: { id: currentUser.userId },
@@ -60,8 +81,11 @@ export const updateCompanyStock = async (
   currentUser: {
     userId: string;
     companyId: string;
-  }
+  },
+  manager: EntityManager = AppDataSource.manager // ✅ default olarak global manager
 ) => {
+  const stockRepo = manager.getRepository(CompanyStock);
+  const projectRepo = manager.getRepository(CompanyProject);
   const stock = await stockRepo.findOne({
     where: {
       code,
