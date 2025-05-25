@@ -1,6 +1,8 @@
 import { AppDataSource } from "../config/data-source";
 import { CompanyStock } from "../entities/CompanyStock";
 import { EntityManager } from "typeorm";
+import { ProjectSupplier } from "../entities/ProjectSupplier"; // ya da ProjectSubcontractor
+import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 
 export function generateNextCompanyCode(
   latestCode: string | null,
@@ -76,11 +78,11 @@ export function generateNextProjectCode(
   return `${fullPrefix}${nextNum}`;
 }
 
-export function generateNextEntityCode(
+/*export function generateNextEntityCode(
   latestCode: string | null,
   projectCode: string,
   category: string,
-  typePrefix: "TED" | "TAS" // 👈 sadece bu değişiyor
+  typePrefix: "TED" | "TAS", 
 ): string {
   const projectSuffix = projectCode.split("-")[1].toUpperCase(); // BAD002
   const categoryPrefix = category.trim().slice(0, 3).toUpperCase();
@@ -94,7 +96,7 @@ export function generateNextEntityCode(
   const nextNum = (parseInt(numPart) + 1).toString().padStart(3, "0");
 
   return `${fullPrefix}${nextNum}`;
-}
+}*/
 
 export const generateStockCode = async (
   category: string,
@@ -114,4 +116,35 @@ export const generateStockCode = async (
   const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
 
   return `${prefix}-${nextNumber}`;
+};
+
+export const generateNextEntityCode = async (
+  manager: EntityManager,
+  projectCode: string,
+  category: string,
+  typePrefix: "TED" | "TAS", // TED = Tedarikçi, TAS = Taşeron
+  entity: "ProjectSupplier" | "ProjectSubcontractor" // ✅ Entity tipi
+): Promise<string> => {
+  const repo =
+    entity === "ProjectSupplier"
+      ? manager.getRepository(ProjectSupplier)
+      : manager.getRepository(ProjectSubcontractor);
+
+  const projectSuffix = projectCode.split("-")[1].toUpperCase();
+  const categoryPrefix = category.trim().slice(0, 3).toUpperCase();
+  const fullPrefix = `${projectSuffix}-${typePrefix}-${categoryPrefix}`;
+
+  const latest = await repo
+    .createQueryBuilder("e")
+    .where("e.code LIKE :prefix", { prefix: `${fullPrefix}%` })
+    .orderBy("e.code", "DESC")
+    .getOne();
+
+  const nextNumber = latest
+    ? (parseInt(latest.code.replace(fullPrefix, "")) + 1)
+        .toString()
+        .padStart(3, "0")
+    : "001";
+
+  return `${fullPrefix}${nextNumber}`;
 };

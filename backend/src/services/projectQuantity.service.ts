@@ -1,4 +1,5 @@
 import { AppDataSource } from "../config/data-source";
+import { EntityManager } from "typeorm";
 import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { CompanyProject } from "../entities/CompanyProject";
 import { QuantityItem } from "../entities/QuantityItem";
@@ -21,8 +22,14 @@ export const createProjectQuantity = async (
   },
   currentUser: {
     userId: string;
-  }
+  },
+  manager: EntityManager = AppDataSource.manager // ✅ default manager
 ): Promise<ProjectQuantity> => {
+  const projectRepo = manager.getRepository(CompanyProject);
+  const quantityItemRepo = manager.getRepository(QuantityItem);
+  const projectQuantityRepo = manager.getRepository(ProjectQuantity);
+  const projectSupplierRepo = manager.getRepository(ProjectSupplier);
+
   const project = await projectRepo.findOneByOrFail({ id: data.projectId });
 
   const quantityItem = await quantityItemRepo.findOneByOrFail({
@@ -42,23 +49,12 @@ export const createProjectQuantity = async (
 
   const savedQuantity = await projectQuantityRepo.save(newRecord);
 
-  const prefix = `${project.code.split("-")[1]}-TED-${data.category
-    .slice(0, 3)
-    .toUpperCase()}`;
-
-  // En son kodu bul
-  const latest = await projectSupplierRepo
-    .createQueryBuilder("supplier")
-    .where("supplier.code LIKE :prefix", { prefix: `${prefix}%` })
-    .orderBy("supplier.code", "DESC")
-    .getOne();
-
-  // Yeni kodu üret
-  const code = generateNextEntityCode(
-    latest?.code ?? null,
+  const code = await generateNextEntityCode(
+    manager,
     project.code,
     data.category,
-    "TED"
+    "TED",
+    "ProjectSupplier"
   );
 
   const autoSupplier = projectSupplierRepo.create({
@@ -70,7 +66,7 @@ export const createProjectQuantity = async (
     quantity: data.quantity,
     unit: data.unit.trim(),
     category: data.category.trim(),
-    description: `${data.category} metraj hesabindan gelen`,
+    description: `${data.category} metraj hesabından gelen`,
     status: `NEW`,
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },

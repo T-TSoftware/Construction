@@ -1,8 +1,10 @@
 import { AppDataSource } from "../config/data-source";
+import { EntityManager } from "typeorm";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { CompanyProject } from "../entities/CompanyProject";
 import { generateNextEntityCode } from "../utils/generateCode";
 import { QuantityItem } from "../entities/QuantityItem";
+
 
 const supplierRepo = AppDataSource.getRepository(ProjectSupplier);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -11,7 +13,7 @@ const quantityItemRepo = AppDataSource.getRepository(QuantityItem);
 export const createProjectSupplier = async (
   data: {
     projectId: string;
-    quantityItemCode: string; // 🔥 yeni alan
+    quantityItemCode: string;
     category: string;
     companyName?: string;
     unit: string;
@@ -24,29 +26,25 @@ export const createProjectSupplier = async (
   },
   currentUser: {
     userId: string;
-  }
+  },
+  manager: EntityManager = AppDataSource.manager // ✅ default manager
 ) => {
+  const supplierRepo = manager.getRepository(ProjectSupplier);
+  const projectRepo = manager.getRepository(CompanyProject);
+  const quantityItemRepo = manager.getRepository(QuantityItem);
+
   const project = await projectRepo.findOneByOrFail({ id: data.projectId });
 
   const quantityItem = await quantityItemRepo.findOneByOrFail({
     code: data.quantityItemCode.trim().toUpperCase(),
   });
 
-  const prefix = `${project.code.split("-")[1]}-TED-${data.category
-    .slice(0, 3)
-    .toUpperCase()}`;
-
-  const latest = await supplierRepo
-    .createQueryBuilder("supplier")
-    .where("supplier.code LIKE :prefix", { prefix: `${prefix}%` })
-    .orderBy("supplier.code", "DESC")
-    .getOne();
-
-  const code = generateNextEntityCode(
-    latest?.code ?? null,
+  const code = await generateNextEntityCode(
+    manager,
     project.code,
     data.category,
-    "TED"
+    "TED",
+    "ProjectSupplier"
   );
 
   const remainingAmount =
@@ -112,8 +110,10 @@ export const updateProjectSupplier = async (
   },
   currentUser: {
     userId: string;
-  }
+  },
+  manager: EntityManager = AppDataSource.manager // ✅ default olarak global manager
 ) => {
+  const supplierRepo = manager.getRepository(ProjectSupplier);
   const supplier = await supplierRepo.findOne({
     where: {
       code,

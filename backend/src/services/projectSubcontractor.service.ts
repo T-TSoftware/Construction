@@ -1,10 +1,12 @@
 import { AppDataSource } from "../config/data-source";
+import { EntityManager } from "typeorm";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { CompanyProject } from "../entities/CompanyProject";
 import { generateNextEntityCode } from "../utils/generateCode";
 
 const subcontractorRepo = AppDataSource.getRepository(ProjectSubcontractor);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
+
 
 export const createProjectSubcontractor = async (
   data: {
@@ -21,25 +23,20 @@ export const createProjectSubcontractor = async (
   },
   currentUser: {
     userId: string;
-  }
+  },
+  manager: EntityManager = AppDataSource.manager // ✅ default olarak global manager
 ) => {
+  const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+  const projectRepo = manager.getRepository(CompanyProject);
+
   const project = await projectRepo.findOneByOrFail({ id: data.projectId });
 
-  const prefix = `${project.code.split("-")[1]}-TAS-${data.category
-    .slice(0, 3)
-    .toUpperCase()}`;
-
-  const latest = await subcontractorRepo
-    .createQueryBuilder("subcontractor")
-    .where("subcontractor.code LIKE :prefix", { prefix: `${prefix}%` })
-    .orderBy("subcontractor.code", "DESC")
-    .getOne();
-
-  const code = generateNextEntityCode(
-    latest?.code ?? null,
+  const code = await generateNextEntityCode(
+    manager,
     project.code,
     data.category,
-    "TAS"
+    "TAS", // 🔧 Taşeron tipi kodu
+    "ProjectSubcontractor"
   );
 
   const remainingAmount =

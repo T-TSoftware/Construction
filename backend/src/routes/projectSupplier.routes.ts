@@ -20,9 +20,6 @@ router.post(
 
 router.get("/projects/:projectId/suppliers", getProjectSuppliersHandler);
 
-router.patch(
-  "/projects/:projectId/suppliers/:code",
-  patchProjectSupplierHandler
-);
+router.patch("/projects/:projectId/suppliers", patchProjectSupplierHandler);
 
 export default router;

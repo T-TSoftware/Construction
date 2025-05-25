@@ -6,62 +6,6 @@ import {
 } from "../services/projectSupplier.service";
 import { AppDataSource } from "../config/data-source"; // transaction için gerekli
 
-/*export const postProjectSupplierHandler = async (
-  req: Request,
-  res: Response
-) => {
-  if (req.user?.role !== "superadmin") {
-    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
-    return;
-  }
-
-  try {
-    const { projectId } = req.params;
-    const {
-      quantityItemCode,
-      category,
-      companyName,
-      unit,
-      unitPrice,
-      quantity,
-      contractAmount,
-      paidAmount,
-      status,
-      description,
-    } = req.body;
-
-    if (!quantityItemCode || !category || !unit || !status) {
-      res.status(400).json({ error: "Zorunlu alanlar eksik." });
-      return;
-    }
-
-    const userId = req.user!.userId.toString();
-
-    const newSupplier = await createProjectSupplier(
-      {
-        projectId,
-        quantityItemCode,
-        category,
-        companyName,
-        unit,
-        unitPrice,
-        quantity,
-        contractAmount,
-        paidAmount,
-        status,
-        description,
-      },
-      { userId }
-    );
-
-    res.status(201).json(newSupplier);
-  } catch (error) {
-    console.error("❌ POST project supplier error:", error);
-    res.status(500).json({ error: "Tedarikçi oluşturulamadı." });
-    return;
-  }
-};*/
-
 export const postProjectSupplierHandler = async (
   req: Request,
   res: Response
@@ -151,7 +95,7 @@ export const getProjectSuppliersHandler = async (
   }
 };
 
-export const patchProjectSupplierHandler = async (
+/*export const patchProjectSupplierHandler = async (
   req: Request,
   res: Response
 ) => {
@@ -178,6 +122,52 @@ export const patchProjectSupplierHandler = async (
     res.status(status).json({ error: error.message });
     return;
   }
-};
+};*/
 
+export const patchProjectSupplierHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ errorMessage: "Yalnızca superadmin işlemi yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const userId = req.user!.userId.toString();
+    const projectId = req.params.projectId;
+    const updatedSuppliers = [];
+
+    for (const body of req.body) {
+      const { code, ...updateData } = body;
+
+      if (!code) {
+        throw new Error("Güncellenecek kaydın 'code' alanı zorunludur.");
+      }
+
+      const updated = await updateProjectSupplier(
+        projectId,
+        code,
+        updateData,
+        { userId },
+        queryRunner.manager
+      );
+
+      updatedSuppliers.push(updated);
+    }
+
+    await queryRunner.commitTransaction();
+    res.status(200).json(updatedSuppliers);
+  } catch (error: any) {
+    await queryRunner.rollbackTransaction();
+    console.error("❌ PATCH project suppliers error:", error);
+    res.status(500).json({ errorMessage: error.message || "Tedarikçiler güncellenemedi." });
+  } finally {
+    await queryRunner.release();
+  }
+};
 // multiple patch will be added according to business needs...
