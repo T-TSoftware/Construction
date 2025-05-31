@@ -5,7 +5,6 @@ import { CompanyProject } from "../entities/CompanyProject";
 import { generateNextEntityCode } from "../utils/generateCode";
 import { QuantityItem } from "../entities/QuantityItem";
 
-
 const supplierRepo = AppDataSource.getRepository(ProjectSupplier);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
 const quantityItemRepo = AppDataSource.getRepository(QuantityItem);

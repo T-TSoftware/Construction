@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const requestMiddleware_1 = require("../middlewares/requestMiddleware");
+const validations_1 = require("../validations/validations");
+const projectSupplier_controller_1 = require("../controllers/projectSupplier.controller");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authMiddleware);
+router.post("/projects/:projectId/suppliers", (0, requestMiddleware_1.validateArrayBody)(validations_1.supplierSchema), projectSupplier_controller_1.postProjectSupplierHandler);
+router.get("/projects/:projectId/suppliers", projectSupplier_controller_1.getProjectSuppliersHandler);
+router.patch("/projects/:projectId/suppliers", projectSupplier_controller_1.patchProjectSupplierHandler);
+exports.default = router;

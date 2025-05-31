@@ -1,0 +1,85 @@
+import { Request, Response } from "express";
+import { AppDataSource } from "../config/data-source";
+import { createCompanyFinanceTransaction } from "../services/companyFinance.service";
+
+export const postCompanyFinanceTransactionHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const results = [];
+
+    for (const body of req.body) {
+      const {
+        type,
+        amount,
+        currency,
+        fromAccountCode,
+        toAccountCode,
+        targetType,
+        targetId,
+        targetName,
+        transactionDate,
+        method,
+        category,
+        invoiceYN,
+        invoiceCode,
+        checkCode,
+        description,
+        projectId,
+        source,
+      } = body;
+
+      const transaction = await createCompanyFinanceTransaction(
+        {
+          type,
+          amount,
+          currency,
+          fromAccountCode,
+          toAccountCode,
+          targetType,
+          targetId,
+          targetName,
+          transactionDate,
+          method,
+          category,
+          invoiceYN,
+          invoiceCode,
+          checkCode,
+          description,
+          projectId,
+          source,
+        },
+        { userId, companyId },
+        queryRunner.manager
+      );
+
+      results.push(transaction);
+    }
+
+    await queryRunner.commitTransaction();
+    res.status(201).json({ transactions: results });
+  } catch (error: any) {
+    await queryRunner.rollbackTransaction();
+    console.error("❌ POST company finance transaction error:", error);
+    res.status(500).json({
+      errorMessage: error.message || "Finansal işlem(ler) oluşturulamadı.",
+    });
+  } finally {
+    await queryRunner.release();
+  }
+};

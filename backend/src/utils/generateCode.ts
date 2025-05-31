@@ -1,8 +1,10 @@
 import { AppDataSource } from "../config/data-source";
+import { DataSource } from "typeorm";
 import { CompanyStock } from "../entities/CompanyStock";
 import { EntityManager } from "typeorm";
 import { ProjectSupplier } from "../entities/ProjectSupplier"; // ya da ProjectSubcontractor
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
+import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 
 export function generateNextCompanyCode(
   latestCode: string | null,
@@ -78,26 +80,6 @@ export function generateNextProjectCode(
   return `${fullPrefix}${nextNum}`;
 }
 
-/*export function generateNextEntityCode(
-  latestCode: string | null,
-  projectCode: string,
-  category: string,
-  typePrefix: "TED" | "TAS", 
-): string {
-  const projectSuffix = projectCode.split("-")[1].toUpperCase(); // BAD002
-  const categoryPrefix = category.trim().slice(0, 3).toUpperCase();
-  const fullPrefix = `${projectSuffix}-${typePrefix}-${categoryPrefix}`;
-
-  if (!latestCode || !latestCode.startsWith(fullPrefix)) {
-    return `${fullPrefix}001`;
-  }
-
-  const numPart = latestCode.replace(fullPrefix, "");
-  const nextNum = (parseInt(numPart) + 1).toString().padStart(3, "0");
-
-  return `${fullPrefix}${nextNum}`;
-}*/
-
 export const generateStockCode = async (
   category: string,
   manager: EntityManager = AppDataSource.manager
@@ -147,4 +129,85 @@ export const generateNextEntityCode = async (
     : "001";
 
   return `${fullPrefix}${nextNumber}`;
+};
+
+
+
+/*export const generateFinanceTransactionCode = async (
+  type: "PAYMENT" | "COLLECTION" | "TRANSFER",
+  transactionDate: Date,
+  manager: DataSource["manager"]
+): Promise<string> => {
+  const prefixMap = {
+    PAYMENT: "PAY",
+    COLLECTION: "COL",
+    TRANSFER: "TRF",
+  };
+
+  const typeCode = prefixMap[type];
+  const now = new Date();
+
+  // MMDDYYYY formatı
+  const datePart = `${(now.getMonth() + 1).toString().padStart(2, "0")}${now
+    .getDate()
+    .toString()
+    .padStart(2, "0")}${now.getFullYear()}`;
+
+  const prefix = `${typeCode}-${datePart}`;
+
+  const repo = manager.getRepository(CompanyFinanceTransaction);
+
+  const latest = await repo
+    .createQueryBuilder("trx")
+    .where("trx.code LIKE :prefix", { prefix: `${prefix}-%` })
+    .orderBy("trx.code", "DESC")
+    .getOne();
+
+  const lastNumber = latest
+    ? parseInt(latest.code.split("-")[2])
+    : 0;
+
+  const nextNumber = (lastNumber + 1).toString().padStart(4, "0");
+
+  return `${prefix}-${nextNumber}`;
+};*/
+
+
+export const generateFinanceTransactionCode = async (
+  type: "PAYMENT" | "COLLECTION" | "TRANSFER",
+  transactionDate: Date,
+  manager: EntityManager,
+  direction?: "IN" | "OUT" // only for TRANSFER
+): Promise<string> => {
+  const date = new Date(transactionDate);
+  const datePart = `${(date.getMonth() + 1).toString().padStart(2, "0")}${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}${date.getFullYear()}`;
+
+  let prefix = "";
+
+  if (type === "TRANSFER") {
+    if (!direction) throw new Error("TRANSFER type requires a direction (IN or OUT).");
+    prefix = direction === "OUT" ? `TRFOUT-${datePart}` : `TRFIN-${datePart}`;
+  } else {
+    const prefixMap = {
+      PAYMENT: "PAY",
+      COLLECTION: "COL",
+    };
+    prefix = `${prefixMap[type]}-${datePart}`;
+  }
+
+  const repo = manager.getRepository(CompanyFinanceTransaction);
+
+  const latest = await repo
+    .createQueryBuilder("trx")
+    .where("trx.code LIKE :prefix", { prefix: `${prefix}-%` })
+    .orderBy("trx.code", "DESC")
+    .getOne();
+
+  const lastNumber = latest ? parseInt(latest.code.split("-")[2]) : 0;
+  const nextNumber = (lastNumber + 1).toString().padStart(4, "0");
+
+  return `${prefix}-${nextNumber}`;
 };

@@ -95,41 +95,14 @@ export const getProjectSuppliersHandler = async (
   }
 };
 
-/*export const patchProjectSupplierHandler = async (
-  req: Request,
-  res: Response
-) => {
-  if (req.user?.role !== "superadmin") {
-    res.status(403).json({ error: "Yalnızca superadmin işlemi yapabilir." });
-    return;
-  }
-
-  try {
-    const { projectId, code } = req.params;
-    const userId = req.user!.userId.toString();
-
-    const updatedSupplier = await updateProjectSupplier(
-      projectId,
-      code,
-      req.body,
-      { userId }
-    );
-
-    res.status(200).json(updatedSupplier);
-  } catch (error: any) {
-    console.error("❌ PATCH project supplier error:", error);
-    const status = error.message === "Tedarikçi bulunamadı." ? 404 : 500;
-    res.status(status).json({ error: error.message });
-    return;
-  }
-};*/
-
 export const patchProjectSupplierHandler = async (
   req: Request,
   res: Response
 ) => {
   if (req.user?.role !== "superadmin") {
-    res.status(403).json({ errorMessage: "Yalnızca superadmin işlemi yapabilir." });
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlemi yapabilir." });
     return;
   }
 
@@ -165,7 +138,9 @@ export const patchProjectSupplierHandler = async (
   } catch (error: any) {
     await queryRunner.rollbackTransaction();
     console.error("❌ PATCH project suppliers error:", error);
-    res.status(500).json({ errorMessage: error.message || "Tedarikçiler güncellenemedi." });
+    res
+      .status(500)
+      .json({ errorMessage: error.message || "Tedarikçiler güncellenemedi." });
   } finally {
     await queryRunner.release();
   }

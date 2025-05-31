@@ -37,6 +37,7 @@ export const createCompanyStock = async (
   const company = await companyRepo.findOneByOrFail({
     id: currentUser.companyId,
   });
+
   const project = data.projectId
     ? await projectRepo.findOneByOrFail({ id: data.projectId })
     : null;

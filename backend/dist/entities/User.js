@@ -42,6 +42,8 @@ __decorate([
 ], User.prototype, "role", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => Company_1.Company, { eager: true }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }) // ✅ all_lower
+    ,
     __metadata("design:type", Company_1.Company)
 ], User.prototype, "company", void 0);
 __decorate([

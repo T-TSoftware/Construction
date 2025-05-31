@@ -10,21 +10,63 @@ const typeorm_1 = require("typeorm");
 const Company_1 = require("../entities/Company");
 const dotenv_1 = __importDefault(require("dotenv"));
 const CompanyBalance_1 = require("../entities/CompanyBalance");
-const CompanyBalanceView_1 = require("../views/CompanyBalanceView");
 const User_1 = require("../entities/User");
 const CompanyProject_1 = require("../entities/CompanyProject");
+const ProjectEstimatedCost_1 = require("../entities/ProjectEstimatedCost");
+const ProjectSupplier_1 = require("../entities/ProjectSupplier");
+const ProjectSubcontractor_1 = require("../entities/ProjectSubcontractor");
+const QuantityItem_1 = require("../entities/QuantityItem");
+const ProjectQuantity_1 = require("../entities/ProjectQuantity");
+const ProjectCurrent_1 = require("../entities/ProjectCurrent");
+const CompanyStock_1 = require("../entities/CompanyStock");
+const CompanyFinance_1 = require("../entities/CompanyFinance");
+const CompanyCheck_1 = require("../entities/CompanyCheck");
 dotenv_1.default.config();
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "postgres",
     host: process.env.DB_HOST || "xxxxx",
-    port: Number(process.env.DB_PORT) || 1111,
+    port: Number(process.env.DB_PORT) || 1010,
     username: process.env.DB_USER || "xxxxx",
     password: process.env.DB_PASSWORD || "xxxx",
     database: process.env.DB_NAME || "xxxx",
     schema: process.env.DB_SCHEMA,
-    synchronize: false, // Otomatik tablo oluşturma (Prod için false olmalı)
+    synchronize: false, // Auto create table (Prod :false)
     logging: false,
-    entities: [Company_1.Company, CompanyBalance_1.CompanyBalance, User_1.User, CompanyProject_1.CompanyProject, CompanyBalanceView_1.CompanyBalanceView],
+    entities: [
+        /*-------------------------*/
+        // Company Related
+        Company_1.Company,
+        CompanyBalance_1.CompanyBalance,
+        CompanyProject_1.CompanyProject,
+        CompanyStock_1.CompanyStock,
+        CompanyFinance_1.CompanyFinanceTransaction,
+        CompanyCheck_1.CompanyCheck
+        /*-------------------------*/
+        // Project Related
+        ,
+        /*-------------------------*/
+        // Project Related
+        ProjectEstimatedCost_1.ProjectEstimatedCost,
+        ProjectSupplier_1.ProjectSupplier,
+        ProjectSubcontractor_1.ProjectSubcontractor,
+        ProjectQuantity_1.ProjectQuantity,
+        ProjectCurrent_1.ProjectCurrent,
+        /*-------------------------*/
+        // User
+        User_1.User,
+        /*-------------------------*/
+        // Master
+        QuantityItem_1.QuantityItem,
+        //StockItem,
+        /*-------------------------*/
+        //View
+        //ProjectCostSummary,
+        //CompanyBalanceView,
+    ],
     migrations: ["src/migrations/*.ts"],
+    //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
     subscribers: [],
 });
+// npx tsc
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/addedCheckTable --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

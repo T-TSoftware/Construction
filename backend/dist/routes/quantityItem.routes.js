@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const quantityItem_controller_1 = require("../controllers/quantityItem.controller");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authMiddleware);
+router.post("/", quantityItem_controller_1.postQuantityItemHandler);
+router.get("/", quantityItem_controller_1.getQuantityItemsHandler);
+//router.post("/bulk", authMiddleware, postBulkQuantityItemsHandler);
+exports.default = router;

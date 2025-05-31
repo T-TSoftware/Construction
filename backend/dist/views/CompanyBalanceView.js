@@ -35,7 +35,7 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyBalanceView.prototype, "currency", void 0);
 __decorate([
-    (0, typeorm_1.ViewColumn)({ name: "companyId" }),
+    (0, typeorm_1.ViewColumn)({ name: "companyid" }),
     __metadata("design:type", String)
 ], CompanyBalanceView.prototype, "companyId", void 0);
 exports.CompanyBalanceView = CompanyBalanceView = __decorate([

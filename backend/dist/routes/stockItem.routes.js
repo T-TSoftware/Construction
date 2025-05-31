@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const stockItem_controller_1 = require("../controllers/stockItem.controller");
+const requestMiddleware_1 = require("../middlewares/requestMiddleware");
+const validations_1 = require("../validations/validations");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authMiddleware);
+router.post("/", (0, requestMiddleware_1.validateBody)(validations_1.stockItemSchema), stockItem_controller_1.postStockItemHandler);
+router.get("/", stockItem_controller_1.getStockItemsHandler);
+router.patch("/:id", (0, requestMiddleware_1.validateBody)(validations_1.stockItemPatchSchema), stockItem_controller_1.patchStockItemHandler);
+//router.post("/bulk", authMiddleware, postBulkQuantityItemsHandler);
+exports.default = router;

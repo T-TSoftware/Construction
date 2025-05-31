@@ -6,8 +6,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  OneToMany,
 } from "typeorm";
 import { Company } from "./Company";
+import { CompanyFinanceTransaction } from "./CompanyFinance";
+import { CompanyCheck } from "./CompanyCheck";
 
 @Entity({ name: "companybalances" })
 export class CompanyBalance {
@@ -51,4 +54,19 @@ export class CompanyBalance {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedatetime!: Date;
+
+  @OneToMany(
+    () => CompanyFinanceTransaction,
+    (financeTransaction) => financeTransaction.fromAccount
+  )
+  outgoingFinanceTransactions!: CompanyFinanceTransaction[];
+
+  @OneToMany(
+    () => CompanyFinanceTransaction,
+    (financeTransaction) => financeTransaction.toAccount
+  )
+  incomingFinanceTransactions!: CompanyFinanceTransaction[];
+
+  @OneToMany(() => CompanyCheck, (check) => check.bank)
+  checks!: CompanyCheck;
 }

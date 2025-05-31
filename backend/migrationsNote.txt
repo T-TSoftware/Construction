@@ -1,0 +1,4 @@
+/*  Migrations to Run */
+1747856762363-CompanystockMasterData.ts 
+1748370329066-finance.ts
+1748712172875-addedCheckTable.ts

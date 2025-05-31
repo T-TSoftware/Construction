@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CompanyBalance = void 0;
 const typeorm_1 = require("typeorm");
 const Company_1 = require("./Company");
+const CompanyFinance_1 = require("./CompanyFinance");
+const CompanyCheck_1 = require("./CompanyCheck");
 let CompanyBalance = class CompanyBalance {
 };
 exports.CompanyBalance = CompanyBalance;
@@ -27,6 +29,7 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => Company_1.Company, (company) => company.balances, {
         onDelete: "CASCADE",
     }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }),
     __metadata("design:type", Company_1.Company)
 ], CompanyBalance.prototype, "company", void 0);
 __decorate([
@@ -42,29 +45,41 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyBalance.prototype, "currency", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: "createdby" }),
     __metadata("design:type", String)
 ], CompanyBalance.prototype, "createdBy", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: "updatedby" }),
     __metadata("design:type", String)
 ], CompanyBalance.prototype, "updatedBy", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({
         type: "timestamp",
+        name: "createdatetime",
         default: () => "CURRENT_TIMESTAMP",
-        onUpdate: "CURRENT_TIMESTAMP",
     }),
     __metadata("design:type", Date)
 ], CompanyBalance.prototype, "createdatetime", void 0);
 __decorate([
     (0, typeorm_1.UpdateDateColumn)({
         type: "timestamp",
+        name: "updatedatetime",
         default: () => "CURRENT_TIMESTAMP",
-        onUpdate: "CURRENT_TIMESTAMP",
     }),
     __metadata("design:type", Date)
 ], CompanyBalance.prototype, "updatedatetime", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyFinance_1.CompanyFinanceTransaction, (financeTransaction) => financeTransaction.fromAccount),
+    __metadata("design:type", Array)
+], CompanyBalance.prototype, "outgoingFinanceTransactions", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyFinance_1.CompanyFinanceTransaction, (financeTransaction) => financeTransaction.toAccount),
+    __metadata("design:type", Array)
+], CompanyBalance.prototype, "incomingFinanceTransactions", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyCheck_1.CompanyCheck, (check) => check.bank),
+    __metadata("design:type", CompanyCheck_1.CompanyCheck)
+], CompanyBalance.prototype, "checks", void 0);
 exports.CompanyBalance = CompanyBalance = __decorate([
     (0, typeorm_1.Entity)({ name: "companybalances" })
 ], CompanyBalance);

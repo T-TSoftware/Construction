@@ -10,7 +10,8 @@ const viewRepo = data_source_1.AppDataSource.getRepository(CompanyBalanceView_1.
 const getCompanyBalances = async (companyId) => {
     try {
         const all = await viewRepo.findBy({ companyId });
-        return all.map(({ code, name, amount, currency }) => ({
+        return all.map(({ id, code, name, amount, currency }) => ({
+            id,
             code,
             name,
             amount,

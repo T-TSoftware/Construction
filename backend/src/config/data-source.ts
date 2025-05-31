@@ -16,6 +16,8 @@ import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { ProjectCurrent } from "../entities/ProjectCurrent";
 import { CompanyStock } from "../entities/CompanyStock";
 import { StockItem } from "../entities/StockItem";
+import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
+import { CompanyCheck } from "../entities/CompanyCheck";
 
 dotenv.config();
 
@@ -36,6 +38,8 @@ export const AppDataSource = new DataSource({
     CompanyBalance,
     CompanyProject,
     CompanyStock,
+    CompanyFinanceTransaction,
+    CompanyCheck,
 
     /*-------------------------*/
 
@@ -60,13 +64,14 @@ export const AppDataSource = new DataSource({
     /*-------------------------*/
 
     //View
-    ProjectCostSummary,
-    CompanyBalanceView,
+    //ProjectCostSummary,
+    //CompanyBalanceView,
   ],
   migrations: ["src/migrations/*.ts"],
   //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
   subscribers: [],
 });
 
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/CompanystockMasterData --dataSource src/config/data-source.ts
+// npx tsc
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/addedCheckTable --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

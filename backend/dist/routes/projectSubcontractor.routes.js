@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const projectSubcontractor_controller_1 = require("../controllers/projectSubcontractor.controller");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authMiddleware);
+router.post("/projects/:projectId/subcontractors", projectSubcontractor_controller_1.postProjectSubcontractorHandler);
+router.get("/projects/:projectId/subcontractors", projectSubcontractor_controller_1.getProjectSubcontractorsHandler);
+router.patch("/projects/:projectId/subcontractors/:code", projectSubcontractor_controller_1.patchProjectSubcontractorHandler);
+exports.default = router;

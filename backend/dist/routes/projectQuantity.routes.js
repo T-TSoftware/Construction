@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const projectQuantity_controller_1 = require("../controllers/projectQuantity.controller");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authMiddleware);
+router.post("/projects/:projectId/quantities", projectQuantity_controller_1.postProjectQuantityHandler);
+router.get("/projects/:projectId/quantities", projectQuantity_controller_1.getProjectQuantitiesHandler);
+exports.default = router;
