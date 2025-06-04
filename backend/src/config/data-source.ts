@@ -73,5 +73,5 @@ export const AppDataSource = new DataSource({
 });
 
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/addedCheckTable --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/adjustedFinTran --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

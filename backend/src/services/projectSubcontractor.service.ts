@@ -7,7 +7,6 @@ import { generateNextEntityCode } from "../utils/generateCode";
 const subcontractorRepo = AppDataSource.getRepository(ProjectSubcontractor);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
 
-
 export const createProjectSubcontractor = async (
   data: {
     projectId: string;
@@ -65,6 +64,7 @@ export const getProjectSubcontractors = async (projectId: string) => {
   });
 
   return subcontractors.map((s) => ({
+    id: s.id,
     code: s.code,
     category: s.category,
     companyName: s.companyName,

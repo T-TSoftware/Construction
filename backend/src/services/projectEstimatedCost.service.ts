@@ -58,6 +58,7 @@ export const getEstimatedCostsByProject = async (projectId: string) => {
   });
 
   return costs.map((cost) => ({
+    id: cost.id,
     code: cost.code,
     name: cost.name,
     category: cost.category,

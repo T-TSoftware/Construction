@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { postCompanyFinanceTransactionHandler } from "../controllers/companyFinance.controller";
+import {
+  postCompanyFinanceTransactionHandler,
+  patchCompanyFinanceTransactionHandler,
+  getCompanyFinanceTransactionsHandler,
+} from "../controllers/companyFinance.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 //import { validateFinanceArrayBody } from "../middlewares/validation.middleware";
@@ -15,4 +19,10 @@ router.post(
   /*validateFinanceArrayBody,*/ postCompanyFinanceTransactionHandler
 );
 
+router.patch(
+  "/:code",
+  /*validateFinanceArrayBody,*/ patchCompanyFinanceTransactionHandler
+);
+
+router.get("/", getCompanyFinanceTransactionsHandler);
 export default router;

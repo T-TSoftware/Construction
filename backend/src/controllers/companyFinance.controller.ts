@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
-import { createCompanyFinanceTransaction } from "../services/companyFinance.service";
+import {
+  createCompanyFinanceTransaction,
+  updateCompanyFinanceTransaction,
+  getCompanyFinanceTransactions,
+} from "../services/companyFinance.service";
 
 export const postCompanyFinanceTransactionHandler = async (
   req: Request,
@@ -81,5 +85,82 @@ export const postCompanyFinanceTransactionHandler = async (
     });
   } finally {
     await queryRunner.release();
+  }
+};
+
+export const patchCompanyFinanceTransactionHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const code = req.params.code;
+    const body = req.body;
+    console.log(req.body);
+    if (!code || typeof code !== "string") {
+      throw new Error("Geçerli bir 'code' parametresi gereklidir.");
+    }
+
+    const updatedTransaction = await updateCompanyFinanceTransaction(
+      code,
+      body,
+      { userId, companyId },
+      queryRunner.manager
+    );
+
+    await queryRunner.commitTransaction();
+    res.status(200).json(updatedTransaction);
+    return;
+  } catch (error: any) {
+    await queryRunner.rollbackTransaction();
+    console.error("❌ PATCH finance transaction error:", error);
+    res.status(400).json({
+      errorMessage: error.message || "Finansal işlem güncellenemedi.",
+    });
+    return;
+  } finally {
+    await queryRunner.release();
+  }
+};
+
+export const getCompanyFinanceTransactionsHandler = async (
+  req: Request,
+  res: Response
+) => {
+  /*if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }*/
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const transactions = await getCompanyFinanceTransactions(
+      { userId, companyId },
+      AppDataSource.manager
+    );
+
+    res.status(200).json({ transactions });
+  } catch (error: any) {
+    console.error("❌ GET finance transactions error:", error);
+    res.status(500).json({
+      errorMessage: error.message || "Finansal işlemler getirilemedi.",
+    });
   }
 };

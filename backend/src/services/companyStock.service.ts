@@ -131,6 +131,7 @@ export const getCompanyStocks = async (companyId: string) => {
   });
 
   return stocks.map((s) => ({
+    id: s.id,
     code: s.code,
     name: s.name,
     category: s.category,

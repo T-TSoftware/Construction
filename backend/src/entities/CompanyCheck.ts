@@ -42,6 +42,9 @@ export class CompanyCheck {
   @Column({ nullable: true })
   status?: string;
 
+  @Column({ type: "varchar", nullable: false })
+  type!: "PAYMENT" | "COLLECTION";
+
   @ManyToOne(() => CompanyBalance)
   @JoinColumn({ name: "bankid" })
   bank!: CompanyBalance;

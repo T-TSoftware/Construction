@@ -73,6 +73,9 @@ export class CompanyFinanceTransaction {
   @Column({ name: "checkcode", nullable: true })
   checkCode?: string;
 
+  @Column({ name: "checkstatus", nullable: true })
+  checkstatus?: string;
+
   @Column({ type: "text", nullable: true })
   description?: string;
 

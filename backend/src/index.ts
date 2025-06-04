@@ -9,7 +9,8 @@ import companyBalanceRoutes from "./routes/companyBalance.routes";
 import companyProjectRoutes from "./routes/companyProject.routes";
 import companyStockRoutes from "./routes/companyStock.routes";
 import companyFinanceRoutes from "./routes/companyFinance.routes";
-import companyBankMovementRoutes from "./routes/companyBankMovement.routes"
+import companyBankMovementRoutes from "./routes/companyBankMovement.routes";
+import companyCheckRoutes from "./routes/companyCheck.routes";
 
 import projectEstimatedCostRoutes from "./routes/projectEstimatedCost.routes";
 import projectSupplierRoutes from "./routes/projectSupplier.routes";
@@ -43,6 +44,7 @@ app.use("/api/projects", companyProjectRoutes);
 app.use("/api/stocks", companyStockRoutes);
 app.use("/api/balances", companyBalanceRoutes);
 app.use("/api/finances", companyFinanceRoutes);
+app.use("/api/checks", companyCheckRoutes);
 app.use("/api/bank-movements", companyBankMovementRoutes);
 
 // Project Related
