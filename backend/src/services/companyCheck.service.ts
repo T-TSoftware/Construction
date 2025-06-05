@@ -6,6 +6,8 @@ import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { generateFinanceTransactionCode } from "../utils/generateCode";
 
 import { updateCompanyBalance } from "../services/companyFinance.service";
+import { User } from "../entities/User";
+import { CompanyProject } from "../entities/CompanyProject";
 
 export const createCompanyCheck = async (
   data: {
@@ -75,6 +77,131 @@ export const createCompanyCheck = async (
   return await repo.save(check);
 };
 
+export const updateCompanyCheck = async (
+  code: string,
+  data: {
+    checkNo?: string;
+    checkDate?: Date;
+    transactionDate?: Date;
+    firm?: string;
+    amount?: number;
+    bankCode?: string;
+    type?: "PAYMENT" | "COLLECTION";
+    projectId?: string;
+    description?: string;
+    status?: string; // "PAID", "COLLECTED", vs.
+  },
+  currentUser: {
+    userId: string;
+    companyId: string;
+  },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyCheck);
+  const balanceRepo = manager.getRepository(CompanyBalance);
+  const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
+  const projectRepo = manager.getRepository(CompanyProject);
+
+  // 🎯 Mevcut check kaydını getir
+  const existing = await repo.findOne({
+    where: { code, company: { id: currentUser.companyId } },
+    relations: ["bank", "transaction", "project"],
+  });
+
+  if (!existing) throw new Error("Check kaydı bulunamadı.");
+
+  // 🧠 Önceki değerleri sakla
+  const prevStatus = existing.status;
+  const prevAmount = existing.amount;
+  const prevBankId = existing.bank?.id;
+  const prevTransaction = existing.transaction;
+
+  // 🔄 Yeni banka atanacak mı?
+  const newBank =
+    data.bankCode && data.bankCode !== existing.bank?.code
+      ? await balanceRepo.findOneByOrFail({ code: data.bankCode })
+      : existing.bank;
+
+  // 🔄 Yeni proje atanacak mı?
+  const newProject =
+    data.projectId && data.projectId !== existing.project?.id
+      ? await projectRepo.findOneByOrFail({ id: data.projectId })
+      : existing.project;
+
+  const newStatus = data.status ?? existing.status;
+
+  // 🔍 Durum değişti mi? (örneğin PAID → COLLECTED gibi)
+  const isStatusChanged =
+    (prevStatus === "PAID" && newStatus === "COLLECTED") ||
+    (prevStatus === "COLLECTED" && newStatus === "PAID");
+
+  // 🧾 Yeni transaction oluşturulmalı mı?
+  const shouldRecreateTransaction =
+    isStatusChanged || // status değiştiyse
+    (!prevTransaction && (newStatus === "PAID" || newStatus === "COLLECTED")) || // ilk defa ekleniyor
+    (prevTransaction && (newStatus === "PAID" || newStatus === "COLLECTED")); // güncelleniyor
+
+  // 🧹 Önceki transaction varsa geri al ve FK kaldır
+  if (shouldRecreateTransaction && prevTransaction) {
+    // 💸 Balance geri al
+    await updateCompanyBalance(
+      prevTransaction.type,
+      prevBankId,
+      null,
+      prevAmount,
+      manager,
+      true // rollback
+    );
+
+    // ❗ FK kaldır
+    existing.transaction = null;
+    await repo.save(existing); // önce FK null yapılmalı
+
+    // 🔥 Transaction sil
+    await transactionRepo.delete(prevTransaction.id);
+  }
+
+  // ➕ Yeni transaction oluştur
+  if (shouldRecreateTransaction) {
+    const newTransaction = await createCheckTransactionFromCheckData(
+      {
+        checkNo: data.checkNo ?? existing.checkNo,
+        transactionDate: data.transactionDate ?? existing.transactionDate,
+        amount: data.amount ?? existing.amount,
+        bankId: newBank.id,
+        firm: data.firm ?? existing.firm,
+        projectId: data.projectId ?? existing.project?.id,
+        description: data.description ?? existing.description,
+        type: data.type ?? existing.type,
+      },
+      currentUser,
+      manager
+    );
+
+    existing.transaction = {
+      id: newTransaction.id,
+    } as CompanyFinanceTransaction;
+  }
+
+  // ✏️ Diğer alanlar güncelleniyor
+  existing.checkNo = data.checkNo ?? existing.checkNo;
+  existing.code = data.checkNo ?? existing.checkNo;
+  existing.checkDate = data.checkDate ?? existing.checkDate;
+  existing.transactionDate = data.transactionDate ?? existing.transactionDate;
+  existing.firm = data.firm ?? existing.firm;
+  existing.amount = data.amount ?? existing.amount;
+  existing.bank = newBank;
+  existing.type = data.type ?? existing.type;
+  existing.project = newProject;
+  existing.description = data.description ?? existing.description;
+  existing.status = newStatus;
+  existing.updatedBy = { id: currentUser.userId } as any;
+  existing.updatedatetime = new Date();
+
+  // 💾 Kaydet ve dön
+  return await repo.save(existing);
+};
+
 export const createCheckTransactionFromCheckData = async (
   check: {
     checkNo: string;
@@ -110,7 +237,7 @@ export const createCheckTransactionFromCheckData = async (
     targetName: check.firm,
     transactionDate: check.transactionDate,
     method: check.type === "COLLECTION" ? "CHECK" : "BANK",
-    category: check.type === "COLLECTION" ? "Çek Tahsilate" : "Çek Ödeme",
+    category: check.type === "COLLECTION" ? "Çek Tahsilatı" : "Çek Ödeme",
     invoiceYN: "N",
     checkCode: check.checkNo,
     description: check.description,
