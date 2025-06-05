@@ -259,3 +259,21 @@ export const createCheckTransactionFromCheckData = async (
 
   return savedTransactionRecord;
 };
+
+
+export const getCompanyChecks = async (
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyCheck);
+
+  const transactions = await repo.find({
+    where: {
+      company: { id: currentUser.companyId },
+    },
+    relations: ["bank", "project", "transaction"],
+    order: { transactionDate: "DESC" },
+  });
+
+  return transactions;
+};

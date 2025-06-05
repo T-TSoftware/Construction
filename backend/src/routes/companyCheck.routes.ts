@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   postCompanyChecksHandler,
   patchCompanyCheckHandler,
+  getCompanyChecksHandler,
 } from "../controllers/companyCheck.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
@@ -28,5 +29,7 @@ router.patch(
   validateBody(checkSchema("update")),
   patchCompanyCheckHandler
 );
+
+router.get("/", getCompanyChecksHandler);
 
 export default router;

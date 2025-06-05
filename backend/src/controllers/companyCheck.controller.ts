@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
-import { createCompanyCheck, updateCompanyCheck } from "../services/companyCheck.service";
+import {
+  createCompanyCheck,
+  updateCompanyCheck,
+  getCompanyChecks,
+} from "../services/companyCheck.service";
 
 export const postCompanyChecksHandler = async (req: Request, res: Response) => {
   // 🔐 Yalnızca superadmin işlem yapabilir
@@ -70,10 +74,7 @@ export const postCompanyChecksHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const patchCompanyCheckHandler = async (
-  req: Request,
-  res: Response
-) => {
+export const patchCompanyCheckHandler = async (req: Request, res: Response) => {
   // 🔒 Yetki kontrolü
   if (req.user?.role !== "superadmin") {
     res.status(403).json({
@@ -117,5 +118,31 @@ export const patchCompanyCheckHandler = async (
     return;
   } finally {
     await queryRunner.release();
+  }
+};
+
+export const getCompanyChecksHandler = async (req: Request, res: Response) => {
+  /*if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }*/
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const checks = await getCompanyChecks(
+      { userId, companyId },
+      AppDataSource.manager
+    );
+
+    res.status(200).json({ checks });
+  } catch (error: any) {
+    console.error("❌ GET checks transactions error:", error);
+    res.status(500).json({
+      errorMessage: error.message || "Çekler getirilemedi.",
+    });
   }
 };
