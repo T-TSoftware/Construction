@@ -4,6 +4,7 @@ import {
   createCompanyCheck,
   updateCompanyCheck,
   getCompanyChecks,
+  getCompanyCheckById,
 } from "../services/companyCheck.service";
 
 export const postCompanyChecksHandler = async (req: Request, res: Response) => {
@@ -144,5 +145,30 @@ export const getCompanyChecksHandler = async (req: Request, res: Response) => {
     res.status(500).json({
       errorMessage: error.message || "Çekler getirilemedi.",
     });
+  }
+};
+
+export const getCompanyCheckByIdHandler = async (req: Request, res: Response) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({ error: "Check ID zorunludur." });
+      return;
+    }
+
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const check = await getCompanyCheckById(id, { userId, companyId });
+    res.status(200).json(check);
+  } catch (error: any) {
+    console.error("❌ GET check by ID error:", error);
+    res.status(500).json({ error: error.message || "Çek bilgisi alınamadı." });
   }
 };

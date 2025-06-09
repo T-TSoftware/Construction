@@ -3,6 +3,7 @@ import {
   postCompanyChecksHandler,
   patchCompanyCheckHandler,
   getCompanyChecksHandler,
+  getCompanyCheckByIdHandler,
 } from "../controllers/companyCheck.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
@@ -31,5 +32,7 @@ router.patch(
 );
 
 router.get("/", getCompanyChecksHandler);
+
+router.get("/:id", getCompanyCheckByIdHandler)
 
 export default router;

@@ -277,3 +277,25 @@ export const getCompanyChecks = async (
 
   return transactions;
 };
+
+export const getCompanyCheckById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyCheck);
+
+  const check = await repo.findOne({
+    where: {
+      id,
+      company: { id: currentUser.companyId },
+    },
+    relations: ["bank", "project", "transaction"],
+  });
+
+  if (!check) {
+    throw new Error("İlgili çek bulunamadı.");
+  }
+
+  return check;
+};

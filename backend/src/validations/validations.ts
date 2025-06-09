@@ -114,7 +114,7 @@ export const checkSchema = (mode: "create" | "update") =>
       : z.enum(["PAYMENT", "COLLECTION"]).optional(),
 
     status: mode === "create"
-      ? z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"], {
+      ? z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED","NOTDUE"], {
           required_error: "Durum zorunludur.",
         })
       : z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"]).optional(),

@@ -3,9 +3,13 @@ import {
   postCompanyFinanceTransactionHandler,
   patchCompanyFinanceTransactionHandler,
   getCompanyFinanceTransactionsHandler,
+  getCompanyFinanceTransactionByIdHandler,
 } from "../controllers/companyFinance.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
-import { validateBody,validateArrayBody } from "../middlewares/requestMiddleware";
+import {
+  validateBody,
+  validateArrayBody,
+} from "../middlewares/requestMiddleware";
 import { financeTransactionSchema } from "../validations/validations";
 
 //import { validateFinanceArrayBody } from "../middlewares/validation.middleware";
@@ -28,4 +32,5 @@ router.patch(
 );
 
 router.get("/", getCompanyFinanceTransactionsHandler);
+router.get("/:id", getCompanyFinanceTransactionByIdHandler);
 export default router;

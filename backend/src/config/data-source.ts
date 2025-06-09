@@ -4,8 +4,7 @@ import { DataSource } from "typeorm";
 import { Company } from "../entities/Company";
 import dotenv from "dotenv";
 import { CompanyBalance } from "../entities/CompanyBalance";
-import { CompanyBalanceView } from "../views/CompanyBalanceView";
-import { ProjectCostSummary } from "../views/ProjectCostSummaryView";
+
 import { User } from "../entities/User";
 import { CompanyProject } from "../entities/CompanyProject";
 import { ProjectEstimatedCost } from "../entities/ProjectEstimatedCost";
@@ -63,9 +62,6 @@ export const AppDataSource = new DataSource({
 
     /*-------------------------*/
 
-    //View
-    //ProjectCostSummary,
-    //CompanyBalanceView,
   ],
   migrations: ["src/migrations/*.ts"],
   //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],

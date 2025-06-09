@@ -452,3 +452,25 @@ export const getCompanyFinanceTransactions = async (
 
   return transactions;
 };
+
+export const getCompanyFinanceTransactionById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyFinanceTransaction);
+
+  const transaction = await repo.findOne({
+    where: {
+      id,
+      company: { id: currentUser.companyId },
+    },
+    relations: ["fromAccount", "toAccount", "project", "updatedBy"],
+  });
+
+  if (!transaction) {
+    throw new Error("İlgili finansal işlem bulunamadı.");
+  }
+
+  return transaction;
+};

@@ -4,6 +4,7 @@ import {
   createCompanyFinanceTransaction,
   updateCompanyFinanceTransaction,
   getCompanyFinanceTransactions,
+  getCompanyFinanceTransactionById,
 } from "../services/companyFinance.service";
 
 export const postCompanyFinanceTransactionHandler = async (
@@ -161,6 +162,40 @@ export const getCompanyFinanceTransactionsHandler = async (
     console.error("❌ GET finance transactions error:", error);
     res.status(500).json({
       errorMessage: error.message || "Finansal işlemler getirilemedi.",
+    });
+  }
+};
+
+export const getCompanyFinanceTransactionByIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({ error: "Transaction ID zorunludur." });
+      return;
+    }
+
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const transaction = await getCompanyFinanceTransactionById(id, {
+      userId,
+      companyId,
+    });
+
+    res.status(200).json(transaction);
+  } catch (error: any) {
+    console.error("❌ GET finance transaction by ID error:", error);
+    res.status(500).json({
+      error: error.message || "Finansal işlem bilgisi alınamadı.",
     });
   }
 };
