@@ -45,8 +45,9 @@ export const postCompanyFinanceTransactionHandler = async (
         invoiceCode,
         checkCode,
         description,
-        projectId,
+        projectCode,
         source,
+        orderCode,
       } = body;
 
       const transaction = await createCompanyFinanceTransaction(
@@ -66,8 +67,9 @@ export const postCompanyFinanceTransactionHandler = async (
           invoiceCode,
           checkCode,
           description,
-          projectId,
+          projectCode,
           source,
+          orderCode,
         },
         { userId, companyId },
         queryRunner.manager

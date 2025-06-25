@@ -5,6 +5,7 @@ import { EntityManager } from "typeorm";
 import { ProjectSupplier } from "../entities/ProjectSupplier"; // ya da ProjectSubcontractor
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
+import { CompanyOrder } from "../entities/CompanyOrder";
 
 export function generateNextCompanyCode(
   latestCode: string | null,
@@ -131,8 +132,6 @@ export const generateNextEntityCode = async (
   return `${fullPrefix}${nextNumber}`;
 };
 
-
-
 /*export const generateFinanceTransactionCode = async (
   type: "PAYMENT" | "COLLECTION" | "TRANSFER",
   transactionDate: Date,
@@ -172,7 +171,6 @@ export const generateNextEntityCode = async (
   return `${prefix}-${nextNumber}`;
 };*/
 
-
 export const generateFinanceTransactionCode = async (
   type: "PAYMENT" | "COLLECTION" | "TRANSFER",
   transactionDate: Date,
@@ -188,7 +186,8 @@ export const generateFinanceTransactionCode = async (
   let prefix = "";
 
   if (type === "TRANSFER") {
-    if (!direction) throw new Error("TRANSFER type requires a direction (IN or OUT).");
+    if (!direction)
+      throw new Error("TRANSFER type requires a direction (IN or OUT).");
     prefix = direction === "OUT" ? `TRFOUT-${datePart}` : `TRFIN-${datePart}`;
   } else {
     const prefixMap = {
@@ -208,6 +207,39 @@ export const generateFinanceTransactionCode = async (
 
   const lastNumber = latest ? parseInt(latest.code.split("-")[2]) : 0;
   const nextNumber = (lastNumber + 1).toString().padStart(4, "0");
+
+  return `${prefix}-${nextNumber}`;
+};
+
+export const generateNextOrderCode = async ({
+  companyId,
+  reference, // projectName ya da stockCategory
+  manager,
+}: {
+  companyId: string;
+  reference: string;
+  manager: EntityManager;
+}): Promise<string> => {
+  const today = new Date();
+  const datePart = `${String(today.getMonth() + 1).padStart(2, "0")}${String(
+    today.getDate()
+  ).padStart(2, "0")}${today.getFullYear()}`;
+
+  const prefix = `SAT-${reference.toUpperCase()}-${datePart}`;
+
+  const repo = manager.getRepository(CompanyOrder);
+
+  const latest = await repo
+    .createQueryBuilder("order")
+    .where("order.companyid = :companyId AND order.code LIKE :prefix", {
+      companyId,
+      prefix: `${prefix}-%`,
+    })
+    .orderBy("order.code", "DESC")
+    .getOne();
+
+  const lastNumber = latest ? parseInt(latest.code.split("-").pop()!) : 0;
+  const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
 
   return `${prefix}-${nextNumber}`;
 };

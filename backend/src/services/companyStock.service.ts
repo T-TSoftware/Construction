@@ -148,3 +148,26 @@ export const getCompanyStocks = async (companyId: string) => {
     updatedatetime: s.updatedatetime,
   }));
 };
+
+export const decreaseStockQuantity = async (
+  options: {
+    stockId: string;
+    quantity: number; // kaç adet düşülecek
+  },
+  manager: EntityManager
+): Promise<void> => {
+  const stockRepo = manager.getRepository(CompanyStock);
+
+  const stock = await stockRepo.findOneByOrFail({ id: options.stockId });
+
+  if (stock.quantity < options.quantity) {
+    throw new Error(
+      `Stok yetersiz: Mevcut ${stock.quantity}, istenen ${options.quantity}`
+    );
+  }
+
+  stock.quantity -= options.quantity;
+  stock.updatedatetime = new Date();
+
+  await stockRepo.save(stock);
+};

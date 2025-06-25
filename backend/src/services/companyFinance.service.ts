@@ -7,6 +7,8 @@ import { AppDataSource } from "../config/data-source";
 
 // Eğer ayrı bir dosyada tutuyorsan import edebilirsin
 import { generateFinanceTransactionCode } from "../utils/generateCode";
+import { CompanyOrder } from "../entities/CompanyOrder";
+import { updateOrderPaymentStatus } from "./companyOrder.service";
 
 const transactionRepo = AppDataSource.getRepository(CompanyFinanceTransaction);
 const balanceRepo = AppDataSource.getRepository(CompanyBalance);
@@ -29,8 +31,9 @@ export const createCompanyFinanceTransaction = async (
     invoiceCode?: string;
     checkCode?: string;
     description?: string;
-    projectId?: string;
+    projectCode?: string;
     source?: string;
+    orderCode?: string;
   },
   currentUser: {
     userId: string;
@@ -41,13 +44,18 @@ export const createCompanyFinanceTransaction = async (
   const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
   const balanceRepo = manager.getRepository(CompanyBalance);
   const projectRepo = manager.getRepository(CompanyProject);
+  const orderRepo = manager.getRepository(CompanyOrder);
 
   const fromAccount = await balanceRepo.findOneByOrFail({
     code: data.fromAccountCode,
   });
 
-  const project = data.projectId
-    ? await projectRepo.findOneByOrFail({ id: data.projectId })
+  const order = data.orderCode
+    ? await orderRepo.findOneByOrFail({ code: data.orderCode })
+    : null;
+
+  const project = data.projectCode
+    ? await projectRepo.findOneByOrFail({ id: data.projectCode })
     : null;
 
   const results: CompanyFinanceTransaction[] = [];
@@ -69,6 +77,7 @@ export const createCompanyFinanceTransaction = async (
       manager,
       "OUT"
     );
+
     const outTransaction = transactionRepo.create({
       type: "TRANSFER",
       code: outCode,
@@ -99,6 +108,7 @@ export const createCompanyFinanceTransaction = async (
       manager,
       "IN"
     );
+
     const inTransaction = transactionRepo.create({
       type: "TRANSFER",
       code: inCode,
@@ -141,6 +151,7 @@ export const createCompanyFinanceTransaction = async (
     data.transactionDate,
     manager
   );
+
   const transaction = transactionRepo.create({
     type: data.type,
     code,
@@ -160,10 +171,22 @@ export const createCompanyFinanceTransaction = async (
     company: { id: currentUser.companyId },
     project: project ? { id: project.id } : null,
     source: data.source,
+    order: order ? { id: order.id } : null,
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
+
   const saved = await transactionRepo.save(transaction);
+
+  if (data.orderCode) {
+    await updateOrderPaymentStatus(
+      data.orderCode,
+      data.amount,
+      currentUser,
+      manager
+    );
+  }
+
   await updateCompanyBalance(
     data.type,
     fromAccount.id,
@@ -173,111 +196,6 @@ export const createCompanyFinanceTransaction = async (
   );
   return saved;
 };
-
-/*export const updateCompanyFinanceTransaction = async (
-  id: string,
-  data: {
-    type?: "PAYMENT" | "COLLECTION" | "TRANSFER";
-    amount?: number;
-    currency?: string;
-    fromAccountCode?: string;
-    toAccountCode?: string;
-    targetType?: string;
-    targetId?: string;
-    targetName?: string;
-    transactionDate?: Date;
-    method?: string;
-    category?: string;
-    invoiceYN?: "Y" | "N";
-    invoiceCode?: string;
-    checkCode?: string;
-    description?: string;
-    projectId?: string | null;
-    source?: string;
-  },
-  currentUser: {
-    userId: string;
-    companyId: string;
-  },
-  manager: EntityManager = AppDataSource.manager
-): Promise<CompanyFinanceTransaction> => {
-  const repo = manager.getRepository(CompanyFinanceTransaction);
-  const balanceRepo = manager.getRepository(CompanyBalance);
-  const projectRepo = manager.getRepository(CompanyProject);
-
-  const transaction = await repo.findOne({
-    where: {
-      id,
-      company: { id: currentUser.companyId },
-    },
-    relations: ["fromAccount", "toAccount", "project"],
-  });
-
-  if (!transaction) throw new Error("Finansal işlem bulunamadı.");
-
-  // 🔁 Balance geri alma
-  await updateCompanyBalance(
-    transaction.type,
-    transaction.fromAccount?.id ?? null,
-    transaction.toAccount?.id ?? null,
-    transaction.amount,
-    manager,
-    true // geri alma işlemi
-  );
-
-  // 🔄 Güncellenecek alanlar
-  if (data.type) transaction.type = data.type;
-  if (data.amount !== undefined) transaction.amount = data.amount;
-  if (data.currency) transaction.currency = data.currency;
-  if (data.fromAccountCode) {
-    const fromAccount = await balanceRepo.findOneByOrFail({
-      code: data.fromAccountCode,
-    });
-    transaction.fromAccount = fromAccount;
-  }
-  if (data.toAccountCode) {
-    const toAccount = await balanceRepo.findOneByOrFail({
-      code: data.toAccountCode,
-    });
-    transaction.toAccount = toAccount;
-  }
-  if (data.targetType !== undefined) transaction.targetType = data.targetType;
-  if (data.targetId !== undefined) transaction.targetId = data.targetId;
-  if (data.targetName !== undefined) transaction.targetName = data.targetName;
-  if (data.transactionDate !== undefined)
-    transaction.transactionDate = data.transactionDate;
-  if (data.method !== undefined) transaction.method = data.method;
-  if (data.category !== undefined) transaction.category = data.category;
-  if (data.invoiceYN !== undefined) transaction.invoiceYN = data.invoiceYN;
-  if (data.invoiceCode !== undefined)
-    transaction.invoiceCode = data.invoiceCode;
-  if (data.checkCode !== undefined) transaction.checkCode = data.checkCode;
-  if (data.description !== undefined)
-    transaction.description = data.description;
-  if (data.source !== undefined) transaction.source = data.source;
-
-  if (data.projectId !== undefined) {
-    transaction.project = data.projectId
-      ? await projectRepo.findOneByOrFail({ id: data.projectId })
-      : null;
-  }
-
-  transaction.updatedBy = { id: currentUser.userId } as any;
-  transaction.updatedatetime = new Date();
-
-  const saved = await repo.save(transaction);
-
-  // ✅ Yeni balance update
-  await updateCompanyBalance(
-    transaction.type,
-    transaction.fromAccount?.id ?? null,
-    transaction.toAccount?.id ?? null,
-    transaction.amount,
-    manager
-  );
-
-  return saved;
-};*/
 
 export const updateCompanyFinanceTransaction = async (
   code: string,
@@ -297,7 +215,8 @@ export const updateCompanyFinanceTransaction = async (
     invoiceCode?: string;
     checkCode?: string;
     description?: string;
-    projectId?: string;
+    orderCode?: string;
+    projectCode?: string;
   },
   currentUser: {
     userId: string;
@@ -308,10 +227,11 @@ export const updateCompanyFinanceTransaction = async (
   const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
   const balanceRepo = manager.getRepository(CompanyBalance);
   const projectRepo = manager.getRepository(CompanyProject);
+  const orderRepo = manager.getRepository(CompanyOrder);
 
   const existing = await transactionRepo.findOne({
     where: { code, company: { id: currentUser.companyId } },
-    relations: ["fromAccount", "toAccount", "company", "project"],
+    relations: ["fromAccount", "toAccount", "company", "project", "order"],
   });
   console.log(existing);
   if (!existing) {
@@ -339,11 +259,18 @@ export const updateCompanyFinanceTransaction = async (
       ? await balanceRepo.findOneByOrFail({ code: data.toAccountCode })
       : existing.toAccount;
 
+  const newOrder =
+    data.orderCode && data.orderCode !== existing.order?.code
+      ? await orderRepo.findOneByOrFail({ id: data.orderCode })
+      : existing.order;
+
   const newProject =
-    data.projectId && data.projectId !== existing.project?.id
-      ? await projectRepo.findOneByOrFail({ id: data.projectId })
+    data.projectCode && data.projectCode !== existing.project?.id
+      ? await projectRepo.findOneByOrFail({ id: data.projectCode })
       : existing.project;
 
+  // 💾 Güncellemeden önce eski amount'u sakla
+  const previousAmount = existing.amount;
   // 🛠️ Alanları güncelle
   existing.type = data.type ?? existing.type;
   existing.amount = data.amount ?? existing.amount;
@@ -361,12 +288,36 @@ export const updateCompanyFinanceTransaction = async (
   existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
   existing.checkCode = data.checkCode ?? existing.checkCode;
   existing.description = data.description ?? existing.description;
+  //existing.order = newOrder;
   existing.project = newProject;
   existing.updatedBy = { id: currentUser.userId } as any;
   existing.updatedatetime = new Date();
-
+  console.log("existing amount 1: ", existing.amount);
   // 💾 Güncelle
   const updated = await transactionRepo.save(existing);
+
+  console.log(
+    "ordercode :",
+    existing.order?.code,
+    " data.amount: ",
+    data.amount,
+    " existing amount: ",
+    existing.amount
+  );
+  if (
+    existing.order?.code &&
+    data.amount !== undefined &&
+    Number(data.amount) !== Number(previousAmount)
+  ) {
+    const diff = Number(data.amount) - Number(previousAmount);
+
+    await updateOrderPaymentStatus(
+      existing.order.code,
+      diff,
+      currentUser,
+      manager
+    );
+  }
 
   // 🔁 Yeni işlemin etkisini uygula
   await updateCompanyBalance(

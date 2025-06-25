@@ -7,10 +7,12 @@ import {
   UpdateDateColumn,
   JoinColumn,
   Unique,
+  OneToMany,
 } from "typeorm";
 import { Company } from "./Company";
 import { CompanyProject } from "./CompanyProject";
 import { User } from "./User";
+import { CompanyOrder } from "./CompanyOrder";
 
 @Entity({ name: "companystocks" }) // ✅ tablo adı burada verildi
 @Unique(["category", "name"]) // ✅ Bileşik benzersizlik tanımı
@@ -74,4 +76,7 @@ export class CompanyStock {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedatetime!: Date;
+
+  @OneToMany(() => CompanyOrder, (order) => order.stock)
+  orders!: CompanyOrder[];
 }

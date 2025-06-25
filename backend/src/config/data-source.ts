@@ -17,6 +17,7 @@ import { CompanyStock } from "../entities/CompanyStock";
 import { StockItem } from "../entities/StockItem";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { CompanyCheck } from "../entities/CompanyCheck";
+import { CompanyOrder } from "../entities/CompanyOrder";
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ export const AppDataSource = new DataSource({
     CompanyStock,
     CompanyFinanceTransaction,
     CompanyCheck,
+    CompanyOrder,
 
     /*-------------------------*/
 
@@ -69,5 +71,5 @@ export const AppDataSource = new DataSource({
 });
 
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/adjustedFinTran --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/addedOrder --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

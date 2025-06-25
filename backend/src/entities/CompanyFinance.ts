@@ -13,6 +13,7 @@ import { CompanyProject } from "./CompanyProject";
 import { User } from "./User";
 import { Company } from "./Company";
 import { CompanyCheck } from "./CompanyCheck";
+import { CompanyOrder } from "./CompanyOrder";
 
 @Entity({ name: "companyfinancetransactions" })
 export class CompanyFinanceTransaction {
@@ -105,9 +106,10 @@ export class CompanyFinanceTransaction {
   })
   updatedatetime!: Date;
 
-  @OneToMany(
-    () => CompanyCheck,
-    (check) => check.checkNo
-  )
+  @OneToMany(() => CompanyCheck, (check) => check.checkNo)
   checks!: CompanyCheck[];
+
+  @ManyToOne(() => CompanyOrder, { nullable: true })
+  @JoinColumn({ name: "orderid" })
+  order?: CompanyOrder | null;
 }
