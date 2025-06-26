@@ -99,3 +99,42 @@ export const updateOrderPaymentStatus = async (
 
   return await orderRepo.save(order);
 };
+
+export const getCompanyOrders = async (
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyOrder);
+
+  const orders = await repo.find({
+    where: {
+      company: { id: currentUser.companyId },
+    },
+    relations: ["stock", "project"],
+    //order: { transactionDate: "DESC" },
+  });
+
+  return orders;
+};
+
+export const getCompanyOrderById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyOrder);
+
+  const order = await repo.findOne({
+    where: {
+      id,
+      company: { id: currentUser.companyId },
+    },
+    relations: ["stock", "project"],
+  });
+
+  if (!order) {
+    throw new Error("İlgili satış bulunamadı.");
+  }
+
+  return order;
+};

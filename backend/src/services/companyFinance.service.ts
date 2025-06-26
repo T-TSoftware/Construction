@@ -397,7 +397,7 @@ export const getCompanyFinanceTransactions = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["fromAccount", "toAccount", "project", "updatedBy"],
+    relations: ["fromAccount", "toAccount", "project", "updatedBy", "order"],
     order: { transactionDate: "DESC" },
   });
 
@@ -416,7 +416,7 @@ export const getCompanyFinanceTransactionById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["fromAccount", "toAccount", "project", "updatedBy"],
+    relations: ["fromAccount", "toAccount", "project", "updatedBy", "order"],
   });
 
   if (!transaction) {

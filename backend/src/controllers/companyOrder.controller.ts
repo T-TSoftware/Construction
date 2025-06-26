@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
-import { createCompanyOrder } from "../services/companyOrder.service";
+import { createCompanyOrder, getCompanyOrderById, getCompanyOrders } from "../services/companyOrder.service";
 
 export const postCompanyOrderHandler = async (req: Request, res: Response) => {
   // 🔐 Yalnızca superadmin işlem yapabilir
@@ -58,5 +58,56 @@ export const postCompanyOrderHandler = async (req: Request, res: Response) => {
     });
   } finally {
     await queryRunner.release();
+  }
+};
+
+export const getCompanyOrdersHandler = async (req: Request, res: Response) => {
+  /*if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }*/
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const orders = await getCompanyOrders(
+      { userId, companyId },
+      AppDataSource.manager
+    );
+
+    res.status(200).json({ orders });
+  } catch (error: any) {
+    console.error("❌ GET orders transactions error:", error);
+    res.status(500).json({
+      errorMessage: error.message || "Satışlar getirilemedi.",
+    });
+  }
+};
+
+export const getCompanyOrderByIdHandler = async (req: Request, res: Response) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({ error: "Check ID zorunludur." });
+      return;
+    }
+
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const order = await getCompanyOrderById(id, { userId, companyId });
+    res.status(200).json(order);
+  } catch (error: any) {
+    console.error("❌ GET order by ID error:", error);
+    res.status(500).json({ error: error.message || "Satış bilgisi alınamadı." });
   }
 };
