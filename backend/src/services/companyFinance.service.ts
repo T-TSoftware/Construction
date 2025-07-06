@@ -425,3 +425,58 @@ export const getCompanyFinanceTransactionById = async (
 
   return transaction;
 };
+
+export const createLoanTransactionFromPaymentData = async (
+  payment: {
+    paymentCode: string;
+    amount: number;
+    transactionDate: Date;
+    bankId: string;
+    loanName: string;
+    installmentNumber: number;
+    projectId?: string;
+    description?: string;
+  },
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+): Promise<CompanyFinanceTransaction> => {
+  const repo = manager.getRepository(CompanyFinanceTransaction);
+
+  const code = await generateFinanceTransactionCode(
+    "PAYMENT",
+    payment.transactionDate,
+    manager
+  );
+
+  const transaction = repo.create({
+    type: "PAYMENT",
+    code,
+    amount: payment.amount,
+    currency: "TRY", // varsayılan
+    fromAccount: { id: payment.bankId },
+    targetName: payment.loanName,
+    transactionDate: payment.transactionDate,
+    method: "BANK",
+    category: "Kredi Ödeme",
+    source: `${payment.paymentCode} Ödemesi`,
+    invoiceYN: "Y",
+    loanCode: payment.paymentCode,
+    description: payment.description,
+    company: { id: currentUser.companyId },
+    project: payment.projectId ? { id: payment.projectId } : null,
+    createdBy: { id: currentUser.userId },
+    updatedBy: { id: currentUser.userId },
+  });
+
+  const saved = await repo.save(transaction);
+
+  await updateCompanyBalance(
+    "PAYMENT",
+    payment.bankId,
+    null,
+    payment.amount,
+    manager
+  );
+
+  return saved;
+};

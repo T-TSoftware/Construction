@@ -18,6 +18,8 @@ import { StockItem } from "../entities/StockItem";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { CompanyCheck } from "../entities/CompanyCheck";
 import { CompanyOrder } from "../entities/CompanyOrder";
+import { CompanyLoan } from "../entities/CompanyLoan";
+import { CompanyLoanPayment } from "../entities/CompanyLoanPayment";
 
 dotenv.config();
 
@@ -41,6 +43,8 @@ export const AppDataSource = new DataSource({
     CompanyFinanceTransaction,
     CompanyCheck,
     CompanyOrder,
+    CompanyLoan,
+    CompanyLoanPayment,
 
     /*-------------------------*/
 
@@ -63,7 +67,6 @@ export const AppDataSource = new DataSource({
     //StockItem,
 
     /*-------------------------*/
-
   ],
   migrations: ["src/migrations/*.ts"],
   //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
@@ -71,5 +74,5 @@ export const AppDataSource = new DataSource({
 });
 
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/addedOrder --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/CompanyLoan --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

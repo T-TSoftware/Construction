@@ -14,6 +14,8 @@ import companyCurrentMovementRoutes from "./routes/companyCurrentMovement.routes
 import companyCashFlowRoutes from "./routes/companyCashFlow.routes";
 import companyCheckRoutes from "./routes/companyCheck.routes";
 import companyOrderRoutes from "./routes/companyOrder.routes";
+import companyLoanRoutes from "./routes/companyLoan.routes";
+import companyLoanPaymentRoutes from "./routes/companyLoanPayment.routes";
 
 import projectEstimatedCostRoutes from "./routes/projectEstimatedCost.routes";
 import projectSupplierRoutes from "./routes/projectSupplier.routes";
@@ -49,6 +51,8 @@ app.use("/api/balances", companyBalanceRoutes);
 app.use("/api/finances", companyFinanceRoutes);
 app.use("/api/checks", companyCheckRoutes);
 app.use("/api/orders", companyOrderRoutes);
+app.use("/api/loans", companyLoanRoutes);
+app.use("/api/loan-payments", companyLoanPaymentRoutes);
 
 app.use("/api/bank-movements", companyBankMovementRoutes);
 app.use("/api/current-movements", companyCurrentMovementRoutes);

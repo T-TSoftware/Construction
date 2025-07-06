@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  OneToOne,
 } from "typeorm";
 import { CompanyBalance } from "./CompanyBalance";
 import { CompanyProject } from "./CompanyProject";
@@ -14,6 +15,7 @@ import { User } from "./User";
 import { Company } from "./Company";
 import { CompanyCheck } from "./CompanyCheck";
 import { CompanyOrder } from "./CompanyOrder";
+import { CompanyLoanPayment } from "./CompanyLoanPayment";
 
 @Entity({ name: "companyfinancetransactions" })
 export class CompanyFinanceTransaction {
@@ -77,6 +79,12 @@ export class CompanyFinanceTransaction {
   @Column({ name: "checkstatus", nullable: true })
   checkstatus?: string;
 
+  @Column({ name: "loancode", nullable: true })
+  loanCode?: string;
+
+  @Column({ name: "loanstatus", nullable: true })
+  loanStatus?: string;
+
   @Column({ type: "text", nullable: true })
   description?: string;
 
@@ -112,4 +120,9 @@ export class CompanyFinanceTransaction {
   @ManyToOne(() => CompanyOrder, { nullable: true })
   @JoinColumn({ name: "orderid" })
   order?: CompanyOrder | null;
+
+  @OneToOne(() => CompanyLoanPayment, (payment) => payment.financeTransaction, {
+    nullable: true,
+  })
+  loanPayment?: CompanyLoanPayment | null; // JoinColumn YOK!
 }

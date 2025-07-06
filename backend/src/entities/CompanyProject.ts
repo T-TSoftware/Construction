@@ -17,6 +17,7 @@ import { ProjectQuantity } from "./ProjectQuantity";
 import { ProjectCurrent } from "./ProjectCurrent";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
 import { CompanyCheck } from "./CompanyCheck";
+import { CompanyLoan } from "./CompanyLoan";
 
 @Entity({ name: "companyprojects" })
 export class CompanyProject {
@@ -102,4 +103,7 @@ export class CompanyProject {
 
   @OneToMany(() => CompanyCheck, (check) => check.project)
   checks!: CompanyCheck;
+
+  @OneToMany(() => CompanyLoan, (loan) => loan.project)
+  loans!: CompanyLoan;
 }
