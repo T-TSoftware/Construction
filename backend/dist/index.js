@@ -13,6 +13,13 @@ const companyProject_routes_1 = __importDefault(require("./routes/companyProject
 const companyStock_routes_1 = __importDefault(require("./routes/companyStock.routes"));
 const companyFinance_routes_1 = __importDefault(require("./routes/companyFinance.routes"));
 const companyBankMovement_routes_1 = __importDefault(require("./routes/companyBankMovement.routes"));
+const companyCurrentMovement_routes_1 = __importDefault(require("./routes/companyCurrentMovement.routes"));
+const companyCashFlow_routes_1 = __importDefault(require("./routes/companyCashFlow.routes"));
+const companyCheck_routes_1 = __importDefault(require("./routes/companyCheck.routes"));
+const companyOrder_routes_1 = __importDefault(require("./routes/companyOrder.routes"));
+const companyLoan_routes_1 = __importDefault(require("./routes/companyLoan.routes"));
+const companyLoanPayment_routes_1 = __importDefault(require("./routes/companyLoanPayment.routes"));
+const companyEmployee_routes_1 = __importDefault(require("./routes/companyEmployee.routes"));
 const projectEstimatedCost_routes_1 = __importDefault(require("./routes/projectEstimatedCost.routes"));
 const projectSupplier_routes_1 = __importDefault(require("./routes/projectSupplier.routes"));
 const projectSubcontractor_routes_1 = __importDefault(require("./routes/projectSubcontractor.routes"));
@@ -37,7 +44,14 @@ app.use("/api/projects", companyProject_routes_1.default);
 app.use("/api/stocks", companyStock_routes_1.default);
 app.use("/api/balances", companyBalance_routes_1.default);
 app.use("/api/finances", companyFinance_routes_1.default);
+app.use("/api/checks", companyCheck_routes_1.default);
+app.use("/api/orders", companyOrder_routes_1.default);
+app.use("/api/loans", companyLoan_routes_1.default);
+app.use("/api/loan-payments", companyLoanPayment_routes_1.default);
+app.use("api/employees", companyEmployee_routes_1.default);
 app.use("/api/bank-movements", companyBankMovement_routes_1.default);
+app.use("/api/current-movements", companyCurrentMovement_routes_1.default);
+app.use("/api/cash-flow", companyCashFlow_routes_1.default);
 // Project Related
 app.use("/api", projectEstimatedCost_routes_1.default);
 app.use("/api", projectSupplier_routes_1.default);

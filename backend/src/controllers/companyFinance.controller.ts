@@ -5,6 +5,7 @@ import {
   updateCompanyFinanceTransaction,
   getCompanyFinanceTransactions,
   getCompanyFinanceTransactionById,
+  deleteCompanyFinanceTransactionById,
 } from "../services/companyFinance.service";
 
 export const postCompanyFinanceTransactionHandler = async (
@@ -196,6 +197,46 @@ export const getCompanyFinanceTransactionByIdHandler = async (
     res.status(200).json(transaction);
   } catch (error: any) {
     console.error("❌ GET finance transaction by ID error:", error);
+    res.status(500).json({
+      error: error.message || "Finansal işlem bilgisi alınamadı.",
+    });
+  }
+};
+
+// 📌 Silme – Sadece superadmin
+export const deleteCompanyFinanceTransactionByIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlemi yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({ error: "Transaction ID zorunludur." });
+      return;
+    }
+
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const transaction = await deleteCompanyFinanceTransactionById(
+      id,
+      { userId, companyId },
+      queryRunner.manager
+    );
+
+    res.status(200).json(transaction);
+  } catch (error: any) {
+    console.error("❌ Delete finance transaction by ID error:", error);
     res.status(500).json({
       error: error.message || "Finansal işlem bilgisi alınamadı.",
     });

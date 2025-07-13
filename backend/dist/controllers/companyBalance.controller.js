@@ -2,16 +2,35 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCompanyBalanceHandler = exports.putCompanyBalanceHandler = exports.postCompanyBalanceHandler = exports.getCompanyBalancesHandler = void 0;
 const companyBalance_service_1 = require("../services/companyBalance.service");
+const data_source_1 = require("../config/data-source");
 // 📌 Listeleme – Her kullanıcı erişebilir
 const getCompanyBalancesHandler = async (req, res) => {
     try {
-        const companyId = req.user.companyId;
-        const balances = await (0, companyBalance_service_1.getCompanyBalances)(companyId);
-        res.json(balances);
+        // 👤 Kullanıcıdan şirket bilgisi al
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            res
+                .status(403)
+                .json({ errorMessage: "Geçerli şirket bilgisi bulunamadı." });
+            return;
+        }
+        // 📆 Query parametrelerini oku
+        const { name, currency, code } = req.query;
+        // 🧠 View'den günlük nakit akışı verilerini al
+        const result = await (0, companyBalance_service_1.getCompanyBalances)({ companyId }, {
+            name: name,
+            currency: currency,
+            code: code,
+        });
+        // ✅ Yanıtla
+        res.status(200).json(result);
     }
     catch (error) {
         console.error("❌ GET balances error:", error);
-        res.status(500).json({ error: "Bakiye listesi alınamadı." });
+        res.status(500).json({
+            errorMessage: "Bakiye verileri alınamadı.",
+            detail: error.message,
+        });
     }
 };
 exports.getCompanyBalancesHandler = getCompanyBalancesHandler;
@@ -21,16 +40,30 @@ const postCompanyBalanceHandler = async (req, res) => {
         res.status(403).json({ error: "Yalnızca superadmin işlemi yapabilir." });
         return;
     }
+    const queryRunner = data_source_1.AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
-        const { name, amount, currency } = req.body;
-        const createdBy = req.user.userId.toString();
+        const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const newBalance = await (0, companyBalance_service_1.createBalance)(companyId, name, amount, currency, createdBy);
-        res.status(201).json(newBalance);
+        const results = [];
+        for (const body of req.body) {
+            const { name, amount, currency } = body;
+            const newBalance = await (0, companyBalance_service_1.createBalance)({ name, amount, currency }, { userId, companyId }, queryRunner.manager);
+            results.push(newBalance);
+        }
+        await queryRunner.commitTransaction();
+        res.status(201).json(results);
     }
     catch (error) {
+        await queryRunner.rollbackTransaction();
         console.error("❌ POST balance error:", error);
-        res.status(500).json({ error: "Bakiye oluşturulamadı." });
+        res.status(500).json({
+            errorMessage: error.message || "Bakiyeler oluşturulamadı.",
+        });
+    }
+    finally {
+        await queryRunner.release();
     }
 };
 exports.postCompanyBalanceHandler = postCompanyBalanceHandler;

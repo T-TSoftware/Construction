@@ -5,7 +5,7 @@ import { EntityManager } from "typeorm";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { generateFinanceTransactionCode } from "../utils/generateCode";
 
-import { updateCompanyBalance } from "../services/companyFinance.service";
+import { updateCompanyBalanceAfterTransaction } from "../services/companyFinance.service";
 import { User } from "../entities/User";
 import { CompanyProject } from "../entities/CompanyProject";
 
@@ -144,7 +144,7 @@ export const updateCompanyCheck = async (
   // 🧹 Önceki transaction varsa geri al ve FK kaldır
   if (shouldRecreateTransaction && prevTransaction) {
     // 💸 Balance geri al
-    await updateCompanyBalance(
+    await updateCompanyBalanceAfterTransaction(
       prevTransaction.type,
       prevBankId,
       null,
@@ -249,7 +249,7 @@ export const createCheckTransactionFromCheckData = async (
 
   const savedTransactionRecord = await repo.save(transaction);
 
-  await updateCompanyBalance(
+  await updateCompanyBalanceAfterTransaction(
     check.type,
     check.bankId,
     null,
@@ -259,7 +259,6 @@ export const createCheckTransactionFromCheckData = async (
 
   return savedTransactionRecord;
 };
-
 
 export const getCompanyChecks = async (
   currentUser: { userId: string; companyId: string },

@@ -22,6 +22,7 @@ const getQuantityItems = async () => {
         order: { createdatetime: "ASC" },
     });
     return items.map((item) => ({
+        id: item.id,
         code: item.code,
         name: item.name,
         description: item.description,

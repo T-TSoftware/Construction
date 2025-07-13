@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCompanyStocks = exports.updateCompanyStock = exports.createCompanyStock = void 0;
+exports.decreaseStockQuantity = exports.getCompanyStocks = exports.updateCompanyStock = exports.createCompanyStock = void 0;
 const data_source_1 = require("../config/data-source");
 const Company_1 = require("../entities/Company");
 const CompanyProject_1 = require("../entities/CompanyProject");
@@ -83,6 +83,7 @@ const getCompanyStocks = async (companyId) => {
         order: { createdatetime: "DESC" },
     });
     return stocks.map((s) => ({
+        id: s.id,
         code: s.code,
         name: s.name,
         category: s.category,
@@ -100,3 +101,14 @@ const getCompanyStocks = async (companyId) => {
     }));
 };
 exports.getCompanyStocks = getCompanyStocks;
+const decreaseStockQuantity = async (options, manager) => {
+    const stockRepo = manager.getRepository(CompanyStock_1.CompanyStock);
+    const stock = await stockRepo.findOneByOrFail({ id: options.stockId });
+    if (stock.quantity < options.quantity) {
+        throw new Error(`Stok yetersiz: Mevcut ${stock.quantity}, istenen ${options.quantity}`);
+    }
+    stock.quantity -= options.quantity;
+    stock.updatedatetime = new Date();
+    await stockRepo.save(stock);
+};
+exports.decreaseStockQuantity = decreaseStockQuantity;

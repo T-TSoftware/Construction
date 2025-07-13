@@ -21,6 +21,11 @@ const ProjectCurrent_1 = require("../entities/ProjectCurrent");
 const CompanyStock_1 = require("../entities/CompanyStock");
 const CompanyFinance_1 = require("../entities/CompanyFinance");
 const CompanyCheck_1 = require("../entities/CompanyCheck");
+const CompanyOrder_1 = require("../entities/CompanyOrder");
+const CompanyLoan_1 = require("../entities/CompanyLoan");
+const CompanyLoanPayment_1 = require("../entities/CompanyLoanPayment");
+const CompanyEmployee_1 = require("../entities/CompanyEmployee");
+const CompanyEmployeeLeave_1 = require("../entities/CompanyEmployeeLeave");
 dotenv_1.default.config();
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "postgres",
@@ -40,10 +45,12 @@ exports.AppDataSource = new typeorm_1.DataSource({
         CompanyProject_1.CompanyProject,
         CompanyStock_1.CompanyStock,
         CompanyFinance_1.CompanyFinanceTransaction,
-        CompanyCheck_1.CompanyCheck
-        /*-------------------------*/
-        // Project Related
-        ,
+        CompanyCheck_1.CompanyCheck,
+        CompanyOrder_1.CompanyOrder,
+        CompanyLoan_1.CompanyLoan,
+        CompanyLoanPayment_1.CompanyLoanPayment,
+        CompanyEmployee_1.CompanyEmployee,
+        CompanyEmployeeLeave_1.CompanyEmployeeLeave,
         /*-------------------------*/
         // Project Related
         ProjectEstimatedCost_1.ProjectEstimatedCost,
@@ -59,14 +66,11 @@ exports.AppDataSource = new typeorm_1.DataSource({
         QuantityItem_1.QuantityItem,
         //StockItem,
         /*-------------------------*/
-        //View
-        //ProjectCostSummary,
-        //CompanyBalanceView,
     ],
     migrations: ["src/migrations/*.ts"],
     //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
     subscribers: [],
 });
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/addedCheckTable --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/Emp --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

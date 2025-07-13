@@ -16,6 +16,8 @@ const CompanyProject_1 = require("./CompanyProject");
 const User_1 = require("./User");
 const Company_1 = require("./Company");
 const CompanyCheck_1 = require("./CompanyCheck");
+const CompanyOrder_1 = require("./CompanyOrder");
+const CompanyLoanPayment_1 = require("./CompanyLoanPayment");
 let CompanyFinanceTransaction = class CompanyFinanceTransaction {
 };
 exports.CompanyFinanceTransaction = CompanyFinanceTransaction;
@@ -95,6 +97,18 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "checkCode", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: "checkstatus", nullable: true }),
+    __metadata("design:type", String)
+], CompanyFinanceTransaction.prototype, "checkstatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "loancode", nullable: true }),
+    __metadata("design:type", String)
+], CompanyFinanceTransaction.prototype, "loanCode", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "loanstatus", nullable: true }),
+    __metadata("design:type", String)
+], CompanyFinanceTransaction.prototype, "loanStatus", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: "text", nullable: true }),
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "description", void 0);
@@ -134,6 +148,17 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => CompanyCheck_1.CompanyCheck, (check) => check.checkNo),
     __metadata("design:type", Array)
 ], CompanyFinanceTransaction.prototype, "checks", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => CompanyOrder_1.CompanyOrder, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "orderid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "order", void 0);
+__decorate([
+    (0, typeorm_1.OneToOne)(() => CompanyLoanPayment_1.CompanyLoanPayment, (payment) => payment.financeTransaction, {
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "loanPayment", void 0);
 exports.CompanyFinanceTransaction = CompanyFinanceTransaction = __decorate([
     (0, typeorm_1.Entity)({ name: "companyfinancetransactions" })
 ], CompanyFinanceTransaction);

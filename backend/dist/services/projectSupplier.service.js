@@ -42,6 +42,7 @@ const getProjectSuppliers = async (projectId) => {
         order: { createdatetime: "DESC" },
     });
     return suppliers.map((s) => ({
+        id: s.id,
         code: s.code,
         category: s.category,
         quantityItemCode: s.quantityItem.code,

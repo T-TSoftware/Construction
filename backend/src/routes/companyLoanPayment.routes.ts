@@ -8,6 +8,9 @@ import {
   postCompanyLoanPaymentHandler,
   getCompanyLoanPaymentByIdHandler,
   getCompanyLoanPaymentsHandler,
+  patchCompanyLoanPaymentHandler,
+  exportLoanPaymentsHandler,
+  exportLoanPaymentsPdfHandler
 } from "../controllers/companyLoanPayment.controller";
 
 const router = Router();
@@ -22,5 +25,11 @@ router.get("/:id", getCompanyLoanPaymentByIdHandler);
 
 // POST → Yeni taksit kaydı (loanId route paramı olarak kullanılabilir)
 router.post("/:loanId", /* validateBody, */ postCompanyLoanPaymentHandler);
+
+router.patch("/:id", patchCompanyLoanPaymentHandler);
+
+router.get("/loanpayments/export/csv", exportLoanPaymentsHandler);
+
+router.get("/loanpayments/export/pdf", exportLoanPaymentsPdfHandler);
 
 export default router;

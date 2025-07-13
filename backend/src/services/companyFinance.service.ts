@@ -135,7 +135,7 @@ export const createCompanyFinanceTransaction = async (
       await transactionRepo.save(inTransaction)
     );
 
-    await updateCompanyBalance(
+    await updateCompanyBalanceAfterTransaction(
       "TRANSFER",
       fromAccount.id,
       toAccount.id,
@@ -187,7 +187,7 @@ export const createCompanyFinanceTransaction = async (
     );
   }
 
-  await updateCompanyBalance(
+  await updateCompanyBalanceAfterTransaction(
     data.type,
     fromAccount.id,
     null,
@@ -239,7 +239,7 @@ export const updateCompanyFinanceTransaction = async (
   }
 
   // 🔁 Eski işlemi geri al
-  await updateCompanyBalance(
+  await updateCompanyBalanceAfterTransaction(
     existing.type,
     existing.fromAccount?.id ?? null,
     existing.toAccount?.id ?? null,
@@ -261,12 +261,12 @@ export const updateCompanyFinanceTransaction = async (
 
   const newOrder =
     data.orderCode && data.orderCode !== existing.order?.code
-      ? await orderRepo.findOneByOrFail({ id: data.orderCode })
+      ? await orderRepo.findOneByOrFail({ code: data.orderCode })
       : existing.order;
 
   const newProject =
     data.projectCode && data.projectCode !== existing.project?.id
-      ? await projectRepo.findOneByOrFail({ id: data.projectCode })
+      ? await projectRepo.findOneByOrFail({ code: data.projectCode })
       : existing.project;
 
   // 💾 Güncellemeden önce eski amount'u sakla
@@ -320,7 +320,7 @@ export const updateCompanyFinanceTransaction = async (
   }
 
   // 🔁 Yeni işlemin etkisini uygula
-  await updateCompanyBalance(
+  await updateCompanyBalanceAfterTransaction(
     updated.type,
     updated.fromAccount?.id ?? null,
     updated.toAccount?.id ?? null,
@@ -341,7 +341,7 @@ export const updateCompanyFinanceTransaction = async (
  * @param manager - Transaction içinde kullanılacak EntityManager
  * @param isReverse - true ise işlemin etkisini geri alır (örneğin eski işlem geri çekilirken)
  */
-export const updateCompanyBalance = async (
+export const updateCompanyBalanceAfterTransaction = async (
   type: "PAYMENT" | "COLLECTION" | "TRANSFER",
   fromAccountId: string | null,
   toAccountId: string | null,
@@ -470,7 +470,7 @@ export const createLoanTransactionFromPaymentData = async (
 
   const saved = await repo.save(transaction);
 
-  await updateCompanyBalance(
+  await updateCompanyBalanceAfterTransaction(
     "PAYMENT",
     payment.bankId,
     null,
@@ -479,4 +479,32 @@ export const createLoanTransactionFromPaymentData = async (
   );
 
   return saved;
+};
+
+export const deleteCompanyFinanceTransactionById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager
+) => {
+  const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
+
+  const transaction = await transactionRepo.findOneOrFail({
+    where: { id },
+    relations: ["company"],
+  });
+
+  if (transaction.company.id !== currentUser.companyId) {
+    throw new Error("Bu finansal işlem kaydına erişim yetkiniz yok.");
+  }
+
+  await updateCompanyBalanceAfterTransaction(
+    transaction.type,
+    transaction.fromAccount?.id ?? null,
+    transaction.toAccount?.id ?? null,
+    transaction.amount,
+    manager,
+    true
+  );
+
+  await transactionRepo.delete({ id: transaction.id });
 };

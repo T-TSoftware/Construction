@@ -56,6 +56,10 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyCheck.prototype, "status", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: "varchar", nullable: false }),
+    __metadata("design:type", String)
+], CompanyCheck.prototype, "type", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyBalance_1.CompanyBalance),
     (0, typeorm_1.JoinColumn)({ name: "bankid" }),
     __metadata("design:type", CompanyBalance_1.CompanyBalance)

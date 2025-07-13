@@ -20,6 +20,9 @@ import { CompanyCheck } from "../entities/CompanyCheck";
 import { CompanyOrder } from "../entities/CompanyOrder";
 import { CompanyLoan } from "../entities/CompanyLoan";
 import { CompanyLoanPayment } from "../entities/CompanyLoanPayment";
+import { CompanyEmployee } from "../entities/CompanyEmployee";
+import { CompanyEmployeeLeave } from "../entities/CompanyEmployeeLeave";
+import { CompanyEmployeeProject } from "../entities/CompanyEmployeeProject";
 
 dotenv.config();
 
@@ -45,6 +48,9 @@ export const AppDataSource = new DataSource({
     CompanyOrder,
     CompanyLoan,
     CompanyLoanPayment,
+    CompanyEmployee,
+    CompanyEmployeeLeave,
+    CompanyEmployeeProject,
 
     /*-------------------------*/
 
@@ -74,5 +80,5 @@ export const AppDataSource = new DataSource({
 });
 
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/CompanyLoan --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/EmpWProject --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

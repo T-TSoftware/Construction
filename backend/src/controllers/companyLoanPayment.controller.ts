@@ -1,10 +1,17 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
+import { CompanyLoanPayment } from "../entities/CompanyLoanPayment";
+import { parse } from "json2csv";
 import {
   createCompanyLoanPayment,
+  exportCompanyLoanPaymentsToCsv,
+  exportCompanyLoanPaymentsToPdf,
   getCompanyLoanPaymentById,
   getCompanyLoanPayments,
+  updateCompanyLoanPayment,
 } from "../services/companyLoanPayment.service";
+import fs from "fs";
+import path from "path";
 
 export const postCompanyLoanPaymentHandler = async (
   req: Request,
@@ -55,6 +62,56 @@ export const postCompanyLoanPaymentHandler = async (
     res.status(500).json({
       errorMessage: error.message || "Loan ödemeleri kaydedilemedi.",
     });
+  } finally {
+    await queryRunner.release();
+  }
+};
+
+export const patchCompanyLoanPaymentHandler = async (
+  req: Request,
+  res: Response
+) => {
+  // 🔒 Yetki kontrolü
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({
+      errorMessage: "Yalnızca superadmin işlem yapabilir.",
+    });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+    const id = req.params.id;
+    const body = req.body;
+
+    // 📌 Parametreden gelen 'id' kontrolü
+    if (!id || typeof id !== "string") {
+      throw new Error("Geçerli bir 'id' parametresi gereklidir.");
+    }
+
+    // 🔁 Taksit güncelleme işlemi
+    await updateCompanyLoanPayment(
+      id,
+      body,
+      { userId, companyId },
+      queryRunner.manager
+    );
+
+    await queryRunner.commitTransaction();
+    res.status(200).json({ message: "Taksit başarıyla güncellendi." });
+    return;
+  } catch (error: any) {
+    await queryRunner.rollbackTransaction();
+    console.error("❌ PATCH loanPayment update error:", error);
+    res.status(400).json({
+      errorMessage: error.message || "Taksit güncellenemedi.",
+    });
+    return;
   } finally {
     await queryRunner.release();
   }
@@ -118,4 +175,40 @@ export const getCompanyLoanPaymentByIdHandler = async (
     console.error("❌ GET loan by ID error:", error);
     res.status(500).json({ error: error.message || "Çek bilgisi alınamadı." });
   }
+};
+
+export const exportLoanPaymentsHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const userId = req.user!.userId.toString();
+  const companyId = req.user!.companyId;
+  const data = await getCompanyLoanPayments({ userId, companyId }); // ✅ Doğru parametre tipi
+
+  const csv = await exportCompanyLoanPaymentsToCsv(data);
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=loan-payments.csv"
+  );
+  res.send(csv);
+};
+
+export const exportLoanPaymentsPdfHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const userId = req.user!.userId.toString();
+  const companyId = req.user!.companyId;
+
+  const data = await getCompanyLoanPayments({ userId, companyId });
+  const pdfBuffer = await exportCompanyLoanPaymentsToPdf(data);
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    "attachment; filename=loan-payments.pdf"
+  );
+  res.send(pdfBuffer);
 };

@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const Company_1 = require("./Company");
 const CompanyProject_1 = require("./CompanyProject");
 const User_1 = require("./User");
+const CompanyOrder_1 = require("./CompanyOrder");
 let CompanyStock = class CompanyStock {
 };
 exports.CompanyStock = CompanyStock;
@@ -93,6 +94,10 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], CompanyStock.prototype, "updatedatetime", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyOrder_1.CompanyOrder, (order) => order.stock),
+    __metadata("design:type", Array)
+], CompanyStock.prototype, "orders", void 0);
 exports.CompanyStock = CompanyStock = __decorate([
     (0, typeorm_1.Entity)({ name: "companystocks" }) // ✅ tablo adı burada verildi
     ,

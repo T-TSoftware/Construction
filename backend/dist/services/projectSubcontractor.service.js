@@ -36,6 +36,7 @@ const getProjectSubcontractors = async (projectId) => {
         order: { createdatetime: "DESC" },
     });
     return subcontractors.map((s) => ({
+        id: s.id,
         code: s.code,
         category: s.category,
         companyName: s.companyName,

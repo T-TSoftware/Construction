@@ -36,6 +36,7 @@ const getEstimatedCostsByProject = async (projectId) => {
         order: { createdatetime: "DESC" },
     });
     return costs.map((cost) => ({
+        id: cost.id,
         code: cost.code,
         name: cost.name,
         category: cost.category,

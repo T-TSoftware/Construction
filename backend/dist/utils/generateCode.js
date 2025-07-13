@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateFinanceTransactionCode = exports.generateNextEntityCode = exports.generateStockCode = void 0;
+exports.generateNextOrderCode = exports.generateFinanceTransactionCode = exports.generateNextEntityCode = exports.generateStockCode = void 0;
 exports.generateNextCompanyCode = generateNextCompanyCode;
 exports.generateNextBalanceCode = generateNextBalanceCode;
 exports.generateUserCode = generateUserCode;
@@ -11,6 +11,7 @@ const CompanyStock_1 = require("../entities/CompanyStock");
 const ProjectSupplier_1 = require("../entities/ProjectSupplier"); // ya da ProjectSubcontractor
 const ProjectSubcontractor_1 = require("../entities/ProjectSubcontractor");
 const CompanyFinance_1 = require("../entities/CompanyFinance");
+const CompanyOrder_1 = require("../entities/CompanyOrder");
 function generateNextCompanyCode(latestCode, name) {
     const prefix = name.slice(0, 3).toUpperCase();
     if (!latestCode || !latestCode.startsWith(prefix))
@@ -162,3 +163,22 @@ const generateFinanceTransactionCode = async (type, transactionDate, manager, di
     return `${prefix}-${nextNumber}`;
 };
 exports.generateFinanceTransactionCode = generateFinanceTransactionCode;
+const generateNextOrderCode = async ({ companyId, reference, // projectName ya da stockCategory
+manager, }) => {
+    const today = new Date();
+    const datePart = `${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}${today.getFullYear()}`;
+    const prefix = `SAT-${reference.toUpperCase()}-${datePart}`;
+    const repo = manager.getRepository(CompanyOrder_1.CompanyOrder);
+    const latest = await repo
+        .createQueryBuilder("order")
+        .where("order.companyid = :companyId AND order.code LIKE :prefix", {
+        companyId,
+        prefix: `${prefix}-%`,
+    })
+        .orderBy("order.code", "DESC")
+        .getOne();
+    const lastNumber = latest ? parseInt(latest.code.split("-").pop()) : 0;
+    const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
+    return `${prefix}-${nextNumber}`;
+};
+exports.generateNextOrderCode = generateNextOrderCode;

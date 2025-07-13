@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const Company_1 = require("./Company");
 const CompanyFinance_1 = require("./CompanyFinance");
 const CompanyCheck_1 = require("./CompanyCheck");
+const CompanyLoan_1 = require("./CompanyLoan");
 let CompanyBalance = class CompanyBalance {
 };
 exports.CompanyBalance = CompanyBalance;
@@ -80,6 +81,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => CompanyCheck_1.CompanyCheck, (check) => check.bank),
     __metadata("design:type", CompanyCheck_1.CompanyCheck)
 ], CompanyBalance.prototype, "checks", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyLoan_1.CompanyLoan, (loan) => loan.bank),
+    __metadata("design:type", CompanyLoan_1.CompanyLoan)
+], CompanyBalance.prototype, "loans", void 0);
 exports.CompanyBalance = CompanyBalance = __decorate([
     (0, typeorm_1.Entity)({ name: "companybalances" })
 ], CompanyBalance);

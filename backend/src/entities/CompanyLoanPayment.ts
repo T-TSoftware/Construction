@@ -49,8 +49,13 @@ export class CompanyLoanPayment {
   @Column({ name: "paymentdate", type: "date", nullable: true })
   paymentDate?: Date;
 
-  @Column({ name: "penaltyamount", type: "numeric", nullable: true })
-  penaltyAmount?: number;
+  @Column({
+    name: "penaltyamount",
+    type: "numeric",
+    nullable: true,
+    default: 0,
+  })
+  penaltyAmount!: number;
 
   @OneToOne(() => CompanyFinanceTransaction, { nullable: true })
   @JoinColumn({ name: "financetransactionid" })

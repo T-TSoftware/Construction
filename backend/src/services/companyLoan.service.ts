@@ -79,10 +79,11 @@ export const createCompanyLoan = async (
   return await loanRepo.save(loan);
 };
 
-export const updateCompanyLoan = async (
+export const updateCompanyLoanPaymentChange = async (
   loanId: string,
   principalAmount: number,
   interestAmount: number,
+  paymentAmount: number,
   userId: string,
   manager: EntityManager,
   isReverse: boolean = false
@@ -107,13 +108,23 @@ export const updateCompanyLoan = async (
   await repo.increment(
     { id: loanId },
     "remainingInstallmentAmount",
+    factor * paymentAmount
+  );
+  console.log(
+    `${isReverse ? "REVERSE" : "APPLY"} remainingInstallmentAmount: ${
+      factor * paymentAmount
+    }`
+  );
+  /*await repo.increment(
+    { id: loanId },
+    "remainingInstallmentAmount",
     factor * (principalAmount + interestAmount)
   );
   console.log(
     `${isReverse ? "REVERSE" : "APPLY"} remainingInstallmentAmount: ${
       factor * (principalAmount + interestAmount)
     }`
-  );
+  );*/
 
   // 🔻 remainingInstallmentCount azaltılır
   await repo.increment({ id: loanId }, "remainingInstallmentCount", factor * 1);
@@ -145,15 +156,15 @@ export const getCompanyLoans = async (
 ) => {
   const repo = manager.getRepository(CompanyLoan);
 
-  const transactions = await repo.find({
+  const loans = await repo.find({
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["bank", "project"],
+    relations: ["company", "bank", "project"],
     order: { createdatetime: "DESC" },
   });
 
-  return transactions;
+  return loans;
 };
 
 export const getCompanyLoanById = async (
@@ -168,7 +179,7 @@ export const getCompanyLoanById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["bank", "project"],
+    relations: ["company", "bank", "project"],
   });
 
   if (!loan) {
