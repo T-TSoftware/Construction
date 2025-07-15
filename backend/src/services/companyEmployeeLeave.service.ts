@@ -177,6 +177,39 @@ export const getCompanyEmployeeLeaveById = async (
   return leave;
 };
 
+export const deleteCompanyEmployeeLeave = async (
+  employeeId: string,
+  leaveId: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const leaveRepo = manager.getRepository(CompanyEmployeeLeave);
+
+  const leave = await leaveRepo.findOne({
+    where: {
+      id: leaveId,
+      employee: { id: employeeId, company: { id: currentUser.companyId } },
+    },
+    relations: ["employee"],
+  });
+
+  if (!leave) throw new Error("İzin kaydı bulunamadı.");
+
+  // 🔁 İzin hakkını geri ekle
+  await updateCompanyEmployeeLeaveChange(
+    leave.employee.id,
+    leave.leaveDayCount,
+    leave.type,
+    currentUser.userId,
+    manager,
+    true // reverse mode
+  );
+
+  await leaveRepo.delete({ id: leaveId });
+
+  return { message: "İzin kaydı başarıyla silindi." };
+};
+
 export const calculateLeaveDayCount = (
   startDate: Date,
   endDate: Date

@@ -6,6 +6,7 @@ import {
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 import {
+  deleteCompanyEmployeeLeaveHandler,
   getCompanyEmployeeLeaveByIdHandler,
   getCompanyEmployeeLeavesByEmployeeIdHandler,
   getCompanyEmployeeLeavesHandler,
@@ -28,4 +29,8 @@ router.get("/", getCompanyEmployeeLeavesHandler);
 
 router.get("/:employeeId", getCompanyEmployeeLeavesByEmployeeIdHandler);
 router.get("/:employeeId/leaves/:leaveId", getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
+router.delete(
+  "/:employeeId/leaves/:leaveId",
+  deleteCompanyEmployeeLeaveHandler
+);
 export default router;

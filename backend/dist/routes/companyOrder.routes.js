@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const companyOrder_controller_1 = require("../controllers/companyOrder.controller");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authMiddleware);
+router.post("/", /*validateBody,*/ companyOrder_controller_1.postCompanyOrderHandler);
+router.get("/", companyOrder_controller_1.getCompanyOrdersHandler);
+router.get("/:id", companyOrder_controller_1.getCompanyOrderByIdHandler);
+exports.default = router;

@@ -9,3 +9,15 @@
 1752313250291-Employeeadj.ts
 1752411834318-EmpWProject.ts
 views
+
+
+
+
+
+"scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "migrate": "prisma migrate dev",
+    "generate": "prisma generate"
+  },

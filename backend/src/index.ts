@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import { AppDataSource } from "./config/data-source";
-
+//import AppDataSource from "./config/data-source";
 import companyRoutes from "./routes/company.routes";
 import companyBalanceRoutes from "./routes/companyBalance.routes";
 import companyProjectRoutes from "./routes/companyProject.routes";
@@ -56,7 +56,7 @@ app.use("/api/orders", companyOrderRoutes);
 app.use("/api/loans", companyLoanRoutes);
 app.use("/api/loan-payments", companyLoanPaymentRoutes);
 app.use("/api/employees", companyEmployeeRoutes);
-app.use("/api/employee-leaves", companyEmployeeLeaveRoutes); 
+app.use("/api/employee-leaves", companyEmployeeLeaveRoutes);
 
 app.use("/api/bank-movements", companyBankMovementRoutes);
 app.use("/api/current-movements", companyCurrentMovementRoutes);
@@ -74,7 +74,8 @@ app.use("/api", projectCurrentRoutes);
 app.use("/api/quantity-items", quantityItemRoutes);
 app.use("/api/stock-items", stockItemRoutes);
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
+
 
 AppDataSource.initialize()
   .then(() => {

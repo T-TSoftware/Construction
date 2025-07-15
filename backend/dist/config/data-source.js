@@ -26,7 +26,10 @@ const CompanyLoan_1 = require("../entities/CompanyLoan");
 const CompanyLoanPayment_1 = require("../entities/CompanyLoanPayment");
 const CompanyEmployee_1 = require("../entities/CompanyEmployee");
 const CompanyEmployeeLeave_1 = require("../entities/CompanyEmployeeLeave");
-dotenv_1.default.config();
+const CompanyEmployeeProject_1 = require("../entities/CompanyEmployeeProject");
+//dotenv.config();
+const envFile = process.env.NODE_ENV === "production" ? ".env.prod" : ".env";
+dotenv_1.default.config({ path: envFile });
 exports.AppDataSource = new typeorm_1.DataSource({
     type: "postgres",
     host: process.env.DB_HOST || "xxxxx",
@@ -35,7 +38,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
     password: process.env.DB_PASSWORD || "xxxx",
     database: process.env.DB_NAME || "xxxx",
     schema: process.env.DB_SCHEMA,
-    synchronize: false, // Auto create table (Prod :false)
+    synchronize: process.env.SYNCHRONIZE_ONCE === "true", //true, // Auto create table (Prod :false)
     logging: false,
     entities: [
         /*-------------------------*/
@@ -51,6 +54,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
         CompanyLoanPayment_1.CompanyLoanPayment,
         CompanyEmployee_1.CompanyEmployee,
         CompanyEmployeeLeave_1.CompanyEmployeeLeave,
+        CompanyEmployeeProject_1.CompanyEmployeeProject,
         /*-------------------------*/
         // Project Related
         ProjectEstimatedCost_1.ProjectEstimatedCost,
@@ -67,10 +71,12 @@ exports.AppDataSource = new typeorm_1.DataSource({
         //StockItem,
         /*-------------------------*/
     ],
-    migrations: ["src/migrations/*.ts"],
+    //migrations: ["src/migrations/*.ts"],
+    migrations: process.env.NODE_ENV === "production" ? [] : ["src/migrations/*.ts"], //  ← dev’de eskisi gibi
     //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
     subscribers: [],
 });
+exports.default = exports.AppDataSource;
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/Emp --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/EmpWProject --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

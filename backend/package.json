@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "migrate": "prisma migrate dev",
-    "generate": "prisma generate"
-  },
+  "dev": "nodemon --exec ts-node src/index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js",
+  "start:prod": "NODE_ENV=production npm run start"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

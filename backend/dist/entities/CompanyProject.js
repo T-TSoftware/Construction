@@ -21,6 +21,7 @@ const ProjectCurrent_1 = require("./ProjectCurrent");
 const CompanyFinance_1 = require("./CompanyFinance");
 const CompanyCheck_1 = require("./CompanyCheck");
 const CompanyLoan_1 = require("./CompanyLoan");
+const CompanyEmployeeProject_1 = require("./CompanyEmployeeProject");
 let CompanyProject = class CompanyProject {
 };
 exports.CompanyProject = CompanyProject;
@@ -123,6 +124,12 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => CompanyLoan_1.CompanyLoan, (loan) => loan.project),
     __metadata("design:type", CompanyLoan_1.CompanyLoan)
 ], CompanyProject.prototype, "loans", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyEmployeeProject_1.CompanyEmployeeProject, (employee) => employee.project, {
+        cascade: true,
+    }),
+    __metadata("design:type", Array)
+], CompanyProject.prototype, "projectEmployees", void 0);
 exports.CompanyProject = CompanyProject = __decorate([
     (0, typeorm_1.Entity)({ name: "companyprojects" })
 ], CompanyProject);

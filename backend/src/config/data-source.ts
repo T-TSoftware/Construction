@@ -24,7 +24,9 @@ import { CompanyEmployee } from "../entities/CompanyEmployee";
 import { CompanyEmployeeLeave } from "../entities/CompanyEmployeeLeave";
 import { CompanyEmployeeProject } from "../entities/CompanyEmployeeProject";
 
-dotenv.config();
+//dotenv.config();
+const envFile = process.env.NODE_ENV === "production" ? ".env.prod" : ".env";
+dotenv.config({ path: envFile });
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -34,7 +36,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || "xxxx",
   database: process.env.DB_NAME || "xxxx",
   schema: process.env.DB_SCHEMA,
-  synchronize: false, // Auto create table (Prod :false)
+  synchronize: process.env.SYNCHRONIZE_ONCE === "true", //true, // Auto create table (Prod :false)
   logging: false,
   entities: [
     /*-------------------------*/
@@ -74,11 +76,13 @@ export const AppDataSource = new DataSource({
 
     /*-------------------------*/
   ],
-  migrations: ["src/migrations/*.ts"],
+  //migrations: ["src/migrations/*.ts"],
+  migrations:
+    process.env.NODE_ENV === "production" ? [] : ["src/migrations/*.ts"], //  ← dev’de eskisi gibi
   //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
   subscribers: [],
 });
-
+export default AppDataSource;
 // npx tsc
 //npx typeorm-ts-node-commonjs migration:generate src/migrations/EmpWProject --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

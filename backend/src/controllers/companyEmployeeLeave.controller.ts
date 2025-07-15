@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import {
+  deleteCompanyEmployeeLeave,
   getCompanyEmployeeLeaveById,
   getCompanyEmployeeLeaves,
   getCompanyEmployeeLeavesByEmployeeId,
@@ -191,18 +192,45 @@ export const getCompanyEmployeeLeaveByIdHandler = async (
       throw new Error("Geçerli bir çalışan veya izin ID'si belirtilmelidir.");
     }
 
-    const getEmpLeave = await getCompanyEmployeeLeaveById(
+    const getEmployeeLeave = await getCompanyEmployeeLeaveById(
       employeeId,
       leaveId,
       { userId, companyId },
       AppDataSource.manager
     );
 
-    res.status(200).json(getEmpLeave);
+    res.status(200).json(getEmployeeLeave);
   } catch (error: any) {
     console.error("❌ PATCH employee leave error:", error);
     res.status(400).json({
       errorMessage: error.message || "İzin güncellenemedi.",
     });
+  }
+};
+
+export const deleteCompanyEmployeeLeaveHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { employeeId, leaveId } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    if (!employeeId || !leaveId) {
+      throw new Error("Geçerli bir çalışan veya izin ID'si belirtilmelidir.");
+    }
+
+    const result = await deleteCompanyEmployeeLeave(
+      employeeId,
+      leaveId,
+      { userId, companyId },
+      AppDataSource.manager
+    );
+
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error("❌ [deleteCompanyEmployeeLeaveHandler] error:", error);
+    res.status(404).json({ error: error.message || "Silme işlemi başarısız." });
   }
 };

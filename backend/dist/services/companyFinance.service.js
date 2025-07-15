@@ -141,10 +141,10 @@ const updateCompanyFinanceTransaction = async (code, data, currentUser, manager 
         ? await balanceRepo.findOneByOrFail({ code: data.toAccountCode })
         : existing.toAccount;
     const newOrder = data.orderCode && data.orderCode !== existing.order?.code
-        ? await orderRepo.findOneByOrFail({ id: data.orderCode })
+        ? await orderRepo.findOneByOrFail({ code: data.orderCode })
         : existing.order;
     const newProject = data.projectCode && data.projectCode !== existing.project?.id
-        ? await projectRepo.findOneByOrFail({ id: data.projectCode })
+        ? await projectRepo.findOneByOrFail({ code: data.projectCode })
         : existing.project;
     // 💾 Güncellemeden önce eski amount'u sakla
     const previousAmount = existing.amount;
