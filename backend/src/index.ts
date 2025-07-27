@@ -76,7 +76,7 @@ app.use("/api", projectSubcontractorRoutes);
 app.use("/api", projectQuantityRoutes);
 app.use("/api", projectCostSummaryRoutes);
 app.use("/api", projectCurrentRoutes);
-app.use("/api", projectBarterAgreementRoutes);
+app.use("/api/project-barters", projectBarterAgreementRoutes);
 
 // Masterdata Related
 app.use("/api/quantity-items", quantityItemRoutes);

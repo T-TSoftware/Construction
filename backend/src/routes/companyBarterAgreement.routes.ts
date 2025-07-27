@@ -4,6 +4,8 @@ import {
   postCompanyBarterAgreementHandler,
   postCompanyBarterAgreementFromProjectHandler,
   getCompanyBarterAgreementByIdHandler,
+  getAllCompanyBarterAgreementsHandler,
+  getAllCompanyBarterAgreementsByProjectIdHandler,
   patchCompanyBarterAgreementHandler,
 } from "../controllers/companyBarterAgreement.controller";
 import {
@@ -26,5 +28,9 @@ router.post(
 router.patch("/:id", patchCompanyBarterAgreementHandler);
 
 router.get("/:id", getCompanyBarterAgreementByIdHandler);
+
+router.get("/", getAllCompanyBarterAgreementsHandler);
+
+router.get("/:projectId", getAllCompanyBarterAgreementsByProjectIdHandler);
 
 export default router;
