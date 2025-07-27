@@ -46,8 +46,11 @@ export const createCompanyEmployee = async (
   await employeeRepo.save(employee);
   // 🔗 Projeleri ilişkilendir
   if (data.projectCodes?.length) {
-    const projects = await projectRepo.findBy({
-      code: In(data.projectCodes as string[]),
+    const projects = await projectRepo.find({
+      where: {
+        code: In(data.projectCodes),
+        company: { id: currentUser.companyId }, // 🔒 sadece yetkili şirketin projeleri
+      },
     });
 
     if (projects.length !== data.projectCodes.length) {
@@ -83,7 +86,7 @@ export const getCompanyEmployees = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "employeeProjects", "employeeProjects.project"],
+    relations: ["employeeProjects", "employeeProjects.project"],
     order: { createdatetime: "DESC" },
   });
 
@@ -102,7 +105,7 @@ export const getCompanyEmployeeById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "employeeProjects", "employeeProjects.project"],
+    relations: ["employeeProjects", "employeeProjects.project"],
   });
 
   if (!employee) {
@@ -137,7 +140,9 @@ export const updateCompanyEmployee = async (
   const employeeProjectRepo = manager.getRepository(CompanyEmployeeProject);
   const projectRepo = manager.getRepository(CompanyProject);
 
-  const employee = await employeeRepo.findOneByOrFail({ id });
+  const employee = await employeeRepo.findOneOrFail({
+    where: { id, company: { id: currentUser.companyId } }, // ✅ güvenli filtreleme
+  });
 
   // 📝 Alanları güncelle
   employee.firstName = data.firstName ?? employee.firstName;
@@ -149,10 +154,12 @@ export const updateCompanyEmployee = async (
   employee.position = data.position ?? employee.position;
   employee.department = data.department ?? employee.department;
   employee.paidLeaveAmount = data.paidLeaveAmount ?? employee.paidLeaveAmount;
-  employee.unpaidLeaveAmount = data.unpaidLeaveAmount ?? employee.unpaidLeaveAmount;
+  employee.unpaidLeaveAmount =
+    data.unpaidLeaveAmount ?? employee.unpaidLeaveAmount;
   employee.sickLeaveAmount = data.sickLeaveAmount ?? employee.sickLeaveAmount;
   employee.roadLeaveAmount = data.roadLeaveAmount ?? employee.roadLeaveAmount;
-  employee.excuseLeaveAmount = data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
+  employee.excuseLeaveAmount =
+    data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
   employee.code = `${employee.position}-${employee.firstName}${employee.lastName}`;
   employee.updatedBy = { id: currentUser.userId } as any;
 
@@ -166,6 +173,7 @@ export const updateCompanyEmployee = async (
     // Yeni eşleşmeleri ekle
     const projectEntities = await projectRepo.findBy({
       code: In(data.projectCodes),
+      company: { id: currentUser.companyId }, // ✅ Şirket doğrulaması
     });
 
     const projectAssignments = projectEntities.map((project) =>

@@ -12,6 +12,7 @@ import {
 import { CompanyLoan } from "./CompanyLoan";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
 import { User } from "./User";
+import { Company } from "./Company";
 
 @Entity({ name: "companyloanpayment" })
 export class CompanyLoanPayment {
@@ -21,6 +22,10 @@ export class CompanyLoanPayment {
   @ManyToOne(() => CompanyLoan, (loan) => loan.payments)
   @JoinColumn({ name: "loanid" })
   loan!: CompanyLoan;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @Column({ name: "code", type: "varchar", length: 100, unique: true })
   code!: string; // e.g., HALKKGFFATURA1-TAKSİT:1

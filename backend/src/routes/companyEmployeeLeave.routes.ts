@@ -27,8 +27,11 @@ router.patch("/:leaveId", patchCompanyEmployeeLeaveHandler);
 
 router.get("/", getCompanyEmployeeLeavesHandler);
 
-router.get("/:employeeId", getCompanyEmployeeLeavesByEmployeeIdHandler);
-router.get("/:employeeId/leaves/:leaveId", getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
+router.get(
+  "/employee/:employeeId",
+  getCompanyEmployeeLeavesByEmployeeIdHandler
+);
+router.get("/:leaveId", getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
 router.delete(
   "/:employeeId/leaves/:leaveId",
   deleteCompanyEmployeeLeaveHandler

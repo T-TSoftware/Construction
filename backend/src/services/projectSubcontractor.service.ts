@@ -3,6 +3,7 @@ import { EntityManager } from "typeorm";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { CompanyProject } from "../entities/CompanyProject";
 import { generateNextEntityCode } from "../utils/generateCode";
+import { ProjectEstimatedCost } from "../entities/ProjectEstimatedCost";
 
 const subcontractorRepo = AppDataSource.getRepository(ProjectSubcontractor);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -22,19 +23,26 @@ export const createProjectSubcontractor = async (
   },
   currentUser: {
     userId: string;
+    companyId: string;
   },
-  manager: EntityManager = AppDataSource.manager // ✅ default olarak global manager
+  manager: EntityManager = AppDataSource.manager
 ) => {
   const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
   const projectRepo = manager.getRepository(CompanyProject);
 
-  const project = await projectRepo.findOneByOrFail({ id: data.projectId });
+  // 🔍 Şirket kontrolüyle birlikte projeyi getir
+  const project = await projectRepo.findOneOrFail({
+    where: {
+      id: data.projectId,
+      company: { id: currentUser.companyId },
+    },
+  });
 
   const code = await generateNextEntityCode(
     manager,
     project.code,
     data.category,
-    "TAS", // 🔧 Taşeron tipi kodu
+    "TAS", // Taşeron tipi kod
     "ProjectSubcontractor"
   );
 
@@ -48,7 +56,8 @@ export const createProjectSubcontractor = async (
     ...data,
     code,
     remainingAmount,
-    project: { id: data.projectId },
+    project: { id: project.id },
+    company: { id: currentUser.companyId },
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
@@ -56,9 +65,15 @@ export const createProjectSubcontractor = async (
   return await subcontractorRepo.save(subcontractor);
 };
 
-export const getProjectSubcontractors = async (projectId: string) => {
+export const getProjectSubcontractors = async (
+  projectId: string,
+  companyId: string
+) => {
   const subcontractors = await subcontractorRepo.find({
-    where: { project: { id: projectId } },
+    where: {
+      project: { id: projectId },
+      company: { id: companyId },
+    },
     relations: ["createdBy", "updatedBy"],
     order: { createdatetime: "DESC" },
   });
@@ -98,49 +113,109 @@ export const updateProjectSubcontractor = async (
   },
   currentUser: {
     userId: string;
-  }
+    companyId: string;
+  },
+  manager: EntityManager = AppDataSource.manager
 ) => {
+  const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+  const estimatedCostRepo = manager.getRepository(ProjectEstimatedCost);
+
   const subcontractor = await subcontractorRepo.findOne({
     where: {
       code,
       project: { id: projectId },
+      company: { id: currentUser.companyId },
     },
-    relations: ["project"],
+    relations: ["project", "company", "projectQuantity", "quantityItem"], // ✅ Ek ilişkiler AGREED kısmı için
   });
 
   if (!subcontractor) {
-    throw new Error("Tedarikçi bulunamadı.");
+    throw new Error("Taşeron bulunamadı.");
   }
 
-  // Yeni alanlar set ediliyor
-  subcontractor.companyName = data.companyName ?? subcontractor.companyName;
-  subcontractor.unit = data.unit ?? subcontractor.unit;
-  subcontractor.unitPrice = data.unitPrice ?? subcontractor.unitPrice;
-  subcontractor.quantity = data.quantity ?? subcontractor.quantity;
-  if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
-    subcontractor.contractAmount = data.contractAmount!;
-  }
-  if (Object.prototype.hasOwnProperty.call(data, "paidAmount")) {
-    subcontractor.paidAmount = data.paidAmount!;
-  }
-  //subcontractor.contractAmount = data.contractAmount ?? subcontractor.contractAmount;
-  //subcontractor.paidAmount = data.paidAmount ?? subcontractor.paidAmount;
-  subcontractor.status = data.status ?? subcontractor.status;
-  subcontractor.description = data.description ?? subcontractor.description;
+  const isLocked = subcontractor.locked === true;
 
-  if (
-    subcontractor.contractAmount !== undefined &&
-    subcontractor.paidAmount !== undefined
-  ) {
-    const contract = Number(subcontractor.contractAmount);
-    const paid = Number(subcontractor.paidAmount);
-    subcontractor.remainingAmount = contract - paid;
+  // 🔐 Eğer taşeron locked ise sadece unitPrice ve status güncellenebilir
+  if (isLocked) {
+    subcontractor.unitPrice = data.unitPrice ?? subcontractor.unitPrice;
+    subcontractor.status = data.status ?? subcontractor.status;
   } else {
-    subcontractor.remainingAmount = null;
+    // 🔧 Güncellenebilir alanlar (locked değilse)
+    subcontractor.companyName = data.companyName ?? subcontractor.companyName;
+    subcontractor.unit = data.unit ?? subcontractor.unit;
+    subcontractor.unitPrice = data.unitPrice ?? subcontractor.unitPrice;
+    subcontractor.quantity = data.quantity ?? subcontractor.quantity;
+
+    if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
+      subcontractor.contractAmount = data.contractAmount!;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(data, "paidAmount")) {
+      subcontractor.paidAmount = data.paidAmount!;
+    }
+
+    subcontractor.description = data.description ?? subcontractor.description;
+    subcontractor.status = data.status ?? subcontractor.status;
+
+    // 🔁 Kalan tutar hesaplama
+    if (
+      subcontractor.contractAmount !== undefined &&
+      subcontractor.paidAmount !== undefined
+    ) {
+      subcontractor.remainingAmount =
+        Number(subcontractor.contractAmount) - Number(subcontractor.paidAmount);
+    } else {
+      subcontractor.remainingAmount = null;
+    }
   }
 
   subcontractor.updatedBy = { id: currentUser.userId } as any;
   subcontractor.updatedatetime = new Date();
 
-  return await subcontractorRepo.save(subcontractor);
+  const saved = await subcontractorRepo.save(subcontractor);
+
+  // ✅ AGREED durumunda tahmini maliyet oluştur
+  if (data.status === "AGREED") {
+    const existingEstimate = await estimatedCostRepo.findOne({
+      where: {
+        project: { id: projectId },
+        company: { id: currentUser.companyId },
+        sourceType: "SUBCONTRACTOR",
+        referenceCode: subcontractor.code, // ✅ aynı referans kodla 1 kere oluşturulmuş mu
+      },
+    });
+
+    if (!existingEstimate) {
+      const isAutoGenerated = subcontractor.addedFromQuantityYN === "Y";
+
+      const projectQuantityText =
+        subcontractor.projectQuantity?.code && subcontractor.quantityItem?.name
+          ? `${subcontractor.projectQuantity.code} - ${subcontractor.quantityItem.name}`
+          : "manuel giriş";
+
+      const estimatedCost = estimatedCostRepo.create({
+        project: { id: projectId },
+        company: { id: currentUser.companyId },
+        unitPrice: subcontractor.unitPrice ?? 0,
+        unit: subcontractor.unit,
+        quantity: subcontractor.quantity,
+        totalCost: subcontractor.contractAmount,
+        sourceType: "SUBCONTRACTOR",
+        referenceCode: subcontractor.code,
+        category: subcontractor.category,
+        name: isAutoGenerated
+          ? `${subcontractor.companyName} • ${projectQuantityText} için otomatik taşeron`
+          : `${subcontractor.companyName} • manuel taşeron`,
+        description: isAutoGenerated
+          ? `Metraj (${projectQuantityText}) kalemi için taşerondan otomatik oluşturuldu.`
+          : `Taşeron kaydı manuel olarak girildi. Metraj bağlantısı bulunmamaktadır.`,
+        createdBy: { id: currentUser.userId },
+        updatedBy: { id: currentUser.userId },
+      });
+
+      await estimatedCostRepo.save(estimatedCost);
+    }
+  }
+
+  return saved;
 };

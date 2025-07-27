@@ -17,12 +17,14 @@ export const postQuantityItemHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    const user = req.user!;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
 
     const newItem = await createQuantityItem(
       { code, name, description },
       {
-        userId: user.userId.toString(),
+        userId,
+        companyId,
       }
     );
 
@@ -84,7 +86,9 @@ export const postQuantityItemHandler = async (req: Request, res: Response) => {
 
 export const getQuantityItemsHandler = async (req: Request, res: Response) => {
   try {
-    const items = await getQuantityItems();
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+    const items = await getQuantityItems({ userId, companyId });
     res.status(200).json(items);
     return;
   } catch (error) {

@@ -18,6 +18,7 @@ export const createEstimatedCost = async (
   },
   currentUser: {
     userId: string;
+    companyId: string; // ✅ companyId eklendi
   }
 ) => {
   const project = await projectRepo.findOneByOrFail({ id: data.projectId });
@@ -27,6 +28,9 @@ export const createEstimatedCost = async (
     .where("cost.code LIKE :prefix", {
       prefix: `${project.code}-${data.name.slice(0, 3).toUpperCase()}%`,
     })
+    .andWhere("cost.companyid = :companyId", {
+      companyId: currentUser.companyId,
+    }) // ✅ şirket filtresi eklendi
     .orderBy("cost.code", "DESC")
     .getOne();
 
@@ -43,6 +47,7 @@ export const createEstimatedCost = async (
     code,
     totalCost,
     project: { id: data.projectId },
+    company: { id: currentUser.companyId }, // ✅ company set edildi
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
@@ -50,9 +55,15 @@ export const createEstimatedCost = async (
   return await estimatedCostRepo.save(estimatedCost);
 };
 
-export const getEstimatedCostsByProject = async (projectId: string) => {
+export const getEstimatedCostsByProject = async (
+  projectId: string,
+  currentUser: { userId: string; companyId: string } // ✅ companyId alındı
+) => {
   const costs = await estimatedCostRepo.find({
-    where: { project: { id: projectId } },
+    where: {
+      project: { id: projectId },
+      company: { id: currentUser.companyId }, // ✅ companyId üzerinden filtreleme
+    },
     relations: ["createdBy", "updatedBy"],
     order: { createdatetime: "DESC" },
   });

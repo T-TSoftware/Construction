@@ -11,6 +11,7 @@ import {
 import { CompanyEmployee } from "./CompanyEmployee";
 import { CompanyProject } from "./CompanyProject";
 import { User } from "./User";
+import { Company } from "./Company";
 
 @Entity({ name: "companyemployeeprojects" })
 export class CompanyEmployeeProject {
@@ -20,6 +21,10 @@ export class CompanyEmployeeProject {
   @ManyToOne(() => CompanyEmployee, (employee) => employee.employeeProjects)
   @JoinColumn({ name: "employeeid" })
   employee!: CompanyEmployee;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @ManyToOne(() => CompanyProject, (project) => project.projectEmployees)
   @JoinColumn({ name: "projectid" })

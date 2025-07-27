@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { User } from "./User";
 import { CompanyProject } from "./CompanyProject";
+import { Company } from "./Company";
 
 @Entity({ name: "projectestimatedcosts" })
 export class ProjectEstimatedCost {
@@ -38,6 +39,16 @@ export class ProjectEstimatedCost {
 
   @Column({ name: "totalcost", type: "numeric" })
   totalCost!: number;
+
+  @Column({ name: "sourcetype", type: "varchar", default: "manual" })
+  sourceType!: string;
+
+  @Column({ name: "referencecode", nullable: true })
+  referenceCode?: string;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @ManyToOne(() => CompanyProject, (project) => project.estimatedCosts)
   @JoinColumn({ name: "projectid" })

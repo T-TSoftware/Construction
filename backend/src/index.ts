@@ -18,6 +18,9 @@ import companyLoanRoutes from "./routes/companyLoan.routes";
 import companyLoanPaymentRoutes from "./routes/companyLoanPayment.routes";
 import companyEmployeeRoutes from "./routes/companyEmployee.routes";
 import companyEmployeeLeaveRoutes from "./routes/companyEmployeeLeave.routes";
+import companyBarterAgreementRoutes from "./routes/companyBarterAgreement.routes";
+import companyBarterAgreementItemRoutes from "./routes/companyBarterAgreementItem.routes";
+import companyBarterItemCashDetailRoutes from "./routes/companyBarterItemCashDetail.routes";
 
 import projectEstimatedCostRoutes from "./routes/projectEstimatedCost.routes";
 import projectSupplierRoutes from "./routes/projectSupplier.routes";
@@ -25,6 +28,7 @@ import projectSubcontractorRoutes from "./routes/projectSubcontractor.routes";
 import projectQuantityRoutes from "./routes/projectQuantity.routes";
 import projectCostSummaryRoutes from "./routes/projectCostSummary.routes";
 import projectCurrentRoutes from "./routes/projectCurrent.routes";
+import projectBarterAgreementRoutes from "./routes/companyBarterAgreement.routes";
 
 import authRoutes from "./routes/auth.routes";
 
@@ -57,6 +61,9 @@ app.use("/api/loans", companyLoanRoutes);
 app.use("/api/loan-payments", companyLoanPaymentRoutes);
 app.use("/api/employees", companyEmployeeRoutes);
 app.use("/api/employee-leaves", companyEmployeeLeaveRoutes);
+app.use("/api/barters", companyBarterAgreementRoutes);
+app.use("/api/barter-items", companyBarterAgreementItemRoutes);
+app.use("/api/barter-cashes", companyBarterItemCashDetailRoutes);
 
 app.use("/api/bank-movements", companyBankMovementRoutes);
 app.use("/api/current-movements", companyCurrentMovementRoutes);
@@ -69,13 +76,13 @@ app.use("/api", projectSubcontractorRoutes);
 app.use("/api", projectQuantityRoutes);
 app.use("/api", projectCostSummaryRoutes);
 app.use("/api", projectCurrentRoutes);
+app.use("/api", projectBarterAgreementRoutes);
 
 // Masterdata Related
 app.use("/api/quantity-items", quantityItemRoutes);
 app.use("/api/stock-items", stockItemRoutes);
 
 const PORT = process.env.PORT || 3000;
-
 
 AppDataSource.initialize()
   .then(() => {

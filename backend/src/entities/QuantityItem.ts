@@ -4,12 +4,19 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from "typeorm";
+import { Company } from "./Company";
 
 @Entity({ name: "quantityitems" })
 export class QuantityItem {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @Column({ unique: true })
   code!: string;

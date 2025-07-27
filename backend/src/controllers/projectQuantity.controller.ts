@@ -23,7 +23,8 @@ export const postProjectQuantityHandler = async (
       return;
     }
 
-    const userId = req.user.userId.toString();
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
 
     const newRecord = await createProjectQuantity(
       {
@@ -34,7 +35,7 @@ export const postProjectQuantityHandler = async (
         description,
         category,
       },
-      { userId }
+      { userId, companyId }
     );
 
     res.status(201).json({
@@ -54,13 +55,15 @@ export const getProjectQuantitiesHandler = async (
 ) => {
   try {
     const { projectId } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
 
     if (!projectId) {
       res.status(400).json({ error: "projectId parametresi zorunludur." });
       return;
     }
 
-    const result = await getProjectQuantities(projectId);
+    const result = await getProjectQuantities(projectId, { userId, companyId });
     res.status(200).json(result);
   } catch (error) {
     console.error("❌ GET project quantities error:", error);

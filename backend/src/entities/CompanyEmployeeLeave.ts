@@ -11,6 +11,7 @@ import {
 } from "typeorm";
 import { CompanyEmployee } from "./CompanyEmployee";
 import { User } from "./User";
+import { Company } from "./Company";
 
 export enum LeaveType {
   PAID = "PAID", // Yıllık Ücretli
@@ -28,6 +29,10 @@ export class CompanyEmployeeLeave {
   @ManyToOne(() => CompanyEmployee)
   @JoinColumn({ name: "employeeid" })
   employee!: CompanyEmployee;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @Column({ name: "startdate", type: "timestamp", nullable: true })
   startDate?: Date;

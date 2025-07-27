@@ -10,6 +10,7 @@ import {
 import { CompanyProject } from "./CompanyProject";
 import { QuantityItem } from "./QuantityItem";
 import { User } from "./User";
+import { Company } from "./Company";
 
 @Entity({ name: "projectquantities" })
 export class ProjectQuantity {
@@ -18,6 +19,10 @@ export class ProjectQuantity {
 
   @Column({ nullable: true })
   code?: string;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @ManyToOne(() => CompanyProject)
   @JoinColumn({ name: "projectid" })

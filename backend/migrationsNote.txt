@@ -8,6 +8,10 @@
 1751805251257-CompanyLoanPaymentPlusFinance.ts
 1752313250291-Employeeadj.ts
 1752411834318-EmpWProject.ts
+1752943910165-AdjCompanyIdx.ts
+1752944628290-AdjCompanyIdxNotNull.ts
+1753395154890-WithBarterFuture.ts
+backend/src/migrations/1753535132223-WithBarterCash.ts
 views
 
 

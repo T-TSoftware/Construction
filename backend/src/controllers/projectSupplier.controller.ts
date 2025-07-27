@@ -22,7 +22,7 @@ export const postProjectSupplierHandler = async (
   try {
     const { projectId } = req.params;
     const userId = req.user!.userId.toString();
-
+    const companyId = req.user!.companyId;
     // 🔁 Artık her zaman array geleceği için döngüyle ilerliyoruz
     const results = [];
 
@@ -38,6 +38,8 @@ export const postProjectSupplierHandler = async (
         paidAmount,
         status,
         description,
+        projectQuantityCode,
+        addedFromQuantityYn,
       } = body;
 
       // ❗ Her item için zorunlu alan kontrolü
@@ -62,8 +64,10 @@ export const postProjectSupplierHandler = async (
           paidAmount,
           status,
           description,
+          projectQuantityCode,
+          addedFromQuantityYn,
         },
-        { userId }
+        { userId, companyId }
       );
 
       results.push(newSupplier);
@@ -84,8 +88,13 @@ export const getProjectSuppliersHandler = async (
 ) => {
   try {
     const { projectId } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
 
-    const suppliers = await getProjectSuppliers(projectId);
+    const suppliers = await getProjectSuppliers(projectId, {
+      userId,
+      companyId,
+    });
 
     res.status(200).json(suppliers);
   } catch (error) {
@@ -112,6 +121,7 @@ export const patchProjectSupplierHandler = async (
 
   try {
     const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
     const projectId = req.params.projectId;
     const updatedSuppliers = [];
 
@@ -126,7 +136,7 @@ export const patchProjectSupplierHandler = async (
         projectId,
         code,
         updateData,
-        { userId },
+        { userId, companyId },
         queryRunner.manager
       );
 

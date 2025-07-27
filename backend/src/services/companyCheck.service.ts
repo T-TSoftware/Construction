@@ -237,7 +237,7 @@ export const createCheckTransactionFromCheckData = async (
     targetName: check.firm,
     transactionDate: check.transactionDate,
     method: check.type === "COLLECTION" ? "CHECK" : "BANK",
-    category: check.type === "COLLECTION" ? "Çek Tahsilatı" : "Çek Ödeme",
+    category: 'CEK',//check.type === "COLLECTION" ? "Çek Tahsilatı" : "Çek Ödeme",
     invoiceYN: "N",
     checkCode: check.checkNo,
     description: check.description,

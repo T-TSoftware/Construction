@@ -4,6 +4,7 @@ import { CompanyStock } from "../entities/CompanyStock";
 import { EntityManager } from "typeorm";
 import { ProjectSupplier } from "../entities/ProjectSupplier"; // ya da ProjectSubcontractor
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
+import { CompanyBarterAgreement } from "../entities/CompanyBarterAgreement";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { CompanyOrder } from "../entities/CompanyOrder";
 
@@ -105,13 +106,21 @@ export const generateNextEntityCode = async (
   manager: EntityManager,
   projectCode: string,
   category: string,
-  typePrefix: "TED" | "TAS", // TED = Tedarikçi, TAS = Taşeron
-  entity: "ProjectSupplier" | "ProjectSubcontractor" // ✅ Entity tipi
+  typePrefix: "TED" | "TAS" | "BRT", // TED = Tedarikçi, TAS = Taşeron, BRT = Barter
+  entity: "ProjectSupplier" | "ProjectSubcontractor" | "CompanyBarterAgreement"
 ): Promise<string> => {
-  const repo =
-    entity === "ProjectSupplier"
-      ? manager.getRepository(ProjectSupplier)
-      : manager.getRepository(ProjectSubcontractor);
+  const repo = (() => {
+    switch (entity) {
+      case "ProjectSupplier":
+        return manager.getRepository(ProjectSupplier);
+      case "ProjectSubcontractor":
+        return manager.getRepository(ProjectSubcontractor);
+      case "CompanyBarterAgreement":
+        return manager.getRepository(CompanyBarterAgreement);
+      default:
+        throw new Error("Unknown entity type.");
+    }
+  })();
 
   const projectSuffix = projectCode.split("-")[1].toUpperCase();
   const categoryPrefix = category.trim().slice(0, 3).toUpperCase();

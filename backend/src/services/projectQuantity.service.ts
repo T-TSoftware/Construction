@@ -5,6 +5,7 @@ import { CompanyProject } from "../entities/CompanyProject";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { generateNextEntityCode } from "../utils/generateCode";
+import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 
 const projectQuantityRepo = AppDataSource.getRepository(ProjectQuantity);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -22,20 +23,28 @@ export const createProjectQuantity = async (
   },
   currentUser: {
     userId: string;
+    companyId: string; // ✅ companyId alındı
   },
-  manager: EntityManager = AppDataSource.manager // ✅ default manager
+  manager: EntityManager = AppDataSource.manager
 ): Promise<ProjectQuantity> => {
   const projectRepo = manager.getRepository(CompanyProject);
   const quantityItemRepo = manager.getRepository(QuantityItem);
   const projectQuantityRepo = manager.getRepository(ProjectQuantity);
   const projectSupplierRepo = manager.getRepository(ProjectSupplier);
+  const projectSubcontractorRepo = manager.getRepository(ProjectSubcontractor);
 
-  const project = await projectRepo.findOneByOrFail({ id: data.projectId });
+  // ✅ Şirket doğrulaması
+  const project = await projectRepo.findOneByOrFail({
+    id: data.projectId,
+    company: { id: currentUser.companyId },
+  });
 
   const quantityItem = await quantityItemRepo.findOneByOrFail({
     code: data.quantityItemCode.trim().toUpperCase(),
+    company: { id: currentUser.companyId }, // ✅ companyId kontrolü
   });
 
+  // ✅ Yeni metraj kaydı oluşturuluyor
   const newRecord = projectQuantityRepo.create({
     project: { id: project.id },
     quantityItem: { id: quantityItem.id },
@@ -43,13 +52,16 @@ export const createProjectQuantity = async (
     unit: data.unit.trim(),
     description: data.description?.trim(),
     category: data.category.trim(),
+    company: { id: currentUser.companyId }, // ✅ companyId atanıyor
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
 
   const savedQuantity = await projectQuantityRepo.save(newRecord);
 
-  const code = await generateNextEntityCode(
+  /*
+  // Eğer supplier tarafı otomatik oluşturulursa bu kısım da açılabilir
+  const supplierCode = await generateNextEntityCode(
     manager,
     project.code,
     data.category,
@@ -58,7 +70,7 @@ export const createProjectQuantity = async (
   );
 
   const autoSupplier = projectSupplierRepo.create({
-    code,
+    code: supplierCode,
     project: { id: data.projectId },
     quantityItem: { id: quantityItem.id },
     projectQuantity: { id: savedQuantity.id },
@@ -68,24 +80,60 @@ export const createProjectQuantity = async (
     category: data.category.trim(),
     description: `${data.category} metraj hesabından gelen`,
     status: `NEW`,
+    company: { id: currentUser.companyId }, // ✅ company set
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
 
   await projectSupplierRepo.save(autoSupplier);
+  */
+
+  // ✅ Otomatik taşeron kaydı oluşturuluyor
+  const subcontractorCode = await generateNextEntityCode(
+    manager,
+    project.code,
+    data.category,
+    "TAS",
+    "ProjectSubcontractor"
+  );
+
+  const autoSubcontractor = projectSubcontractorRepo.create({
+    code: subcontractorCode,
+    project: { id: data.projectId },
+    quantityItem: { id: quantityItem.id },
+    projectQuantity: { id: savedQuantity.id },
+    locked: true,
+    addedFromQuantityYN: "Y",
+    quantity: data.quantity,
+    unit: data.unit.trim(),
+    category: data.category.trim(),
+    description: `${data.category} metraj hesabından gelen`,
+    status: `NEW`,
+    company: { id: currentUser.companyId }, // ✅ companyId atanıyor
+    createdBy: { id: currentUser.userId },
+    updatedBy: { id: currentUser.userId },
+  });
+
+  await projectSubcontractorRepo.save(autoSubcontractor);
 
   return savedQuantity;
 };
 
-export const getProjectQuantities = async (projectId: string) => {
+export const getProjectQuantities = async (
+  projectId: string,
+  currentUser: { userId: string; companyId: string } // ✅ companyId alındı
+) => {
   const items = await projectQuantityRepo.find({
-    where: { project: { id: projectId } },
+    where: {
+      project: { id: projectId },
+      company: { id: currentUser.companyId }, // ✅ sadece kullanıcının şirketine ait kayıtlar
+    },
     relations: ["quantityItem", "createdBy", "updatedBy"],
     order: { createdatetime: "DESC" },
   });
 
   return items.map((item) => ({
-    id:item.id,
+    id: item.id,
     code: item.code ?? null,
     quantityItemCode: item.quantityItem.code,
     quantityItemName: item.quantityItem.name,

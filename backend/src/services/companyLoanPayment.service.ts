@@ -38,7 +38,10 @@ export const createCompanyLoanPayment = async (
   const paymentRepo = manager.getRepository(CompanyLoanPayment);
 
   const loan = await loanRepo.findOneOrFail({
-    where: { code: data.loanCode, company: { id: currentUser.companyId } },
+    where: {
+      code: data.loanCode,
+      company: { id: currentUser.companyId }, // ✅ Şirket kontrolü burada yapılmış
+    },
     relations: ["bank", "project"],
   });
 
@@ -84,6 +87,7 @@ export const createCompanyLoanPayment = async (
     status: data.status ?? "PENDING",
     paymentDate: data.paymentDate,
     financeTransaction: transaction ?? undefined,
+    company: { id: currentUser.companyId }, // ✅ Şirkete ait olarak kaydediliyor
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
@@ -99,11 +103,10 @@ export const getCompanyLoanPayments = async (
 
   const transactions = await repo.find({
     where: {
-      loan: { company: { id: currentUser.companyId } },
+      company: { id: currentUser.companyId }, // ✅ doğrudan companyId ile filtreleme
     },
     relations: [
-      "loan",
-      "loan.company",
+      "loan", // ✔ sadece gerekli ilişkiler kaldı
       "loan.project",
       "loan.bank",
       "financeTransaction",
@@ -124,15 +127,9 @@ export const getCompanyLoanPaymentById = async (
   const payment = await repo.findOne({
     where: {
       id,
-      loan: { company: { id: currentUser.companyId } },
+      company: { id: currentUser.companyId },
     },
-    relations: [
-      "loan",
-      "loan.company",
-      "loan.project",
-      "loan.bank",
-      "financeTransaction",
-    ],
+    relations: ["loan", "loan.project", "loan.bank", "financeTransaction"],
   });
 
   if (!payment) {
@@ -166,10 +163,10 @@ export const updateCompanyLoanPayment = async (
     where: { id },
     relations: [
       "loan",
-      "loan.company",
       "loan.bank",
       "loan.project",
       "financeTransaction",
+      "company"
     ],
   });
   const loan = await loanRepo.findOneOrFail({

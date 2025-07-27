@@ -23,7 +23,9 @@ export const postCompanyEmployeeLeave = async (
   const employeeRepo = manager.getRepository(CompanyEmployee);
   const leaveRepo = manager.getRepository(CompanyEmployeeLeave);
 
-  const employee = await employeeRepo.findOneByOrFail({ id: employeeId });
+  const employee = await employeeRepo.findOneOrFail({
+    where: { id: employeeId, company: { id: currentUser.companyId } },
+  });
   const calculatedLeaveDayCount = calculateLeaveDayCount(
     data.startDate,
     data.endDate
@@ -41,6 +43,7 @@ export const postCompanyEmployeeLeave = async (
 
   const leave = leaveRepo.create({
     employee,
+    company: { id: currentUser.companyId },
     startDate: data.startDate,
     endDate: data.endDate,
     leaveDayCount: calculatedLeaveDayCount,
@@ -69,9 +72,9 @@ export const updateCompanyEmployeeLeave = async (
   const leaveRepo = manager.getRepository(CompanyEmployeeLeave);
   const employeeRepo = manager.getRepository(CompanyEmployee);
 
-  const leave = await leaveRepo.findOne({
-    where: { id },
-    relations: ["employee"],
+  const leave = await leaveRepo.findOneByOrFail({
+    id,
+    company: { id: currentUser.companyId }, // ✅ doğrudan company kontrolü
   });
 
   if (!leave) {
@@ -127,9 +130,8 @@ export const getCompanyEmployeeLeaves = async (
 
   const leaves = await leaveRepo.find({
     where: {
-      employee: { company: { id: currentUser.companyId } },
+      company: { id: currentUser.companyId },
     },
-    relations: ["employee"],
     order: { createdatetime: "DESC" },
   });
 
@@ -145,9 +147,9 @@ export const getCompanyEmployeeLeavesByEmployeeId = async (
 
   const leaves = await leaveRepo.find({
     where: {
-      employee: { id: employeeId, company: { id: currentUser.companyId } },
+      employee: { id: employeeId },
+      company: { id: currentUser.companyId }, // ✅ Doğrudan leave.company üzerinden filtre
     },
-    relations: ["employee"],
     order: { createdatetime: "DESC" },
   });
 
@@ -165,9 +167,10 @@ export const getCompanyEmployeeLeaveById = async (
   const leave = await leaveRepo.findOne({
     where: {
       id: leaveId,
-      employee: { id: employeeId, company: { id: currentUser.companyId } },
+      employee: { id: employeeId },
+      company: { id: currentUser.companyId }, // ✅ doğrudan companyId kontrolü
     },
-    relations: ["employee"],
+    // relations: ["employee"], // ❌ sadece employee bilgisine UI’da ihtiyaç varsa aç
   });
 
   if (!leave) {
@@ -188,9 +191,10 @@ export const deleteCompanyEmployeeLeave = async (
   const leave = await leaveRepo.findOne({
     where: {
       id: leaveId,
-      employee: { id: employeeId, company: { id: currentUser.companyId } },
+      employee: { id: employeeId },
+      company: { id: currentUser.companyId }, // ✅ Daha güvenli ve performanslı kontrol
     },
-    relations: ["employee"],
+    // relations: ["employee"], // ❌ Sadece UI’da employee bilgisi gerekiyorsa eklenmeli
   });
 
   if (!leave) throw new Error("İzin kaydı bulunamadı.");

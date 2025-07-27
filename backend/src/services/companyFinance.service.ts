@@ -55,7 +55,7 @@ export const createCompanyFinanceTransaction = async (
     : null;
 
   const project = data.projectCode
-    ? await projectRepo.findOneByOrFail({ id: data.projectCode })
+    ? await projectRepo.findOneByOrFail({ code: data.projectCode })
     : null;
 
   const results: CompanyFinanceTransaction[] = [];
@@ -457,7 +457,7 @@ export const createLoanTransactionFromPaymentData = async (
     targetName: payment.loanName,
     transactionDate: payment.transactionDate,
     method: "BANK",
-    category: "Kredi Ödeme",
+    category: "KREDI",
     source: `${payment.paymentCode} Ödemesi`,
     invoiceYN: "Y",
     loanCode: payment.paymentCode,
@@ -475,6 +475,62 @@ export const createLoanTransactionFromPaymentData = async (
     payment.bankId,
     null,
     payment.amount,
+    manager
+  );
+
+  return saved;
+};
+
+export const createBarterTransactionFromCashDetailData = async (
+  cashDetail: {
+    barterItemCode: string;
+    barterName: string;
+    amount: number;
+    currency: string;
+    transactionDate: Date;
+    fromAccountId: string;
+    direction: "IN" | "OUT";
+    projectId?: string;
+    description?: string;
+  },
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+): Promise<CompanyFinanceTransaction> => {
+  const repo = manager.getRepository(CompanyFinanceTransaction);
+
+  const type = cashDetail.direction === "OUT" ? "PAYMENT" : "COLLECTION";
+  const code = await generateFinanceTransactionCode(
+    type,
+    cashDetail.transactionDate,
+    manager
+  );
+
+  const transaction = repo.create({
+    type,
+    code,
+    amount: cashDetail.amount,
+    currency: cashDetail.currency,
+    fromAccount: { id: cashDetail.fromAccountId },
+    targetName: cashDetail.barterName,
+    transactionDate: cashDetail.transactionDate,
+    method: "BANK",
+    category: "BARTER",
+    source: `${cashDetail.barterItemCode} Takas`,
+    //barterCode: cashDetail.barterItemCode,
+    description: cashDetail.description,
+    company: { id: currentUser.companyId },
+    project: cashDetail.projectId ? { id: cashDetail.projectId } : null,
+    createdBy: { id: currentUser.userId },
+    updatedBy: { id: currentUser.userId },
+  });
+
+  const saved = await repo.save(transaction);
+
+  await updateCompanyBalanceAfterTransaction(
+    type,
+    cashDetail.fromAccountId,
+    null,
+    cashDetail.amount,
     manager
   );
 

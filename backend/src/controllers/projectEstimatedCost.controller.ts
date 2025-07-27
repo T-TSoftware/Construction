@@ -14,6 +14,7 @@ export const postEstimatedCostHandler = async (req: Request, res: Response) => {
     const { name, category, description, unit, unitPrice, quantity } = req.body;
 
     const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
 
     const newEstimatedCost = await createEstimatedCost(
       {
@@ -27,6 +28,7 @@ export const postEstimatedCostHandler = async (req: Request, res: Response) => {
       },
       {
         userId,
+        companyId,
       }
     );
 
@@ -43,8 +45,13 @@ export const getEstimatedCostsByProjectHandler = async (
 ) => {
   try {
     const { projectId } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
 
-    const estimatedCosts = await getEstimatedCostsByProject(projectId);
+    const estimatedCosts = await getEstimatedCostsByProject(projectId, {
+      userId,
+      companyId,
+    });
 
     res.status(200).json(estimatedCosts);
   } catch (error) {

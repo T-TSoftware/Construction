@@ -11,6 +11,7 @@ import { CompanyProject } from "./CompanyProject";
 import { QuantityItem } from "./QuantityItem";
 import { User } from "./User";
 import { ProjectQuantity } from "./ProjectQuantity";
+import { Company } from "./Company";
 
 @Entity({ name: "projectsuppliers" })
 export class ProjectSupplier {
@@ -19,6 +20,10 @@ export class ProjectSupplier {
 
   @Column({ unique: true })
   code!: string;
+
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
 
   @ManyToOne(() => CompanyProject)
   @JoinColumn({ name: "projectid" }) // camelCase → FK
@@ -30,9 +35,9 @@ export class ProjectSupplier {
 
   @ManyToOne(() => ProjectQuantity, { nullable: true })
   @JoinColumn({ name: "projectquantityid" })
-  projectQuantity?: ProjectQuantity;
+  projectQuantity?: ProjectQuantity | null;
 
-  @Column({ name: "addedfromquantityyn", type: "varchar", default: 'N' })
+  @Column({ name: "addedfromquantityyn", type: "varchar", default: "N" })
   addedFromQuantityYN!: string;
 
   @Column({ name: "companyname", nullable: true }) // camelCase → fix

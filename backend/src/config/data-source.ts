@@ -23,6 +23,9 @@ import { CompanyLoanPayment } from "../entities/CompanyLoanPayment";
 import { CompanyEmployee } from "../entities/CompanyEmployee";
 import { CompanyEmployeeLeave } from "../entities/CompanyEmployeeLeave";
 import { CompanyEmployeeProject } from "../entities/CompanyEmployeeProject";
+import { CompanyBarterAgreement } from "../entities/CompanyBarterAgreement";
+import { CompanyBarterAgreementItem } from "../entities/CompanyBarterAgreementItem";
+import { CompanyBarterCashDetail } from "../entities/CompanyBarterItemCashDetail";
 
 //dotenv.config();
 const envFile = process.env.NODE_ENV === "production" ? ".env.prod" : ".env";
@@ -53,6 +56,9 @@ export const AppDataSource = new DataSource({
     CompanyEmployee,
     CompanyEmployeeLeave,
     CompanyEmployeeProject,
+    CompanyBarterAgreement,
+    CompanyBarterAgreementItem,
+    CompanyBarterCashDetail,
 
     /*-------------------------*/
 
@@ -82,7 +88,8 @@ export const AppDataSource = new DataSource({
   //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
   subscribers: [],
 });
-export default AppDataSource;
+//export default AppDataSource;
+
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/EmpWProject --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/CashDetailsAdjusted --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

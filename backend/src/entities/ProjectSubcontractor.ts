@@ -8,7 +8,10 @@ import {
   JoinColumn,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
+import { ProjectQuantity } from "./ProjectQuantity";
+import { QuantityItem } from "../entities/QuantityItem";
 import { User } from "./User";
+import { Company } from "./Company";
 
 @Entity({ name: "projectsubcontractors" })
 export class ProjectSubcontractor {
@@ -18,11 +21,29 @@ export class ProjectSubcontractor {
   @Column({ unique: true })
   code!: string;
 
+  @ManyToOne(() => Company, { nullable: false })
+  @JoinColumn({ name: "companyid" })
+  company!: Company;
+
   @ManyToOne(() => CompanyProject)
-  @JoinColumn({ name: "projectid" }) // ✅ all lower
+  @JoinColumn({ name: "projectid" })
   project!: CompanyProject;
 
-  @Column({ name: "companyname", nullable: true }) // ✅ all lower
+  @ManyToOne(() => ProjectQuantity, { nullable: true })
+  @JoinColumn({ name: "projectquantityid" })
+  projectQuantity?: ProjectQuantity;
+
+  @ManyToOne(() => QuantityItem)
+  @JoinColumn({ name: "quantityitemid" }) // camelCase → FK
+  quantityItem!: QuantityItem;
+
+  @Column({ name: "addedfromquantityyn", type: "varchar", default: "N" })
+  addedFromQuantityYN!: string;
+
+  @Column({ default: false })
+  locked!: boolean;
+
+  @Column({ name: "companyname", nullable: true })
   companyName?: string;
 
   @Column()
@@ -34,19 +55,19 @@ export class ProjectSubcontractor {
   @Column()
   unit!: string;
 
-  @Column({ name: "unitprice", type: "numeric", nullable: true }) // ✅ all lower
+  @Column({ name: "unitprice", type: "numeric", nullable: true })
   unitPrice?: number;
 
   @Column({ type: "numeric", nullable: true })
   quantity?: number;
 
-  @Column({ name: "contractamount", type: "numeric", nullable: true }) // ✅ all lower
+  @Column({ name: "contractamount", type: "numeric", nullable: true })
   contractAmount?: number;
 
-  @Column({ name: "paidamount", type: "numeric", nullable: true }) // ✅ all lower
+  @Column({ name: "paidamount", type: "numeric", nullable: true })
   paidAmount?: number;
 
-  @Column({ name: "remainingamount", type: "numeric", nullable: true }) // ✅ all lower
+  @Column({ name: "remainingamount", type: "numeric", nullable: true })
   remainingAmount?: number | null;
 
   @Column({ default: "pending", nullable: true })
@@ -67,10 +88,10 @@ export class ProjectSubcontractor {
   updatedatetime!: Date;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "createdby" }) // ✅ all lower
+  @JoinColumn({ name: "createdby" })
   createdBy!: User;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "updatedby" }) // ✅ all lower
+  @JoinColumn({ name: "updatedby" })
   updatedBy!: User;
 }
