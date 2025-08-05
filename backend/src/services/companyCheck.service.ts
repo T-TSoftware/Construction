@@ -83,6 +83,9 @@ export const createCompanyCheck = async (
     where: { id: savedCheck.id },
     relations: {
       project: true,
+      bank: true,
+      createdBy: true,
+      updatedBy: true,
     },
   });
 };
@@ -280,7 +283,7 @@ export const getCompanyChecks = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["bank", "project", "transaction"],
+    relations: ["bank", "project", "transaction", "createdBy", "updatedBy"],
     order: { transactionDate: "DESC" },
   });
 
@@ -299,7 +302,7 @@ export const getCompanyCheckById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["bank", "project", "transaction"],
+    relations: ["bank", "project", "transaction", "createdBy", "updatedBy"],
   });
 
   if (!check) {
