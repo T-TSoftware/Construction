@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  postCompanyChecksHandler,
+  postCompanyCheckHandler,
   patchCompanyCheckHandler,
   getCompanyChecksHandler,
   getCompanyCheckByIdHandler,
@@ -22,8 +22,8 @@ router.use(authMiddleware);
 // 🔐 Only superadmin can post – validation + business logic
 router.post(
   "/",
-  validateArrayBody(checkSchema("create")),
-  postCompanyChecksHandler
+  //validateArrayBody(checkSchema("create")),
+  postCompanyCheckHandler
 );
 router.patch(
   "/:code",
@@ -33,6 +33,6 @@ router.patch(
 
 router.get("/", getCompanyChecksHandler);
 
-router.get("/:id", getCompanyCheckByIdHandler)
+router.get("/:id", getCompanyCheckByIdHandler);
 
 export default router;

@@ -18,7 +18,10 @@ import { updateLoanPaymentStatus } from "./companyLoanPayment.service";
 import { updateCheckPaymentStatus } from "./companyCheck.service";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
-import { updateProjectSubcontractorStatus } from "./projectSubcontractor.service";
+import {
+  updateProjectSubcontractorStatus,
+  updateProjectSubcontractorStatusNew,
+} from "./projectSubcontractor.service";
 import { updateProjectSupplierStatus } from "./projectSupplier.service";
 import { updateBarterItemPaymentStatus } from "./companyBarterAgreementItem.service";
 import { CompanyBarterAgreementItem } from "../entities/CompanyBarterAgreementItem";
@@ -341,4 +344,146 @@ export const createCompanyFinanceTransaction = async (
 
   const saved = await transactionRepo.save(transaction);
   return saved;
+};
+
+export const updateCompanyFinanceTransaction = async (
+  id: string,
+  data: {
+    type?: "PAYMENT" | "COLLECTION" | "TRANSFER";
+    amount?: number;
+    currency?: string;
+    fromAccountCode?: string;
+    toAccountCode?: string;
+    targetType?: string;
+    targetId?: string;
+    targetName?: string;
+    transactionDate?: Date;
+    method?: string;
+    category?: string;
+    invoiceYN?: "Y" | "N";
+    invoiceCode?: string;
+    referenceCode?: string;
+    description?: string;
+    projectCode?: string;
+  },
+  currentUser: {
+    userId: string;
+    companyId: string;
+  },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
+  const balanceRepo = manager.getRepository(CompanyBalance);
+  const projectRepo = manager.getRepository(CompanyProject);
+  const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+
+  
+
+  const existing = await transactionRepo.findOne({
+    where: { id, company: { id: currentUser.companyId } },
+    relations: [
+      "fromAccount",
+      "toAccount",
+      "company",
+      "project"
+    ],
+  });
+
+  console.log(existing?.id);
+
+  if (!existing) {
+    throw new Error("Finansal işlem bulunamadı.");
+  }
+
+  // 🔁 Eski bakiyeyi geri al
+  await updateCompanyBalanceAfterTransaction(
+    existing.type,
+    existing.fromAccount?.id ?? null,
+    existing.toAccount?.id ?? null,
+    existing.amount,
+    manager,
+    true
+  );
+
+  // 🔁 Eski subcontractor etkisini geri al
+  if (existing.category === "SUBCONTRACTOR" && existing.referenceCode) {
+    await updateProjectSubcontractorStatusNew(
+      existing.referenceCode,
+      existing.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+
+  // 🔁 Gerekli ilişkileri getir
+  const newFromAccount =
+    data.fromAccountCode && data.fromAccountCode !== existing.fromAccount?.code
+      ? await balanceRepo.findOneByOrFail({ code: data.fromAccountCode })
+      : existing.fromAccount;
+
+  const newToAccount =
+    data.toAccountCode && data.toAccountCode !== existing.toAccount?.code
+      ? await balanceRepo.findOneByOrFail({ code: data.toAccountCode })
+      : existing.toAccount;
+
+  const newProject =
+    data.projectCode && data.projectCode !== existing.project?.id
+      ? await projectRepo.findOneByOrFail({ code: data.projectCode })
+      : existing.project;
+
+  // 🛠️ Alanları güncelle
+  existing.type = data.type ?? existing.type;
+  existing.amount = data.amount ?? existing.amount;
+  existing.currency = data.currency ?? existing.currency;
+  existing.fromAccount = newFromAccount;
+  existing.toAccount = newToAccount;
+  existing.targetType = data.targetType ?? existing.targetType;
+  existing.targetId = data.targetId ?? existing.targetId;
+  existing.targetName = data.targetName ?? existing.targetName;
+  existing.transactionDate = data.transactionDate ?? existing.transactionDate;
+  existing.method = data.method ?? existing.method;
+  existing.category = data.category ?? existing.category;
+  existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
+  existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
+  existing.referenceCode = data.referenceCode ?? existing.referenceCode;
+  existing.description = data.description ?? existing.description;
+  existing.project = newProject;
+  existing.updatedBy = { id: currentUser.userId } as any;
+  existing.updatedatetime = new Date();
+
+  // 💾 Güncelleme
+  const updated = await transactionRepo.save(existing);
+  console.log(updated)
+
+  // 🔄 Yeni subcontractor etkisini uygula
+  /*if (updated.category === "SUBCONTRACTOR" && updated.referenceCode) {
+    console.log("enter category statement")
+    const subcontractor = await subcontractorRepo.findOneByOrFail({
+      code: updated.referenceCode,
+    });
+
+    updated.subcontractor = { id: subcontractor.id } as ProjectSubcontractor;
+
+    await updateProjectSubcontractorStatusNew(
+      updated.referenceCode,
+      updated.amount,
+      currentUser,
+      manager,
+      false
+    );
+
+    //await transactionRepo.save(updated); // yeniden kaydet
+  }*/
+
+  // 🔁 Yeni bakiyeyi uygula
+  await updateCompanyBalanceAfterTransaction(
+    updated.type,
+    updated.fromAccount?.id ?? null,
+    updated.toAccount?.id ?? null,
+    updated.amount,
+    manager
+  );
+
+  return updated;
 };

@@ -7,8 +7,7 @@ import {
   getCompanyCheckById,
 } from "../services/companyCheck.service";
 
-export const postCompanyChecksHandler = async (req: Request, res: Response) => {
-  // 🔐 Yalnızca superadmin işlem yapabilir
+export const postCompanyCheckHandler = async (req: Request, res: Response) => {
   if (req.user?.role !== "superadmin") {
     res
       .status(403)
@@ -24,10 +23,22 @@ export const postCompanyChecksHandler = async (req: Request, res: Response) => {
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
-    const results = [];
+    const {
+      checkNo,
+      checkDate,
+      transactionDate,
+      firm,
+      amount,
+      bankCode,
+      type,
+      projectId,
+      description,
+      status,
+      dueDate,
+    } = req.body;
 
-    for (const body of req.body) {
-      const {
+    const newCheck = await createCompanyCheck(
+      {
         checkNo,
         checkDate,
         transactionDate,
@@ -35,42 +46,22 @@ export const postCompanyChecksHandler = async (req: Request, res: Response) => {
         amount,
         bankCode,
         type,
-        //transactionId,
         projectId,
         description,
         status,
         dueDate,
-      } = body;
-
-      const newCheck = await createCompanyCheck(
-        {
-          checkNo,
-          checkDate,
-          transactionDate,
-          firm,
-          amount,
-          bankCode,
-          type,
-          //transactionId,
-          projectId,
-          description,
-          status,
-          dueDate,
-        },
-        { userId, companyId },
-        queryRunner.manager
-      );
-
-      results.push(newCheck);
-    }
+      },
+      { userId, companyId },
+      queryRunner.manager
+    );
 
     await queryRunner.commitTransaction();
-    res.status(201).json(results);
+    res.status(201).json(newCheck);
   } catch (error: any) {
     await queryRunner.rollbackTransaction();
-    console.error("❌ POST company checks error:", error);
+    console.error("❌ POST company check error:", error);
     res.status(500).json({
-      errorMessage: error.message || "Çek kayıtları oluşturulamadı.",
+      errorMessage: error.message || "Çek kaydı oluşturulamadı.",
     });
   } finally {
     await queryRunner.release();

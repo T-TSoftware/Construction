@@ -2,12 +2,15 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import {
   //createCompanyFinanceTransaction,
-  updateCompanyFinanceTransaction,
+  //updateCompanyFinanceTransaction,
   getCompanyFinanceTransactions,
   getCompanyFinanceTransactionById,
   deleteCompanyFinanceTransactionById,
 } from "../services/companyFinance.service";
-import { createCompanyFinanceTransaction } from "../services/companyFinanceTransaction.service";
+import {
+  createCompanyFinanceTransaction,
+  updateCompanyFinanceTransaction,
+} from "../services/companyFinanceTransaction.service";
 
 export const postCompanyFinanceTransactionHandler = async (
   req: Request,
@@ -110,15 +113,15 @@ export const patchCompanyFinanceTransactionHandler = async (
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
-    const code = req.params.code;
+    const id = req.params.id;
     const body = req.body;
     console.log(req.body);
-    if (!code || typeof code !== "string") {
+    if (!id || typeof id !== "string") {
       throw new Error("Geçerli bir 'code' parametresi gereklidir.");
     }
 
     const updatedTransaction = await updateCompanyFinanceTransaction(
-      code,
+      id,
       body,
       { userId, companyId },
       queryRunner.manager
@@ -128,6 +131,7 @@ export const patchCompanyFinanceTransactionHandler = async (
     res.status(200).json(updatedTransaction);
     return;
   } catch (error: any) {
+    console.log("hataaaa")
     await queryRunner.rollbackTransaction();
     console.error("❌ PATCH finance transaction error:", error);
     res.status(400).json({
@@ -135,6 +139,7 @@ export const patchCompanyFinanceTransactionHandler = async (
     });
     return;
   } finally {
+    console.log("finally")
     await queryRunner.release();
   }
 };

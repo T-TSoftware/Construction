@@ -27,7 +27,7 @@ router.post(
 );
 
 router.patch(
-  "/:code",
+  "/:id",
   /*validateFinanceArrayBody,*/ patchCompanyFinanceTransactionHandler
 );
 

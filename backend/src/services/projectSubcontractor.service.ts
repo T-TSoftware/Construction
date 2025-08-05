@@ -264,3 +264,47 @@ export const updateProjectSubcontractorStatus = async (
 
   return await subcontractorRepo.save(subcontractor);
 };
+
+export const updateProjectSubcontractorStatusNew = async (
+  subcontractorCode: string,
+  amount: number,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager,
+  isReverse = false
+) => {
+  const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+
+  const subcontractor = await subcontractorRepo.findOneOrFail({
+    where: {
+      code: subcontractorCode,
+      company: { id: currentUser.companyId },
+    },
+  });
+
+  const factor = isReverse ? -1 : 1;
+
+  // ✅ increment/decrement ile ödeme durumu güncelle
+  await subcontractorRepo.increment(
+    { id: subcontractor.id },
+    "paidAmount",
+    factor * amount
+  );
+
+  // Mevcut güncel subcontractor'ı yeniden al (paidAmount güncellendi)
+  const updatedSubcontractor = await subcontractorRepo.findOneOrFail({
+    where: { id: subcontractor.id },
+  });
+
+  // ✅ remainingAmount ve status hesapla
+  const remainingAmount = Number(updatedSubcontractor.contractAmount) - Number(updatedSubcontractor.paidAmount);
+  const status = remainingAmount <= 0 ? "PAID" : "PARTIAL";
+
+  // Güncelleme
+  updatedSubcontractor.remainingAmount = remainingAmount;
+  updatedSubcontractor.status = status;
+  updatedSubcontractor.updatedBy = { id: currentUser.userId } as User;
+  updatedSubcontractor.updatedatetime = new Date();
+
+  // Kaydet
+  return await subcontractorRepo.save(updatedSubcontractor);
+};
