@@ -377,16 +377,9 @@ export const updateCompanyFinanceTransaction = async (
   const projectRepo = manager.getRepository(CompanyProject);
   const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
 
-  
-
   const existing = await transactionRepo.findOne({
     where: { id, company: { id: currentUser.companyId } },
-    relations: [
-      "fromAccount",
-      "toAccount",
-      "company",
-      "project"
-    ],
+    relations: ["fromAccount", "toAccount", "company", "project"],
   });
 
   console.log(existing?.id);
@@ -432,6 +425,9 @@ export const updateCompanyFinanceTransaction = async (
       ? await projectRepo.findOneByOrFail({ code: data.projectCode })
       : existing.project;
 
+  const newAmount = data.amount && data.amount !== existing.amount
+ 
+
   // 🛠️ Alanları güncelle
   existing.type = data.type ?? existing.type;
   existing.amount = data.amount ?? existing.amount;
@@ -454,7 +450,7 @@ export const updateCompanyFinanceTransaction = async (
 
   // 💾 Güncelleme
   const updated = await transactionRepo.save(existing);
-  console.log(updated)
+  console.log(updated.amount, " : ", data.amount, " : ", existing.amount);
 
   // 🔄 Yeni subcontractor etkisini uygula
   /*if (updated.category === "SUBCONTRACTOR" && updated.referenceCode) {

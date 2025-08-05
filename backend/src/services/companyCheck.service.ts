@@ -21,7 +21,7 @@ export const createCompanyCheck = async (
     projectId?: string;
     description?: string;
     status?: string; // "PAID" | "COLLECTED" vs.
-    dueDate:Date;
+    dueDate: Date;
   },
   currentUser: {
     userId: string;
@@ -61,7 +61,7 @@ export const createCompanyCheck = async (
     code: data.checkNo,
     checkNo: data.checkNo,
     checkDate: data.checkDate,
-    transactionDate: data.dueDate,//data.transactionDate,
+    transactionDate: data.dueDate, //data.transactionDate,
     firm: data.firm,
     amount: data.amount,
     bank: { id: bank.id },
@@ -70,14 +70,21 @@ export const createCompanyCheck = async (
     project: data.projectId ? { id: data.projectId } : null,
     description: data.description,
     status: "PENDING", //data.status,
-    dueDate:data.dueDate,
+    dueDate: data.dueDate,
     remainingAmount: data.amount,
     company: { id: currentUser.companyId },
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
 
-  return await repo.save(check);
+  const savedCheck = await repo.save(check);
+
+  return await repo.findOneOrFail({
+    where: { id: savedCheck.id },
+    relations: {
+      project: true,
+    },
+  });
 };
 
 export const updateCompanyCheck = async (
