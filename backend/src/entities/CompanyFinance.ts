@@ -16,6 +16,9 @@ import { Company } from "./Company";
 import { CompanyCheck } from "./CompanyCheck";
 import { CompanyOrder } from "./CompanyOrder";
 import { CompanyLoanPayment } from "./CompanyLoanPayment";
+import { ProjectSubcontractor } from "./ProjectSubcontractor";
+import { ProjectSupplier } from "./ProjectSupplier";
+import { CompanyBarterAgreementItem } from "./CompanyBarterAgreementItem";
 
 @Entity({ name: "companyfinancetransactions" })
 export class CompanyFinanceTransaction {
@@ -36,21 +39,18 @@ export class CompanyFinanceTransaction {
   amount!: number;
 
   @Column()
-  currency!: string; // Örn: TRY, USD, EUR
+  currency!: string;
 
   @ManyToOne(() => CompanyBalance)
   @JoinColumn({ name: "fromaccountid" })
-  fromAccount!: CompanyBalance; // Akbank || Kasa || YKB
+  fromAccount!: CompanyBalance;
 
   @ManyToOne(() => CompanyBalance, { nullable: true })
   @JoinColumn({ name: "toaccountid" })
   toAccount?: CompanyBalance;
 
   @Column({ name: "targettype", nullable: true })
-  targetType!: string; //"SUPPLIER" | "CUSTOMER" | "BANK" | "COMPANY" | "OTHER";
-
-  @Column({ name: "source", nullable: true })
-  source!: string;
+  targetType!: string;
 
   @Column({ name: "targetid", nullable: true })
   targetId?: string;
@@ -61,11 +61,11 @@ export class CompanyFinanceTransaction {
   @Column({ name: "transactiondate", type: "timestamp", nullable: false })
   transactionDate!: Date;
 
-  @Column({ name: "method" })
-  method!: string; //"BANK" | "CASH" | "CHEQUE" | "CARD";
+  @Column()
+  method!: string;
 
-  @Column({ name: "category" })
-  category!: string; // Check payment | Order Revenue
+  @Column()
+  category!: string;
 
   @Column({ name: "invoiceyn", type: "varchar", default: "N" })
   invoiceYN!: string;
@@ -73,31 +73,49 @@ export class CompanyFinanceTransaction {
   @Column({ name: "invoicecode", nullable: true })
   invoiceCode?: string;
 
-  @Column({ name: "checkcode", nullable: true })
-  checkCode?: string;
-
-  @Column({ name: "checkstatus", nullable: true })
-  checkstatus?: string;
-
-  @Column({ name: "loancode", nullable: true })
-  loanCode?: string;
-
-  @Column({ name: "loanstatus", nullable: true })
-  loanStatus?: string;
-
   @Column({ type: "text", nullable: true })
   description?: string;
+
+  @Column({ name: "source", nullable: true })
+  source!: string;
+
+  @Column({ name: "referencecode", nullable: true })
+  referenceCode?: string; // Hangi entity olursa olsun code’u burada tutulur
 
   @ManyToOne(() => CompanyProject, { nullable: true })
   @JoinColumn({ name: "projectid" })
   project?: CompanyProject | null;
+
+  @ManyToOne(() => CompanyCheck, { nullable: true })
+  @JoinColumn({ name: "checkid" })
+  check?: CompanyCheck | null;
+
+  @ManyToOne(() => CompanyOrder, { nullable: true })
+  @JoinColumn({ name: "orderid" })
+  order?: CompanyOrder | null;
+
+  @ManyToOne(() => CompanyLoanPayment, { nullable: true })
+  @JoinColumn({ name: "loanpaymentid" })
+  loanPayment?: CompanyLoanPayment | null;
+
+  @ManyToOne(() => ProjectSubcontractor, { nullable: true })
+  @JoinColumn({ name: "subcontractorid" })
+  subcontractor?: ProjectSubcontractor | null;
+
+  @ManyToOne(() => ProjectSupplier, { nullable: true })
+  @JoinColumn({ name: "supplierid" })
+  supplier?: ProjectSupplier | null;
+
+  @ManyToOne(() => CompanyBarterAgreementItem, { nullable: true })
+  @JoinColumn({ name: "barteritemid" })
+  barterItem?: CompanyBarterAgreementItem | null;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: "createdby" })
   createdBy!: User;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "updatedby" }) // camelCase → fix
+  @JoinColumn({ name: "updatedby" })
   updatedBy!: User;
 
   @CreateDateColumn({
@@ -113,16 +131,4 @@ export class CompanyFinanceTransaction {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedatetime!: Date;
-
-  @OneToMany(() => CompanyCheck, (check) => check.checkNo)
-  checks!: CompanyCheck[];
-
-  @ManyToOne(() => CompanyOrder, { nullable: true })
-  @JoinColumn({ name: "orderid" })
-  order?: CompanyOrder | null;
-
-  @OneToOne(() => CompanyLoanPayment, (payment) => payment.financeTransaction, {
-    nullable: true,
-  })
-  loanPayment?: CompanyLoanPayment | null; // JoinColumn YOK!
 }

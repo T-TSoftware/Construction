@@ -15,11 +15,15 @@ import { ProjectSupplier } from "./ProjectSupplier";
 import { Company } from "./Company";
 import { User } from "./User";
 import { CompanyBarterCashDetail } from "./CompanyBarterItemCashDetail";
+import { CompanyFinanceTransaction } from "./CompanyFinance";
 
 @Entity({ name: "companybarteragreementitems" })
 export class CompanyBarterAgreementItem {
   @PrimaryGeneratedColumn("uuid")
   id!: string; // 🔑 Kalem ID’si
+
+  @Column({ unique: true }) //
+  code!: string; // 📄 Anlaşma kodu (örnek: BRT-2023-001)
 
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: "companyid" })
@@ -33,7 +37,7 @@ export class CompanyBarterAgreementItem {
   direction!: "OUT" | "IN";
   // 🔁 Kalemin yönü: Biz mi veriyoruz (GIVING), biz mi alıyoruz (RECEIVING)
 
-  @Column({name:"itemtype"})
+  @Column({ name: "itemtype" })
   itemType!: "STOCK" | "SERVICE" | "ASSET" | "CASH" | "CHECK";
   // 📦 Kalem tipi:
   // STOCK → daire, malzeme
@@ -47,6 +51,22 @@ export class CompanyBarterAgreementItem {
 
   @Column({ name: "agreedvalue", type: "numeric" })
   agreedValue!: number; // 💰 Bu kalem için anlaşılan parasal değer
+
+  @Column("numeric", { name: "processedamount", default: 0, nullable: true })
+  processedAmount?: number;
+
+  @Column("numeric", { name: "remainingamount", nullable: true })
+  remainingAmount?: number | null;
+
+  @Column({ default: "PENDING" }) // default: "PENDING"
+  status!:
+    | "PENDING"
+    | "ACTIVE"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "PAID"
+    | "COLLECTED"
+    | "PARTIAL";
 
   @ManyToOne(() => CompanyStock, { nullable: true })
   @JoinColumn({ name: "relatedstockid" })
@@ -90,4 +110,10 @@ export class CompanyBarterAgreementItem {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedatetime!: Date;
+
+  @OneToMany(
+    () => CompanyFinanceTransaction,
+    (financeTransaction) => financeTransaction.barterItem
+  )
+  transactions!: CompanyFinanceTransaction[];
 }

@@ -35,7 +35,7 @@ export class CompanyBarterCashDetail {
 
   @ManyToOne(() => CompanyFinanceTransaction, { nullable: true })
   @JoinColumn({ name: "financetransactionid" })
-  financeTransaction?: CompanyFinanceTransaction;
+  financeTransaction?: CompanyFinanceTransaction | null;
 
   @Column({ type: "numeric" })
   amount!: number;

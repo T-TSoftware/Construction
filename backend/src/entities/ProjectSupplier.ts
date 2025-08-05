@@ -6,12 +6,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  OneToMany,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
 import { QuantityItem } from "./QuantityItem";
 import { User } from "./User";
 import { ProjectQuantity } from "./ProjectQuantity";
 import { Company } from "./Company";
+import { CompanyFinanceTransaction } from "./CompanyFinance";
 
 @Entity({ name: "projectsuppliers" })
 export class ProjectSupplier {
@@ -91,4 +93,10 @@ export class ProjectSupplier {
   @ManyToOne(() => User)
   @JoinColumn({ name: "updatedby" }) // camelCase → fix
   updatedBy!: User;
+
+  @OneToMany(
+    () => CompanyFinanceTransaction,
+    (financeTransaction) => financeTransaction.supplier
+  )
+  transactions!: CompanyFinanceTransaction[];
 }

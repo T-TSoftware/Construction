@@ -4,6 +4,7 @@ import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { CompanyProject } from "../entities/CompanyProject";
 import { generateNextEntityCode } from "../utils/generateCode";
 import { ProjectEstimatedCost } from "../entities/ProjectEstimatedCost";
+import { User } from "../entities/User";
 
 const subcontractorRepo = AppDataSource.getRepository(ProjectSubcontractor);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -139,12 +140,7 @@ export const updateProjectSubcontractor = async (
   if (isLocked) {
     subcontractor.unitPrice = data.unitPrice ?? subcontractor.unitPrice;
     subcontractor.status = data.status ?? subcontractor.status;
-  } else {
-    // 🔧 Güncellenebilir alanlar (locked değilse)
     subcontractor.companyName = data.companyName ?? subcontractor.companyName;
-    subcontractor.unit = data.unit ?? subcontractor.unit;
-    subcontractor.unitPrice = data.unitPrice ?? subcontractor.unitPrice;
-    subcontractor.quantity = data.quantity ?? subcontractor.quantity;
 
     if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
       subcontractor.contractAmount = data.contractAmount!;
@@ -154,10 +150,34 @@ export const updateProjectSubcontractor = async (
       subcontractor.paidAmount = data.paidAmount!;
     }
 
+    if (
+      subcontractor.contractAmount !== undefined &&
+      subcontractor.paidAmount !== undefined
+    ) {
+      subcontractor.remainingAmount =
+        Number(subcontractor.contractAmount) - Number(subcontractor.paidAmount);
+    } else {
+      subcontractor.remainingAmount = null;
+    }
+  } else {
+    // 🔧 Güncellenebilir alanlar (locked değilse)
+    subcontractor.unit = data.unit ?? subcontractor.unit;
+    subcontractor.unitPrice = data.unitPrice ?? subcontractor.unitPrice;
+    subcontractor.quantity = data.quantity ?? subcontractor.quantity;
+    subcontractor.companyName = data.companyName ?? subcontractor.companyName;
     subcontractor.description = data.description ?? subcontractor.description;
     subcontractor.status = data.status ?? subcontractor.status;
+    subcontractor.status = data.status ?? subcontractor.status;
+    subcontractor.companyName = data.companyName ?? subcontractor.companyName;
 
-    // 🔁 Kalan tutar hesaplama
+    if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
+      subcontractor.contractAmount = data.contractAmount!;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(data, "paidAmount")) {
+      subcontractor.paidAmount = data.paidAmount!;
+    }
+
     if (
       subcontractor.contractAmount !== undefined &&
       subcontractor.paidAmount !== undefined
@@ -218,4 +238,29 @@ export const updateProjectSubcontractor = async (
   }
 
   return saved;
+};
+
+export const updateProjectSubcontractorStatus = async (
+  subcontractorCode: string,
+  amountReceived: number,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager
+) => {
+  const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+
+  const subcontractor = await subcontractorRepo.findOneOrFail({
+    where: {
+      code: subcontractorCode,
+      company: { id: currentUser.companyId },
+    },
+  });
+
+  subcontractor.paidAmount = Number(subcontractor.paidAmount ?? 0) + amountReceived;
+  subcontractor.remainingAmount = Number(subcontractor.contractAmount) - subcontractor.paidAmount;
+  subcontractor.status = subcontractor.remainingAmount <= 0 ? "PAID" : "PARTIAL";
+  //order.updatedatetime = new Date();
+  subcontractor.updatedBy = { id: currentUser.userId } as User;
+  
+
+  return await subcontractorRepo.save(subcontractor);
 };

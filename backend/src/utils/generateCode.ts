@@ -7,6 +7,7 @@ import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { CompanyBarterAgreement } from "../entities/CompanyBarterAgreement";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { CompanyOrder } from "../entities/CompanyOrder";
+import { CompanyBarterAgreementItem } from "../entities/CompanyBarterAgreementItem";
 
 export function generateNextCompanyCode(
   latestCode: string | null,
@@ -251,4 +252,27 @@ export const generateNextOrderCode = async ({
   const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
 
   return `${prefix}-${nextNumber}`;
+};
+
+export const generateNextBarterAgreementItemCode = async (
+  manager: EntityManager,
+  barterAgreementCode: string,
+  itemType: "STOCK" | "SERVICE" | "ASSET" | "CASH" | "CHECK"
+): Promise<string> => {
+  const repo = manager.getRepository(CompanyBarterAgreementItem);
+
+  const itemTypePrefix = itemType.slice(0, 3).toUpperCase(); // e.g. "SER", "CAS"
+  const prefix = `${barterAgreementCode}-${itemTypePrefix}`;
+
+  const latest = await repo
+    .createQueryBuilder("item")
+    .where("item.code LIKE :prefix", { prefix: `${prefix}%` })
+    .orderBy("item.code", "DESC")
+    .getOne();
+
+  const nextNumber = latest
+    ? (parseInt(latest.code.replace(prefix, "")) + 1).toString().padStart(3, "0")
+    : "001";
+
+  return `${prefix}${nextNumber}`;
 };

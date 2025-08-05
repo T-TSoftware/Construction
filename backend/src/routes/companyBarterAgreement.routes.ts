@@ -31,6 +31,9 @@ router.get("/:id", getCompanyBarterAgreementByIdHandler);
 
 router.get("/", getAllCompanyBarterAgreementsHandler);
 
-router.get("/:projectId", getAllCompanyBarterAgreementsByProjectIdHandler);
+router.get(
+  "/project/:projectId",
+  getAllCompanyBarterAgreementsByProjectIdHandler
+);
 
 export default router;

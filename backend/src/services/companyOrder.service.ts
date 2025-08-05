@@ -5,6 +5,7 @@ import { CompanyProject } from "../entities/CompanyProject";
 import { EntityManager } from "typeorm";
 import { generateNextOrderCode } from "../utils/generateCode";
 import { decreaseStockQuantity } from "./companyStock.service";
+import { User } from "../entities/User";
 
 export const createCompanyOrder = async (
   data: {
@@ -55,7 +56,7 @@ export const createCompanyOrder = async (
     totalAmount: data.totalAmount,
     receivedAmount: 0,
     remainingAmount: data.totalAmount,
-    status: "UNPAID",
+    status: "UNCOLLECTED",
     description: data.description,
     stockType: data.stockType,
     company: { id: currentUser.companyId },
@@ -92,9 +93,9 @@ export const updateOrderPaymentStatus = async (
 
   order.receivedAmount = Number(order.receivedAmount) + amountReceived;
   order.remainingAmount = Number(order.totalAmount) - order.receivedAmount;
-  order.status = order.remainingAmount <= 0 ? "PAID" : "PARTIAL";
-  order.updatedatetime = new Date();
-  order.updatedBy = { id: currentUser.userId } as any;
+  order.status = order.remainingAmount <= 0 ? "COLLECTED" : "PARTIAL";
+  //order.updatedatetime = new Date();
+  order.updatedBy = { id: currentUser.userId } as User;
   console.log("BEFORE", order.receivedAmount, "ADDING", amountReceived);
 
   return await orderRepo.save(order);

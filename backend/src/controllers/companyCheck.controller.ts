@@ -39,6 +39,7 @@ export const postCompanyChecksHandler = async (req: Request, res: Response) => {
         projectId,
         description,
         status,
+        dueDate,
       } = body;
 
       const newCheck = await createCompanyCheck(
@@ -54,6 +55,7 @@ export const postCompanyChecksHandler = async (req: Request, res: Response) => {
           projectId,
           description,
           status,
+          dueDate,
         },
         { userId, companyId },
         queryRunner.manager
@@ -148,7 +150,10 @@ export const getCompanyChecksHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const getCompanyCheckByIdHandler = async (req: Request, res: Response) => {
+export const getCompanyCheckByIdHandler = async (
+  req: Request,
+  res: Response
+) => {
   if (req.user?.role !== "superadmin") {
     res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
     return;

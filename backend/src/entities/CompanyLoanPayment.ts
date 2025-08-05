@@ -48,6 +48,9 @@ export class CompanyLoanPayment {
   @Column({ name: "paymentamount", type: "numeric", nullable: true })
   paymentAmount?: number;
 
+  @Column("numeric", { name: "remainingamount" })
+  remainingAmount!: number;
+
   @Column({ name: "status", type: "varchar", length: 20, default: "PENDING" })
   status!: "PENDING" | "PAID" | "OVERDUE";
 
@@ -62,9 +65,11 @@ export class CompanyLoanPayment {
   })
   penaltyAmount!: number;
 
-  @OneToOne(() => CompanyFinanceTransaction, { nullable: true })
-  @JoinColumn({ name: "financetransactionid" })
-  financeTransaction?: CompanyFinanceTransaction;
+  @OneToMany(
+    () => CompanyFinanceTransaction,
+    (financeTransaction) => financeTransaction.loanPayment
+  )
+  transactions!: CompanyFinanceTransaction[];
 
   // 🔗 Oluşturan kullanıcı
   @ManyToOne(() => User, { nullable: false })

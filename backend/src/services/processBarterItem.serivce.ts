@@ -63,21 +63,4 @@ export const processBarterItem = async ({
       );
     }
   }
-
-  // Nakit işlem
-  /*if (item.itemType === "CASH") {
-    const transaction = transactionRepo.create({
-      type: item.direction === "RECEIVING" ? "COLLECTION" : "PAYMENT",
-      transactionDate: new Date(),
-      amount: item.agreedValue,
-      currency: "TRY",
-      method: "CASH",
-      description: `BRT-${agreementCode} barter anlaşması ${item.direction === "RECEIVING" ? "nakit tahsilatı" : "nakit ödemesi"}`,
-      company: { id: currentUser.companyId },
-      createdBy: { id: currentUser.userId },
-      updatedBy: { id: currentUser.userId },
-    });
-
-    await transactionRepo.save(transaction);
-  }*/
 };

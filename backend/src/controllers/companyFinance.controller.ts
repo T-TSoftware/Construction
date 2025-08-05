@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
 import {
-  createCompanyFinanceTransaction,
+  //createCompanyFinanceTransaction,
   updateCompanyFinanceTransaction,
   getCompanyFinanceTransactions,
   getCompanyFinanceTransactionById,
   deleteCompanyFinanceTransactionById,
 } from "../services/companyFinance.service";
+import { createCompanyFinanceTransaction } from "../services/companyFinanceTransaction.service";
 
 export const postCompanyFinanceTransactionHandler = async (
   req: Request,
@@ -44,11 +45,10 @@ export const postCompanyFinanceTransactionHandler = async (
         category,
         invoiceYN,
         invoiceCode,
-        checkCode,
+        referenceCode,
         description,
         projectCode,
         source,
-        orderCode,
       } = body;
 
       const transaction = await createCompanyFinanceTransaction(
@@ -66,11 +66,10 @@ export const postCompanyFinanceTransactionHandler = async (
           category,
           invoiceYN,
           invoiceCode,
-          checkCode,
+          referenceCode,
           description,
           projectCode,
           source,
-          orderCode,
         },
         { userId, companyId },
         queryRunner.manager

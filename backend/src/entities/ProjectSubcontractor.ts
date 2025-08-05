@@ -6,12 +6,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  OneToMany,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
 import { ProjectQuantity } from "./ProjectQuantity";
 import { QuantityItem } from "../entities/QuantityItem";
 import { User } from "./User";
 import { Company } from "./Company";
+import { CompanyFinanceTransaction } from "./CompanyFinance";
 
 @Entity({ name: "projectsubcontractors" })
 export class ProjectSubcontractor {
@@ -94,4 +96,10 @@ export class ProjectSubcontractor {
   @ManyToOne(() => User)
   @JoinColumn({ name: "updatedby" })
   updatedBy!: User;
+
+  @OneToMany(
+    () => CompanyFinanceTransaction,
+    (financeTransaction) => financeTransaction.subcontractor
+  )
+  transactions!: CompanyFinanceTransaction[];
 }

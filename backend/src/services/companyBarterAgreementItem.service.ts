@@ -6,6 +6,8 @@ import { CompanyStock } from "../entities/CompanyStock";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { processBarterItem } from "./processBarterItem.serivce";
+import { generateNextBarterAgreementItemCode } from "../utils/generateCode";
+import { User } from "../entities/User";
 
 export const postCompanyBarterAgreementItem = async (
   agreementId: string,
@@ -56,13 +58,21 @@ export const postCompanyBarterAgreementItem = async (
       })
     : null;
 
+  const code = await generateNextBarterAgreementItemCode(
+    manager,
+    agreement.code,
+    data.itemType
+  );
+
   const item = itemRepo.create({
+    code,
     barterAgreement: agreement,
     company: { id: currentUser.companyId },
     direction: data.direction,
     itemType: data.itemType,
     description: data.description,
     agreedValue: data.agreedValue,
+    remainingAmount: data.itemType === "CASH" ? data.agreedValue : null,
     relatedStock: relatedStock ? { id: relatedStock.id } : null,
     relatedSubcontractor: relatedSubcontractor
       ? { id: relatedSubcontractor.id }
@@ -136,4 +146,33 @@ export const getCompanyBarterAgreementItemById = async (
       relatedSupplier: true,
     },
   });
+};
+
+export const updateBarterItemPaymentStatus = async (
+  itemCode: string,
+  processedAmount: number,
+  currentUser: { userId: string },
+  manager: EntityManager
+) => {
+  const barterItemRepo = manager.getRepository(CompanyBarterAgreementItem);
+
+  const barterItem = await barterItemRepo.findOneByOrFail({ code: itemCode });
+
+  const totalProcessedAmount = Number(barterItem.processedAmount ?? 0) + processedAmount;
+
+  const remainingAmount =
+    Number(barterItem.remainingAmount) - Number(processedAmount);
+
+  let status: "PAID" | "COLLECTED" | "PARTIAL";
+  if (remainingAmount <= 0) {
+    status = barterItem.direction === "OUT" ? "PAID" : "COLLECTED";
+  } else {
+    status = "PARTIAL";
+  }
+  barterItem.processedAmount = totalProcessedAmount;
+  barterItem.status = status;
+  barterItem.remainingAmount = remainingAmount;
+  barterItem.updatedBy = { id: currentUser.userId } as User;
+
+  return await barterItemRepo.save(barterItem);
 };

@@ -52,8 +52,8 @@ export class CompanyOrder {
   @Column("numeric", { name: "remainingamount", default: 0 })
   remainingAmount!: number;
 
-  @Column({ default: "UNPAID" })
-  status!: "PAID" | "PARTIAL" | "UNPAID" | "CANCELLED";
+  @Column({ default: "UNCOLLECTED" })
+  status!: "COLLECTED" | "PARTIAL" | "UNCOLLECTED" | "CANCELLED";
 
   @ManyToOne(() => User)
   @JoinColumn({ name: "createdby" })

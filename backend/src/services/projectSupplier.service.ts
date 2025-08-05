@@ -6,6 +6,7 @@ import { generateNextEntityCode } from "../utils/generateCode";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { ProjectEstimatedCost } from "../entities/ProjectEstimatedCost";
+import { User } from "../entities/User";
 
 const supplierRepo = AppDataSource.getRepository(ProjectSupplier);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -275,4 +276,29 @@ export const updateProjectSupplier = async (
   }
 
   return saved;
+};
+
+export const updateProjectSupplierStatus = async (
+  supplierCode: string,
+  amountReceived: number,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager
+) => {
+  const supplierRepo = manager.getRepository(ProjectSupplier);
+
+  const supplier = await supplierRepo.findOneOrFail({
+    where: {
+      code: supplierCode,
+      company: { id: currentUser.companyId },
+    },
+  });
+
+  supplier.paidAmount = Number(supplier.paidAmount ?? 0) + amountReceived;
+  supplier.remainingAmount = Number(supplier.contractAmount) - supplier.paidAmount;
+  supplier.status = supplier.remainingAmount <= 0 ? "PAID" : "PARTIAL";
+  //order.updatedatetime = new Date();
+  supplier.updatedBy = { id: currentUser.userId } as User;
+  
+
+  return await supplierRepo.save(supplier);
 };

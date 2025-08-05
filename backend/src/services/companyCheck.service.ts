@@ -21,6 +21,7 @@ export const createCompanyCheck = async (
     projectId?: string;
     description?: string;
     status?: string; // "PAID" | "COLLECTED" vs.
+    dueDate:Date;
   },
   currentUser: {
     userId: string;
@@ -38,7 +39,7 @@ export const createCompanyCheck = async (
   // 🔄 Duruma göre otomatik transaction oluştur
   let transaction = null;
 
-  if (data.status === "PAID" || data.status === "COLLECTED") {
+  /*if (data.status === "PAID" || data.status === "COLLECTED") {
     transaction = await createCheckTransactionFromCheckData(
       {
         checkNo: data.checkNo,
@@ -53,22 +54,24 @@ export const createCompanyCheck = async (
       currentUser,
       manager
     );
-  }
+  }*/
 
   // 🧾 Check oluşturuluyor
   const check = repo.create({
     code: data.checkNo,
     checkNo: data.checkNo,
     checkDate: data.checkDate,
-    transactionDate: data.transactionDate,
+    transactionDate: data.dueDate,//data.transactionDate,
     firm: data.firm,
     amount: data.amount,
     bank: { id: bank.id },
     type: data.type,
-    transaction: transaction ? { id: transaction.id } : null,
+    //transaction: transaction ? { id: transaction.id } : null,
     project: data.projectId ? { id: data.projectId } : null,
     description: data.description,
-    status: data.status,
+    status: "PENDING", //data.status,
+    dueDate:data.dueDate,
+    remainingAmount: data.amount,
     company: { id: currentUser.companyId },
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
@@ -237,9 +240,9 @@ export const createCheckTransactionFromCheckData = async (
     targetName: check.firm,
     transactionDate: check.transactionDate,
     method: check.type === "COLLECTION" ? "CHECK" : "BANK",
-    category: 'CEK',//check.type === "COLLECTION" ? "Çek Tahsilatı" : "Çek Ödeme",
+    category: "CEK", //check.type === "COLLECTION" ? "Çek Tahsilatı" : "Çek Ödeme",
     invoiceYN: "N",
-    checkCode: check.checkNo,
+    referenceCode: check.checkNo,
     description: check.description,
     company: { id: currentUser.companyId },
     project: check.projectId ? { id: check.projectId } : null,
@@ -297,4 +300,30 @@ export const getCompanyCheckById = async (
   }
 
   return check;
+};
+
+export const updateCheckPaymentStatus = async (
+  checkCode: string,
+  amountPaid: number,
+  currentUser: { userId: string },
+  manager: EntityManager
+) => {
+  const checkRepo = manager.getRepository(CompanyCheck);
+
+  const check = await checkRepo.findOneByOrFail({ code: checkCode });
+
+  const remainingAmount = Number(check.remainingAmount) - Number(amountPaid);
+
+  let status: string;
+  if (remainingAmount <= 0) {
+    status = check.type === "PAYMENT" ? "PAID" : "COLLECTED";
+  } else {
+    status = check.type === "PAYMENT" ? "PARTIAL" : "PARTIAL";
+  }
+
+  check.status = status;
+  check.remainingAmount = remainingAmount;
+  check.updatedBy = { id: currentUser.userId } as User;
+
+  return await checkRepo.save(check);
 };

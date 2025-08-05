@@ -21,6 +21,7 @@ import companyEmployeeLeaveRoutes from "./routes/companyEmployeeLeave.routes";
 import companyBarterAgreementRoutes from "./routes/companyBarterAgreement.routes";
 import companyBarterAgreementItemRoutes from "./routes/companyBarterAgreementItem.routes";
 import companyBarterItemCashDetailRoutes from "./routes/companyBarterItemCashDetail.routes";
+import companyUpcomingTransactionRoutes from "./routes/companyUpcomingTransaction.routes";
 
 import projectEstimatedCostRoutes from "./routes/projectEstimatedCost.routes";
 import projectSupplierRoutes from "./routes/projectSupplier.routes";
@@ -64,6 +65,7 @@ app.use("/api/employee-leaves", companyEmployeeLeaveRoutes);
 app.use("/api/barters", companyBarterAgreementRoutes);
 app.use("/api/barter-items", companyBarterAgreementItemRoutes);
 app.use("/api/barter-cashes", companyBarterItemCashDetailRoutes);
+app.use("/api/upcoming", companyUpcomingTransactionRoutes);
 
 app.use("/api/bank-movements", companyBankMovementRoutes);
 app.use("/api/current-movements", companyCurrentMovementRoutes);
@@ -76,7 +78,7 @@ app.use("/api", projectSubcontractorRoutes);
 app.use("/api", projectQuantityRoutes);
 app.use("/api", projectCostSummaryRoutes);
 app.use("/api", projectCurrentRoutes);
-app.use("/api/project-barters", projectBarterAgreementRoutes);
+//app.use("/api", projectBarterAgreementRoutes);
 
 // Masterdata Related
 app.use("/api/quantity-items", quantityItemRoutes);

@@ -2,7 +2,11 @@ import { EntityManager } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { CompanyBarterAgreementItem } from "../entities/CompanyBarterAgreementItem";
 import { CompanyBarterCashDetail } from "../entities/CompanyBarterItemCashDetail";
-import { createBarterTransactionFromCashDetailData, deleteCompanyFinanceTransactionById, updateCompanyFinanceTransaction } from "./companyFinance.service";
+import {
+  createBarterTransactionFromCashDetailData,
+  deleteCompanyFinanceTransactionById,
+  updateCompanyFinanceTransaction,
+} from "./companyFinance.service";
 import { CompanyBarterAgreement } from "../entities/CompanyBarterAgreement";
 
 export const createCompanyBarterCashDetail = async (
@@ -118,16 +122,25 @@ export const updateCompanyBarterCashDetail = async (
 
   // 5. Değişiklik olup olmadığını kontrol et
   const amountChanged = data.amount !== undefined && data.amount !== oldAmount;
-  const currencyChanged = data.currency !== undefined && data.currency !== detail.currency;
-  const accountChanged = data.fromAccountId !== undefined && data.fromAccountId !== detail.fromAccountId;
-  const descriptionChanged = data.description !== undefined && data.description !== detail.description;
+  const currencyChanged =
+    data.currency !== undefined && data.currency !== detail.currency;
+  const accountChanged =
+    data.fromAccountId !== undefined &&
+    data.fromAccountId !== detail.fromAccountId;
+  const descriptionChanged =
+    data.description !== undefined && data.description !== detail.description;
   const paymentDateChanged =
     data.paymentDate !== undefined &&
-    data.paymentDate?.toISOString() !== detail.financeTransaction?.transactionDate?.toISOString();
+    data.paymentDate?.toISOString() !==
+      detail.financeTransaction?.transactionDate?.toISOString();
 
   // 6. Transaction'ı güncellemek gerekiyor mu?
   const shouldUpdateTransaction =
-    amountChanged || currencyChanged || accountChanged || descriptionChanged || paymentDateChanged;
+    amountChanged ||
+    currencyChanged ||
+    accountChanged ||
+    descriptionChanged ||
+    paymentDateChanged;
 
   const barterItem = detail.barterItem;
   const barterAgreement = barterItem.barterAgreement;
@@ -135,22 +148,26 @@ export const updateCompanyBarterCashDetail = async (
   // 7. Eğer eski status PAID/COLLECTED ise ve yeni status PENDING ise → Transaction sil
   if (
     (oldStatus === "PAID" || oldStatus === "COLLECTED") &&
-    (newStatus !== "PAID" && newStatus !== "COLLECTED")
+    newStatus !== "PAID" &&
+    newStatus !== "COLLECTED"
   ) {
     if (detail.financeTransaction) {
+      await repo.update({ id: detail.id }, { financeTransaction: null });
+
       await deleteCompanyFinanceTransactionById(
         detail.financeTransaction.id,
         currentUser,
         manager
       );
     }
-    //detail.financeTransaction = null; // ilişkisini de kaldır
+    detail.financeTransaction = null; // ilişkisini de kaldır
   }
 
   // 8. Eğer eski status PENDING ve yeni status PAID/COLLECTED ise → Transaction oluştur
   if (
     (newStatus === "PAID" || newStatus === "COLLECTED") &&
-    (oldStatus !== "PAID" && oldStatus !== "COLLECTED")
+    oldStatus !== "PAID" &&
+    oldStatus !== "COLLECTED"
   ) {
     const transaction = await createBarterTransactionFromCashDetailData(
       {
@@ -183,7 +200,8 @@ export const updateCompanyBarterCashDetail = async (
       {
         amount: newAmount,
         description: data.description ?? detail.description,
-        transactionDate: data.paymentDate ?? detail.financeTransaction.transactionDate,
+        transactionDate:
+          data.paymentDate ?? detail.financeTransaction.transactionDate,
       },
       currentUser,
       manager
@@ -196,10 +214,15 @@ export const updateCompanyBarterCashDetail = async (
     {
       ...(data.amount !== undefined && { amount: data.amount }),
       ...(data.currency !== undefined && { currency: data.currency }),
-      ...(data.fromAccountId !== undefined && { fromAccountId: data.fromAccountId }),
+      ...(data.fromAccountId !== undefined && {
+        fromAccountId: data.fromAccountId,
+      }),
       ...(data.accountType !== undefined && { accountType: data.accountType }),
       ...(data.status !== undefined && { status: data.status }),
       ...(data.description !== undefined && { description: data.description }),
+      ...(detail.financeTransaction && {
+        financeTransaction: detail.financeTransaction,
+      }),
       updatedBy: { id: currentUser.userId },
       updatedatetime: new Date(),
     }

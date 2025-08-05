@@ -91,5 +91,5 @@ export const AppDataSource = new DataSource({
 //export default AppDataSource;
 
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/CashDetailsAdjusted --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/LastVersion --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

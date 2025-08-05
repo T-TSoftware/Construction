@@ -27,6 +27,9 @@ export class CompanyCheck {
   @Column({ name: "transactiondate", type: "timestamp" })
   transactionDate!: Date;
 
+  @Column({ name: "duedate", type: "date" })
+  dueDate!: Date; // Vade tarihi
+
   @Column()
   firm!: string;
 
@@ -48,6 +51,12 @@ export class CompanyCheck {
   @ManyToOne(() => CompanyBalance)
   @JoinColumn({ name: "bankid" })
   bank!: CompanyBalance;
+
+  @Column({
+    name: "remainingamount",
+    type: "numeric",
+  })
+  remainingAmount?: number;
 
   @ManyToOne(() => CompanyFinanceTransaction, { nullable: true })
   @JoinColumn({ name: "transactionid" })

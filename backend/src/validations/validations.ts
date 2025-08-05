@@ -83,13 +83,13 @@ export const checkSchema = (mode: "create" | "update") =>
         message: "Geçerli bir çek kesim tarihi giriniz.",
       }),
 
-    transactionDate: z
+    /*transactionDate: z
       .coerce
       .date()
       .optional()
       .refine((val) => val instanceof Date, {
         message: "Geçerli bir Ödeme/Tahsilat tarihi giriniz.",
-      }),
+      }),*/
 
     firm: mode === "create" ? z.string().min(1, "Firma zorunludur") : z.string().optional(),
 
@@ -113,11 +113,11 @@ export const checkSchema = (mode: "create" | "update") =>
         })
       : z.enum(["PAYMENT", "COLLECTION"]).optional(),
 
-    status: mode === "create"
+    /*status: mode === "create"
       ? z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED","NOTDUE"], {
           required_error: "Durum zorunludur.",
         })
-      : z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"]).optional(),
+      : z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"]).optional(),*/
 
     projectId: z.string().optional(),
     description: z.string().optional(),

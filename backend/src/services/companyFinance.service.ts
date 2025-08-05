@@ -93,7 +93,7 @@ export const createCompanyFinanceTransaction = async (
       category: data.category,
       invoiceYN: data.invoiceYN ?? "N",
       invoiceCode: data.invoiceCode,
-      checkCode: data.checkCode,
+      //checkCode: data.checkCode,
       description: `Transfer to ${toAccount.name}`,
       company: { id: currentUser.companyId },
       project: project ? { id: project.id } : null,
@@ -166,7 +166,7 @@ export const createCompanyFinanceTransaction = async (
     category: data.category,
     invoiceYN: data.invoiceYN ?? "N",
     invoiceCode: data.invoiceCode,
-    checkCode: data.checkCode,
+    //checkCode: data.checkCode,
     description: data.description,
     company: { id: currentUser.companyId },
     project: project ? { id: project.id } : null,
@@ -213,7 +213,7 @@ export const updateCompanyFinanceTransaction = async (
     category?: string;
     invoiceYN?: "Y" | "N";
     invoiceCode?: string;
-    checkCode?: string;
+    referenceCode?: string;
     description?: string;
     orderCode?: string;
     projectCode?: string;
@@ -286,7 +286,7 @@ export const updateCompanyFinanceTransaction = async (
   existing.category = data.category ?? existing.category;
   existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
   existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
-  existing.checkCode = data.checkCode ?? existing.checkCode;
+  existing.referenceCode = data.referenceCode ?? existing.referenceCode;
   existing.description = data.description ?? existing.description;
   //existing.order = newOrder;
   existing.project = newProject;
@@ -355,6 +355,8 @@ export const updateCompanyBalanceAfterTransaction = async (
   // Tahsilatta: normalde +amount → ters işlemde -amount
   const sign = isReverse ? 1 : -1; // PAYMENT ve TRANSFER işlemlerinde kullanılır
   const reverseSign = isReverse ? -1 : 1; // COLLECTION işlemi için
+
+  console.log("enter updateee", fromAccountId, " ", type);
 
   // 🔻 Ödeme (PAYMENT): Paranın çıktığı hesabın bakiyesi azalır
   if (type === "PAYMENT" && fromAccountId) {
@@ -460,7 +462,7 @@ export const createLoanTransactionFromPaymentData = async (
     category: "KREDI",
     source: `${payment.paymentCode} Ödemesi`,
     invoiceYN: "Y",
-    loanCode: payment.paymentCode,
+    referenceCode: payment.paymentCode,
     description: payment.description,
     company: { id: currentUser.companyId },
     project: payment.projectId ? { id: payment.projectId } : null,
@@ -546,16 +548,18 @@ export const deleteCompanyFinanceTransactionById = async (
 
   const transaction = await transactionRepo.findOneOrFail({
     where: { id },
-    relations: ["company"],
+    relations: ["company", "fromAccount", "toAccount"],
   });
 
   if (transaction.company.id !== currentUser.companyId) {
     throw new Error("Bu finansal işlem kaydına erişim yetkiniz yok.");
   }
 
+  console.log("from account from: ", transaction.fromAccount);
+
   await updateCompanyBalanceAfterTransaction(
     transaction.type,
-    transaction.fromAccount?.id ?? null,
+    transaction.fromAccount.id,
     transaction.toAccount?.id ?? null,
     transaction.amount,
     manager,
