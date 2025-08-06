@@ -139,3 +139,46 @@ export const getCompanyOrderById = async (
 
   return order;
 };
+
+export const updateOrderPaymentStatusNew = async (
+  orderCode: string,
+  amount: number,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager,
+  isReverse = false
+) => {
+  const orderRepo = manager.getRepository(CompanyOrder);
+
+  const order = await orderRepo.findOneOrFail({
+    where: {
+      code: orderCode,
+      company: { id: currentUser.companyId },
+    },
+  });
+
+  const factor = isReverse ? -1 : 1;
+
+  // ✅ receivedAmount güncelle (increment/decrement)
+  await orderRepo.increment(
+    { id: order.id },
+    "receivedAmount",
+    factor * amount
+  );
+
+  // Güncellenmiş order'ı tekrar çek
+  const updatedOrder = await orderRepo.findOneOrFail({
+    where: { id: order.id },
+  });
+
+  // ✅ remainingAmount ve status hesapla
+  const remainingAmount = Number(updatedOrder.totalAmount) - Number(updatedOrder.receivedAmount);
+  const status = remainingAmount <= 0 ? "COLLECTED" : "PARTIAL";
+
+  updatedOrder.remainingAmount = remainingAmount;
+  updatedOrder.status = status;
+  updatedOrder.updatedBy = { id: currentUser.userId } as User;
+  updatedOrder.updatedatetime = new Date();
+
+  // Kaydet
+  return await orderRepo.save(updatedOrder);
+};

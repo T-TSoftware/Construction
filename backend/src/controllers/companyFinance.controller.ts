@@ -131,7 +131,6 @@ export const patchCompanyFinanceTransactionHandler = async (
     res.status(200).json(updatedTransaction);
     return;
   } catch (error: any) {
-    console.log("hataaaa")
     await queryRunner.rollbackTransaction();
     console.error("❌ PATCH finance transaction error:", error);
     res.status(400).json({
@@ -139,7 +138,6 @@ export const patchCompanyFinanceTransactionHandler = async (
     });
     return;
   } finally {
-    console.log("finally")
     await queryRunner.release();
   }
 };

@@ -8,21 +8,30 @@ import { AppDataSource } from "../config/data-source";
 // Eğer ayrı bir dosyada tutuyorsan import edebilirsin
 import { generateFinanceTransactionCode } from "../utils/generateCode";
 import { CompanyOrder } from "../entities/CompanyOrder";
-import { updateOrderPaymentStatus } from "./companyOrder.service";
+import {
+  updateOrderPaymentStatus,
+  updateOrderPaymentStatusNew,
+} from "./companyOrder.service";
 import { updateCompanyBalanceAfterTransaction } from "./companyFinance.service";
 import { CompanyCheck } from "../entities/CompanyCheck";
 import { User } from "../entities/User";
 import { updateCompanyLoanPaymentChange } from "./companyLoan.service";
 import { CompanyLoanPayment } from "../entities/CompanyLoanPayment";
-import { updateLoanPaymentStatus } from "./companyLoanPayment.service";
-import { updateCheckPaymentStatus } from "./companyCheck.service";
+import { updateLoanPaymentStatus, updateLoanPaymentStatusNew } from "./companyLoanPayment.service";
+import {
+  updateCheckPaymentStatus,
+  updateCheckPaymentStatusNew,
+} from "./companyCheck.service";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import {
   updateProjectSubcontractorStatus,
   updateProjectSubcontractorStatusNew,
 } from "./projectSubcontractor.service";
-import { updateProjectSupplierStatus } from "./projectSupplier.service";
+import {
+  updateProjectSupplierStatus,
+  updateProjectSupplierStatusNew,
+} from "./projectSupplier.service";
 import { updateBarterItemPaymentStatus } from "./companyBarterAgreementItem.service";
 import { CompanyBarterAgreementItem } from "../entities/CompanyBarterAgreementItem";
 
@@ -376,13 +385,18 @@ export const updateCompanyFinanceTransaction = async (
   const balanceRepo = manager.getRepository(CompanyBalance);
   const projectRepo = manager.getRepository(CompanyProject);
   const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+  const supplierRepo = manager.getRepository(ProjectSupplier);
+  const checkRepo = manager.getRepository(CompanyCheck);
+  const loanPaymentRepo = manager.getRepository(CompanyLoanPayment);
+  const barterItemRepo = manager.getRepository(CompanyBarterAgreementItem);
+  const orderRepo = manager.getRepository(CompanyOrder);
 
   const existing = await transactionRepo.findOne({
     where: { id, company: { id: currentUser.companyId } },
     relations: ["fromAccount", "toAccount", "company", "project"],
   });
 
-  console.log(existing?.id);
+  //console.log(existing);
 
   if (!existing) {
     throw new Error("Finansal işlem bulunamadı.");
@@ -398,9 +412,53 @@ export const updateCompanyFinanceTransaction = async (
     true
   );
 
-  // 🔁 Eski subcontractor etkisini geri al
+  // 🔁 Eski Subcontractor etkisini geri al
   if (existing.category === "SUBCONTRACTOR" && existing.referenceCode) {
     await updateProjectSubcontractorStatusNew(
+      existing.referenceCode,
+      existing.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+
+  // 🔁 Eski Supplier etkisini geri al
+  if (existing.category === "SUPPLIER" && existing.referenceCode) {
+    await updateProjectSupplierStatusNew(
+      existing.referenceCode,
+      existing.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+
+  // 🔁 Eski Check etkisini geri al
+  if (existing.category === "CHECK" && existing.referenceCode) {
+    await updateCheckPaymentStatusNew(
+      existing.referenceCode,
+      existing.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+
+  // 🔁 Eski Order etkisini geri al
+  if (existing.category === "ORDER" && existing.referenceCode) {
+    await updateOrderPaymentStatusNew(
+      existing.referenceCode,
+      existing.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+
+  // 🔁 Eski Loan etkisini geri al
+  if (existing.category === "LOAN" && existing.referenceCode) {
+    await updateLoanPaymentStatusNew(
       existing.referenceCode,
       existing.amount,
       currentUser,
@@ -424,9 +482,6 @@ export const updateCompanyFinanceTransaction = async (
     data.projectCode && data.projectCode !== existing.project?.id
       ? await projectRepo.findOneByOrFail({ code: data.projectCode })
       : existing.project;
-
-  const newAmount = data.amount && data.amount !== existing.amount
- 
 
   // 🛠️ Alanları güncelle
   existing.type = data.type ?? existing.type;
@@ -452,9 +507,9 @@ export const updateCompanyFinanceTransaction = async (
   const updated = await transactionRepo.save(existing);
   console.log(updated.amount, " : ", data.amount, " : ", existing.amount);
 
-  // 🔄 Yeni subcontractor etkisini uygula
-  /*if (updated.category === "SUBCONTRACTOR" && updated.referenceCode) {
-    console.log("enter category statement")
+  // 🔄 SUBCONTRACTOR
+  if (updated.category === "SUBCONTRACTOR" && updated.referenceCode) {
+    console.log("enter category statement");
     const subcontractor = await subcontractorRepo.findOneByOrFail({
       code: updated.referenceCode,
     });
@@ -470,7 +525,87 @@ export const updateCompanyFinanceTransaction = async (
     );
 
     //await transactionRepo.save(updated); // yeniden kaydet
-  }*/
+  }
+
+  // 🔄 SUPPLIER
+  if (updated.category === "SUPPLIER" && updated.referenceCode) {
+    console.log("enter category statement");
+    const supplier = await supplierRepo.findOneByOrFail({
+      code: updated.referenceCode,
+    });
+
+    updated.supplier = { id: supplier.id } as ProjectSupplier;
+
+    await updateProjectSupplierStatusNew(
+      updated.referenceCode,
+      updated.amount,
+      currentUser,
+      manager,
+      false
+    );
+
+    //await transactionRepo.save(updated); // yeniden kaydet
+  }
+
+  // 🔄 CHECK
+  if (updated.category === "CHECK" && updated.referenceCode) {
+    console.log("enter category statement");
+    const check = await checkRepo.findOneByOrFail({
+      code: updated.referenceCode,
+    });
+
+    updated.check = { id: check.id } as CompanyCheck;
+
+    await updateCheckPaymentStatusNew(
+      updated.referenceCode,
+      updated.amount,
+      currentUser,
+      manager,
+      false
+    );
+
+    //await transactionRepo.save(updated); // yeniden kaydet
+  }
+
+  // 🔄 ORDER
+  if (updated.category === "ORDER" && updated.referenceCode) {
+    console.log("enter category statement");
+    const order = await orderRepo.findOneByOrFail({
+      code: updated.referenceCode,
+    });
+
+    updated.order = { id: order.id } as CompanyOrder;
+
+    await updateOrderPaymentStatusNew(
+      updated.referenceCode,
+      updated.amount,
+      currentUser,
+      manager,
+      false
+    );
+
+    //await transactionRepo.save(updated); // yeniden kaydet
+  }
+
+  // 🔄 LOAN
+  if (updated.category === "LOAN" && updated.referenceCode) {
+    console.log("enter category statement");
+    const loanPayment = await loanPaymentRepo.findOneByOrFail({
+      code: updated.referenceCode,
+    });
+
+    updated.loanPayment = { id: loanPayment.id } as CompanyLoanPayment;
+
+    await updateLoanPaymentStatusNew(
+      updated.referenceCode,
+      updated.amount,
+      currentUser,
+      manager,
+      false
+    );
+
+    //await transactionRepo.save(updated); // yeniden kaydet
+  }
 
   // 🔁 Yeni bakiyeyi uygula
   await updateCompanyBalanceAfterTransaction(

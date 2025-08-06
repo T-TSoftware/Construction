@@ -233,7 +233,7 @@ export const updateCompanyFinanceTransaction = async (
     where: { code, company: { id: currentUser.companyId } },
     relations: ["fromAccount", "toAccount", "company", "project", "order"],
   });
-  console.log(existing);
+
   if (!existing) {
     throw new Error("Finansal işlem bulunamadı.");
   }

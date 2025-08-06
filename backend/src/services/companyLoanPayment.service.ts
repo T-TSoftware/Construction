@@ -83,7 +83,6 @@ export const getCompanyLoanPayments = async (
       "loan", // ✔ sadece gerekli ilişkiler kaldı
       "loan.project",
       "loan.bank",
-      "financeTransaction",
     ],
     order: { installmentNumber: "ASC" },
   });
@@ -103,7 +102,7 @@ export const getCompanyLoanPaymentById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["loan", "loan.project", "loan.bank", "financeTransaction"],
+    relations: ["loan", "loan.project", "loan.bank"],
   });
 
   if (!payment) {
@@ -308,6 +307,70 @@ export const updateLoanPaymentStatus = async (
   );
 
   return { payment };
+};
+
+export const updateLoanPaymentStatusNew = async (
+  paymentCode: string,
+  amount: number,
+  //transactionDate: Date,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager,
+  isReverse = false
+) => {
+  const paymentRepo = manager.getRepository(CompanyLoanPayment);
+
+  const payment = await paymentRepo.findOneOrFail({
+    where: {
+      code: paymentCode,
+      company: { id: currentUser.companyId },
+    },
+    relations: ["loan"],
+  });
+
+  const factor = isReverse ? -1 : 1;
+
+  // ✅ paymentAmount güncelle (increment/decrement)
+  await paymentRepo.increment(
+    { id: payment.id },
+    "paymentAmount",
+    factor * amount
+  );
+
+  // Güncellenmiş payment tekrar çek
+  const updatedPayment = await paymentRepo.findOneOrFail({
+    where: { id: payment.id },
+    relations: ["loan"],
+  });
+
+  // ✅ Durum, kalan ve ceza hesapla
+  const totalExpected = Number(updatedPayment.totalAmount ?? 0);
+  const totalPaid = Number(updatedPayment.paymentAmount ?? 0);
+  const rawRemaining = totalExpected - totalPaid;
+  const remainingAmount = rawRemaining < 0 ? 0 : rawRemaining;
+  const penaltyAmount =
+    totalPaid > totalExpected ? totalPaid - totalExpected : 0;
+  const status = totalPaid >= totalExpected ? "PAID" : "PARTIAL";
+
+  updatedPayment.remainingAmount = remainingAmount;
+  updatedPayment.penaltyAmount = penaltyAmount;
+  updatedPayment.status = status as any;
+  //updatedPayment.paymentDate = transactionDate;
+  updatedPayment.updatedBy = { id: currentUser.userId } as User;
+  updatedPayment.updatedatetime = new Date();
+
+  await paymentRepo.save(updatedPayment);
+
+  // 🔄 Loan üzerindeki kalan borçları güncelle
+  await updateCompanyLoanPaymentChange(
+    updatedPayment.loan.id,
+    updatedPayment.principalAmount ?? 0,
+    updatedPayment.interestAmount ?? 0,
+    totalExpected,
+    currentUser.userId,
+    manager
+  );
+
+  return { payment: updatedPayment };
 };
 
 /*---------------------------------------------------------------------------------------------------*/

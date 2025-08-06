@@ -337,3 +337,45 @@ export const updateCheckPaymentStatus = async (
 
   return await checkRepo.save(check);
 };
+
+export const updateCheckPaymentStatusNew = async (
+  checkCode: string,
+  amount: number,
+  currentUser: { userId: string },
+  manager: EntityManager,
+  isReverse = false
+) => {
+  const checkRepo = manager.getRepository(CompanyCheck);
+
+  const check = await checkRepo.findOneOrFail({
+    where: { code: checkCode },
+  });
+
+  const factor = isReverse ? 1 : -1;
+
+  // ✅ increment/decrement remainingAmount
+  await checkRepo.increment(
+    { id: check.id },
+    "remainingAmount",
+    factor * amount
+  );
+
+  // Güncel check'i yeniden al
+  const updatedCheck = await checkRepo.findOneOrFail({
+    where: { id: check.id },
+  });
+
+  // ✅ Status hesapla
+  const isPaidOff = Number(updatedCheck.remainingAmount) <= 0;
+  const statusMap = {
+    PAYMENT: isPaidOff ? "PAID" : "PARTIAL",
+    COLLECTION: isPaidOff ? "COLLECTED" : "PARTIAL",
+  };
+
+  updatedCheck.status = statusMap[updatedCheck.type];
+  updatedCheck.updatedBy = { id: currentUser.userId } as User;
+  updatedCheck.updatedatetime = new Date();
+
+  // Kaydet
+  return await checkRepo.save(updatedCheck);
+};

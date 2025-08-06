@@ -302,3 +302,47 @@ export const updateProjectSupplierStatus = async (
 
   return await supplierRepo.save(supplier);
 };
+
+export const updateProjectSupplierStatusNew = async (
+  supplierCode: string,
+  amount: number,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager,
+  isReverse = false
+) => {
+  const supplierRepo = manager.getRepository(ProjectSupplier);
+
+  const supplier = await supplierRepo.findOneOrFail({
+    where: {
+      code: supplierCode,
+      company: { id: currentUser.companyId },
+    },
+  });
+
+  const factor = isReverse ? -1 : 1;
+
+  // ✅ increment/decrement ile ödeme güncelle
+  await supplierRepo.increment(
+    { id: supplier.id },
+    "paidAmount",
+    factor * amount
+  );
+
+  // Mevcut güncel supplier'ı yeniden al (paidAmount güncellendi)
+  const updatedSupplier = await supplierRepo.findOneOrFail({
+    where: { id: supplier.id },
+  });
+
+  // ✅ remainingAmount ve status hesapla
+  const remainingAmount = Number(updatedSupplier.contractAmount) - Number(updatedSupplier.paidAmount);
+  const status = remainingAmount <= 0 ? "PAID" : "PARTIAL";
+
+  // Güncelleme
+  updatedSupplier.remainingAmount = remainingAmount;
+  updatedSupplier.status = status;
+  updatedSupplier.updatedBy = { id: currentUser.userId } as User;
+  updatedSupplier.updatedatetime = new Date();
+
+  // Kaydet
+  return await supplierRepo.save(updatedSupplier);
+};
