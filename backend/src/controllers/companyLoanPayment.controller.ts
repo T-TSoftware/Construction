@@ -48,7 +48,8 @@ export const postCompanyLoanPaymentHandler = async (
 
     for (const item of body) {
       const newPayment = await createCompanyLoanPayment(
-        { ...item, loanId },
+        loanId,
+        { ...item },
         { userId, companyId },
         queryRunner.manager
       );

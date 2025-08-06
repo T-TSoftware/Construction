@@ -18,8 +18,8 @@ import path from "path";
 import { User } from "../entities/User";
 
 export const createCompanyLoanPayment = async (
+  loanId: string,
   data: {
-    loanCode: string;
     code: string;
     installmentNumber: number;
     dueDate: Date;
@@ -41,7 +41,7 @@ export const createCompanyLoanPayment = async (
 
   const loan = await loanRepo.findOneOrFail({
     where: {
-      code: data.loanCode,
+      id: loanId,
       company: { id: currentUser.companyId }, // ✅ Şirket kontrolü burada yapılmış
     },
     relations: ["bank", "project"],
@@ -50,7 +50,7 @@ export const createCompanyLoanPayment = async (
   // 🧾 LoanPayment oluşturuluyor
   const payment = paymentRepo.create({
     loan: { id: loan.id },
-    code: `${data.loanCode}-TAKSIT:${data.installmentNumber}`,
+    code: `${loan.code}-TAKSIT:${data.installmentNumber}`,
     installmentNumber: data.installmentNumber,
     dueDate: data.dueDate,
     totalAmount: data.principalAmount + data.interestAmount, //data.totalAmount,
