@@ -158,7 +158,8 @@ export const updateBarterItemPaymentStatus = async (
 
   const barterItem = await barterItemRepo.findOneByOrFail({ code: itemCode });
 
-  const totalProcessedAmount = Number(barterItem.processedAmount ?? 0) + processedAmount;
+  const totalProcessedAmount =
+    Number(barterItem.processedAmount ?? 0) + processedAmount;
 
   const remainingAmount =
     Number(barterItem.remainingAmount) - Number(processedAmount);
@@ -175,4 +176,49 @@ export const updateBarterItemPaymentStatus = async (
   barterItem.updatedBy = { id: currentUser.userId } as User;
 
   return await barterItemRepo.save(barterItem);
+};
+
+export const updateBarterItemPaymentStatusNew = async (
+  itemCode: string,
+  amount: number,
+  currentUser: { userId: string },
+  manager: EntityManager,
+  isReverse = false
+) => {
+  const barterItemRepo = manager.getRepository(CompanyBarterAgreementItem);
+
+  const barterItem = await barterItemRepo.findOneByOrFail({ code: itemCode });
+
+  const factor = isReverse ? -1 : 1;
+
+  // ✅ processedAmount güncelle (increment/decrement)
+  await barterItemRepo.increment(
+    { id: barterItem.id },
+    "processedAmount",
+    factor * amount
+  );
+
+  // Güncellenmiş veriyi tekrar al
+  const updatedItem = await barterItemRepo.findOneOrFail({
+    where: { id: barterItem.id },
+  });
+
+  // ✅ remainingAmount hesapla
+  const remainingAmount =
+    Number(updatedItem.agreedValue ?? 0) - Number(updatedItem.processedAmount);
+
+  // ✅ status belirle
+  let status: "PAID" | "COLLECTED" | "PARTIAL";
+  if (remainingAmount <= 0) {
+    status = updatedItem.direction === "OUT" ? "PAID" : "COLLECTED";
+  } else {
+    status = "PARTIAL";
+  }
+
+  updatedItem.remainingAmount = remainingAmount;
+  updatedItem.status = status;
+  updatedItem.updatedBy = { id: currentUser.userId } as User;
+  updatedItem.updatedatetime = new Date();
+
+  return await barterItemRepo.save(updatedItem);
 };

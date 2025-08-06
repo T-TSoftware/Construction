@@ -9,8 +9,9 @@ import {
   getCompanyLoanPaymentByIdHandler,
   getCompanyLoanPaymentsHandler,
   patchCompanyLoanPaymentHandler,
+  getCompanyLoanPaymentsByLoanIdHandler,
   exportLoanPaymentsHandler,
-  exportLoanPaymentsPdfHandler
+  exportLoanPaymentsPdfHandler,
 } from "../controllers/companyLoanPayment.controller";
 
 const router = Router();
@@ -27,6 +28,8 @@ router.get("/:id", getCompanyLoanPaymentByIdHandler);
 router.post("/:loanId", /* validateBody, */ postCompanyLoanPaymentHandler);
 
 router.patch("/:id", patchCompanyLoanPaymentHandler);
+
+router.get("/loan/:loanId", getCompanyLoanPaymentsByLoanIdHandler);
 
 router.get("/loanpayments/export/csv", exportLoanPaymentsHandler);
 

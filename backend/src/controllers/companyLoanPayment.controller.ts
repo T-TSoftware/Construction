@@ -8,6 +8,7 @@ import {
   exportCompanyLoanPaymentsToPdf,
   getCompanyLoanPaymentById,
   getCompanyLoanPayments,
+  getCompanyLoanPaymentsByLoanId,
   updateCompanyLoanPayment,
 } from "../services/companyLoanPayment.service";
 import fs from "fs";
@@ -174,6 +175,35 @@ export const getCompanyLoanPaymentByIdHandler = async (
   } catch (error: any) {
     console.error("❌ GET loan by ID error:", error);
     res.status(500).json({ error: error.message || "Çek bilgisi alınamadı." });
+  }
+};
+
+export const getCompanyLoanPaymentsByLoanIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const loanId = req.params.loanId;
+    if (!loanId) {
+      res.status(400).json({ errorMessage: "Loan ID zorunludur." });
+      return;
+    }
+
+    const loanPayments = await getCompanyLoanPaymentsByLoanId(
+      loanId,
+      { userId, companyId },
+      AppDataSource.manager
+    );
+
+    res.status(200).json({ loanPayments });
+  } catch (error: any) {
+    console.error("❌ GET loan payments by loanId error:", error);
+    res.status(500).json({
+      errorMessage: error.message || "Loan ödemeleri getirilemedi.",
+    });
   }
 };
 

@@ -111,6 +111,28 @@ export const getCompanyLoanPaymentById = async (
 
   return payment;
 };
+export const getCompanyLoanPaymentsByLoanId = async (
+  loanId: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyLoanPayment);
+
+  const payments = await repo.find({
+    where: {
+      company: { id: currentUser.companyId },
+      loan: { id: loanId },
+    },
+    relations: [
+      "loan",
+      "loan.project",
+      "loan.bank",
+    ],
+    order: { installmentNumber: "ASC" },
+  });
+
+  return payments;
+};
 
 export const updateCompanyLoanPayment = async (
   id: string,
