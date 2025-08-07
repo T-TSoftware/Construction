@@ -16,6 +16,7 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 import fs from "fs";
 import path from "path";
 import { User } from "../entities/User";
+import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
 
 export const createCompanyLoanPayment = async (
   loanId: string,
@@ -66,7 +67,22 @@ export const createCompanyLoanPayment = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  return await paymentRepo.save(payment);
+  /*try {
+    return await paymentRepo.save(payment);
+  } catch (error: any) {
+    if (error.code === "23505") {
+      throw new Error("Bu Taksit Numarası zaten mevcut. Lütfen farklı bir taksit numarası seçin.");
+    }
+    throw new Error("Taksit kaydı sırasında bir hata oluştu.");
+  }*/
+  /*return await handleSaveWithUniqueConstraint(
+    () => paymentRepo.save(payment),
+    "Taksit kaydı oluşturulamadı."
+  );*/
+  return await handleSaveWithUniqueConstraint(
+    () => paymentRepo.save(payment),
+    "CompanyLoanPayment"
+  );
 };
 
 export const getCompanyLoanPayments = async (
@@ -123,11 +139,7 @@ export const getCompanyLoanPaymentsByLoanId = async (
       company: { id: currentUser.companyId },
       loan: { id: loanId },
     },
-    relations: [
-      "loan",
-      "loan.project",
-      "loan.bank",
-    ],
+    relations: ["loan", "loan.project", "loan.bank"],
     order: { installmentNumber: "ASC" },
   });
 

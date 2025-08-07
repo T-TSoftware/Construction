@@ -6,6 +6,7 @@ import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { generateNextEntityCode } from "../utils/generateCode";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
+import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
 
 const projectQuantityRepo = AppDataSource.getRepository(ProjectQuantity);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -39,15 +40,14 @@ export const createProjectQuantity = async (
     company: { id: currentUser.companyId },
   });
 
-  const quantityItem = await quantityItemRepo.findOneByOrFail({
-    code: data.quantityItemCode.trim().toUpperCase(),
-    company: { id: currentUser.companyId }, // ✅ companyId kontrolü
-  });
+  const quantityItem = data.quantityItemCode
+    ? await projectRepo.findOneByOrFail({ code: data.quantityItemCode })
+    : null;
 
   // ✅ Yeni metraj kaydı oluşturuluyor
   const newRecord = projectQuantityRepo.create({
     project: { id: project.id },
-    quantityItem: { id: quantityItem.id },
+    quantityItem: quantityItem ? { id: quantityItem.id } : null,
     quantity: data.quantity,
     unit: data.unit.trim(),
     description: data.description?.trim(),
@@ -100,7 +100,7 @@ export const createProjectQuantity = async (
   const autoSubcontractor = projectSubcontractorRepo.create({
     code: subcontractorCode,
     project: { id: data.projectId },
-    quantityItem: { id: quantityItem.id },
+    quantityItem: quantityItem ? { id: quantityItem.id } : null,
     projectQuantity: { id: savedQuantity.id },
     locked: true,
     addedFromQuantityYN: "Y",
@@ -114,7 +114,12 @@ export const createProjectQuantity = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  await projectSubcontractorRepo.save(autoSubcontractor);
+  //await projectSubcontractorRepo.save(autoSubcontractor);
+
+  await handleSaveWithUniqueConstraint(
+    () => projectSubcontractorRepo.save(autoSubcontractor),
+    "ProjectSubcontractor"
+  );
 
   return savedQuantity;
 };
@@ -135,8 +140,8 @@ export const getProjectQuantities = async (
   return items.map((item) => ({
     id: item.id,
     code: item.code ?? null,
-    quantityItemCode: item.quantityItem.code,
-    quantityItemName: item.quantityItem.name,
+    quantityItemCode: item.quantityItem?.code,
+    quantityItemName: item.quantityItem?.name,
     quantity: item.quantity,
     unit: item.unit,
     description: item.description,

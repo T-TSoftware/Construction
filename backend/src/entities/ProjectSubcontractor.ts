@@ -20,7 +20,7 @@ export class ProjectSubcontractor {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column()
   code!: string;
 
   @ManyToOne(() => Company, { nullable: false })
@@ -37,7 +37,7 @@ export class ProjectSubcontractor {
 
   @ManyToOne(() => QuantityItem)
   @JoinColumn({ name: "quantityitemid" }) // camelCase → FK
-  quantityItem!: QuantityItem;
+  quantityItem?: QuantityItem | null;
 
   @Column({ name: "addedfromquantityyn", type: "varchar", default: "N" })
   addedFromQuantityYN!: string;

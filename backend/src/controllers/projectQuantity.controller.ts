@@ -18,7 +18,7 @@ export const postProjectQuantityHandler = async (
     const { quantityItemCode, quantity, unit, description, category } =
       req.body;
 
-    if (!quantityItemCode || !quantity || !unit) {
+    if (!quantity || !unit) {
       res.status(400).json({ error: "Gerekli alanlar eksik." });
       return;
     }
@@ -42,9 +42,11 @@ export const postProjectQuantityHandler = async (
       message: "Metraj başarıyla eklendi.",
       id: newRecord.id,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ POST project quantity error:", error);
-    res.status(500).json({ error: "Metraj kaydı oluşturulamadı." });
+    res
+      .status(500)
+      .json({ error: error.message || "Metraj kaydı oluşturulamadı." });
     return;
   }
 };

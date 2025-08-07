@@ -30,7 +30,7 @@ export class ProjectQuantity {
 
   @ManyToOne(() => QuantityItem)
   @JoinColumn({ name: "quantityitemid" })
-  quantityItem!: QuantityItem;
+  quantityItem?: QuantityItem | null;
 
   @Column({ type: "numeric" })
   quantity!: number;
