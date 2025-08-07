@@ -27,6 +27,9 @@ const CompanyLoanPayment_1 = require("../entities/CompanyLoanPayment");
 const CompanyEmployee_1 = require("../entities/CompanyEmployee");
 const CompanyEmployeeLeave_1 = require("../entities/CompanyEmployeeLeave");
 const CompanyEmployeeProject_1 = require("../entities/CompanyEmployeeProject");
+const CompanyBarterAgreement_1 = require("../entities/CompanyBarterAgreement");
+const CompanyBarterAgreementItem_1 = require("../entities/CompanyBarterAgreementItem");
+const CompanyBarterItemCashDetail_1 = require("../entities/CompanyBarterItemCashDetail");
 //dotenv.config();
 const envFile = process.env.NODE_ENV === "production" ? ".env.prod" : ".env";
 dotenv_1.default.config({ path: envFile });
@@ -55,6 +58,9 @@ exports.AppDataSource = new typeorm_1.DataSource({
         CompanyEmployee_1.CompanyEmployee,
         CompanyEmployeeLeave_1.CompanyEmployeeLeave,
         CompanyEmployeeProject_1.CompanyEmployeeProject,
+        CompanyBarterAgreement_1.CompanyBarterAgreement,
+        CompanyBarterAgreementItem_1.CompanyBarterAgreementItem,
+        CompanyBarterItemCashDetail_1.CompanyBarterCashDetail,
         /*-------------------------*/
         // Project Related
         ProjectEstimatedCost_1.ProjectEstimatedCost,
@@ -76,7 +82,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
     //migrations: ["src/migrations/1747655234423-masterdataStockItem.ts"],
     subscribers: [],
 });
-exports.default = exports.AppDataSource;
+//export default AppDataSource;
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/EmpWProject --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/UniqeC --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

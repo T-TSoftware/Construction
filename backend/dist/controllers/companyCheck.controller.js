@@ -1,10 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCompanyCheckByIdHandler = exports.getCompanyChecksHandler = exports.patchCompanyCheckHandler = exports.postCompanyChecksHandler = void 0;
+exports.getCompanyCheckByIdHandler = exports.getCompanyChecksHandler = exports.patchCompanyCheckHandler = exports.postCompanyCheckHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const companyCheck_service_1 = require("../services/companyCheck.service");
-const postCompanyChecksHandler = async (req, res) => {
-    // 🔐 Yalnızca superadmin işlem yapabilir
+const postCompanyCheckHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
         res
             .status(403)
@@ -17,41 +16,35 @@ const postCompanyChecksHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const results = [];
-        for (const body of req.body) {
-            const { checkNo, checkDate, transactionDate, firm, amount, bankCode, type, 
-            //transactionId,
-            projectId, description, status, } = body;
-            const newCheck = await (0, companyCheck_service_1.createCompanyCheck)({
-                checkNo,
-                checkDate,
-                transactionDate,
-                firm,
-                amount,
-                bankCode,
-                type,
-                //transactionId,
-                projectId,
-                description,
-                status,
-            }, { userId, companyId }, queryRunner.manager);
-            results.push(newCheck);
-        }
+        const { checkNo, checkDate, transactionDate, firm, amount, bankCode, type, projectId, description, status, dueDate, } = req.body;
+        const newCheck = await (0, companyCheck_service_1.createCompanyCheck)({
+            checkNo,
+            checkDate,
+            transactionDate,
+            firm,
+            amount,
+            bankCode,
+            type,
+            projectId,
+            description,
+            status,
+            dueDate,
+        }, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
-        res.status(201).json(results);
+        res.status(201).json(newCheck);
     }
     catch (error) {
         await queryRunner.rollbackTransaction();
-        console.error("❌ POST company checks error:", error);
+        console.error("❌ POST company check error:", error);
         res.status(500).json({
-            errorMessage: error.message || "Çek kayıtları oluşturulamadı.",
+            errorMessage: error.message || "Çek kaydı oluşturulamadı.",
         });
     }
     finally {
         await queryRunner.release();
     }
 };
-exports.postCompanyChecksHandler = postCompanyChecksHandler;
+exports.postCompanyCheckHandler = postCompanyCheckHandler;
 const patchCompanyCheckHandler = async (req, res) => {
     // 🔒 Yetki kontrolü
     if (req.user?.role !== "superadmin") {

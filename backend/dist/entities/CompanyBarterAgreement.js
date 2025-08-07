@@ -9,64 +9,79 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProjectQuantity = void 0;
+exports.CompanyBarterAgreement = void 0;
 const typeorm_1 = require("typeorm");
-const CompanyProject_1 = require("./CompanyProject");
-const QuantityItem_1 = require("./QuantityItem");
-const User_1 = require("./User");
 const Company_1 = require("./Company");
-let ProjectQuantity = class ProjectQuantity {
+const CompanyProject_1 = require("./CompanyProject");
+const User_1 = require("./User");
+const CompanyBarterAgreementItem_1 = require("./CompanyBarterAgreementItem");
+let CompanyBarterAgreement = class CompanyBarterAgreement {
 };
-exports.ProjectQuantity = ProjectQuantity;
+exports.CompanyBarterAgreement = CompanyBarterAgreement;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)("uuid"),
     __metadata("design:type", String)
-], ProjectQuantity.prototype, "id", void 0);
+], CompanyBarterAgreement.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ unique: true }),
     __metadata("design:type", String)
-], ProjectQuantity.prototype, "code", void 0);
+], CompanyBarterAgreement.prototype, "code", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
     (0, typeorm_1.JoinColumn)({ name: "companyid" }),
     __metadata("design:type", Company_1.Company)
-], ProjectQuantity.prototype, "company", void 0);
+], CompanyBarterAgreement.prototype, "company", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyProject_1.CompanyProject),
     (0, typeorm_1.JoinColumn)({ name: "projectid" }),
     __metadata("design:type", CompanyProject_1.CompanyProject)
-], ProjectQuantity.prototype, "project", void 0);
+], CompanyBarterAgreement.prototype, "project", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => QuantityItem_1.QuantityItem),
-    (0, typeorm_1.JoinColumn)({ name: "quantityitemid" }),
-    __metadata("design:type", Object)
-], ProjectQuantity.prototype, "quantityItem", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: "numeric" }),
-    __metadata("design:type", Number)
-], ProjectQuantity.prototype, "quantity", void 0);
-__decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: "counterpartytype" }),
     __metadata("design:type", String)
-], ProjectQuantity.prototype, "unit", void 0);
+], CompanyBarterAgreement.prototype, "counterpartyType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "counterpartyid", type: "uuid", nullable: true }),
+    __metadata("design:type", Object)
+], CompanyBarterAgreement.prototype, "counterpartyId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "counterpartyname" }),
+    __metadata("design:type", String)
+], CompanyBarterAgreement.prototype, "counterpartyName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "agreementdate", type: "timestamp", nullable: false }),
+    __metadata("design:type", Date)
+], CompanyBarterAgreement.prototype, "agreementDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: "DRAFT" }),
+    __metadata("design:type", String)
+], CompanyBarterAgreement.prototype, "status", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: "text", nullable: true }),
     __metadata("design:type", String)
-], ProjectQuantity.prototype, "description", void 0);
+], CompanyBarterAgreement.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
-    __metadata("design:type", String)
-], ProjectQuantity.prototype, "category", void 0);
+    (0, typeorm_1.Column)({ name: "totalourvalue", type: "numeric", nullable: true }),
+    __metadata("design:type", Number)
+], CompanyBarterAgreement.prototype, "totalOurValue", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "totaltheirvalue", type: "numeric", nullable: true }),
+    __metadata("design:type", Number)
+], CompanyBarterAgreement.prototype, "totalTheirValue", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyBarterAgreementItem_1.CompanyBarterAgreementItem, (item) => item.barterAgreement),
+    __metadata("design:type", Array)
+], CompanyBarterAgreement.prototype, "items", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User),
     (0, typeorm_1.JoinColumn)({ name: "createdby" }),
     __metadata("design:type", User_1.User)
-], ProjectQuantity.prototype, "createdBy", void 0);
+], CompanyBarterAgreement.prototype, "createdBy", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User),
     (0, typeorm_1.JoinColumn)({ name: "updatedby" }),
     __metadata("design:type", User_1.User)
-], ProjectQuantity.prototype, "updatedBy", void 0);
+], CompanyBarterAgreement.prototype, "updatedBy", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({
         type: "timestamp",
@@ -74,7 +89,7 @@ __decorate([
         default: () => "CURRENT_TIMESTAMP",
     }),
     __metadata("design:type", Date)
-], ProjectQuantity.prototype, "createdatetime", void 0);
+], CompanyBarterAgreement.prototype, "createdatetime", void 0);
 __decorate([
     (0, typeorm_1.UpdateDateColumn)({
         type: "timestamp",
@@ -82,7 +97,7 @@ __decorate([
         default: () => "CURRENT_TIMESTAMP",
     }),
     __metadata("design:type", Date)
-], ProjectQuantity.prototype, "updatedatetime", void 0);
-exports.ProjectQuantity = ProjectQuantity = __decorate([
-    (0, typeorm_1.Entity)({ name: "projectquantities" })
-], ProjectQuantity);
+], CompanyBarterAgreement.prototype, "updatedatetime", void 0);
+exports.CompanyBarterAgreement = CompanyBarterAgreement = __decorate([
+    (0, typeorm_1.Entity)({ name: "companybarteragreements" })
+], CompanyBarterAgreement);

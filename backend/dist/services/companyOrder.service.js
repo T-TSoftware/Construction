@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCompanyOrderById = exports.getCompanyOrders = exports.updateOrderPaymentStatus = exports.createCompanyOrder = void 0;
+exports.updateOrderPaymentStatusNew = exports.getCompanyOrderById = exports.getCompanyOrders = exports.updateOrderPaymentStatus = exports.createCompanyOrder = void 0;
 const data_source_1 = require("../config/data-source");
 const CompanyOrder_1 = require("../entities/CompanyOrder");
 const CompanyStock_1 = require("../entities/CompanyStock");
@@ -41,7 +41,7 @@ const createCompanyOrder = async (data, currentUser, manager = data_source_1.App
         totalAmount: data.totalAmount,
         receivedAmount: 0,
         remainingAmount: data.totalAmount,
-        status: "UNPAID",
+        status: "UNCOLLECTED",
         description: data.description,
         stockType: data.stockType,
         company: { id: currentUser.companyId },
@@ -67,8 +67,8 @@ const updateOrderPaymentStatus = async (orderCode, amountReceived, currentUser, 
     });
     order.receivedAmount = Number(order.receivedAmount) + amountReceived;
     order.remainingAmount = Number(order.totalAmount) - order.receivedAmount;
-    order.status = order.remainingAmount <= 0 ? "PAID" : "PARTIAL";
-    order.updatedatetime = new Date();
+    order.status = order.remainingAmount <= 0 ? "COLLECTED" : "PARTIAL";
+    //order.updatedatetime = new Date();
     order.updatedBy = { id: currentUser.userId };
     console.log("BEFORE", order.receivedAmount, "ADDING", amountReceived);
     return await orderRepo.save(order);
@@ -101,3 +101,29 @@ const getCompanyOrderById = async (id, currentUser, manager = data_source_1.AppD
     return order;
 };
 exports.getCompanyOrderById = getCompanyOrderById;
+const updateOrderPaymentStatusNew = async (orderCode, amount, currentUser, manager, isReverse = false) => {
+    const orderRepo = manager.getRepository(CompanyOrder_1.CompanyOrder);
+    const order = await orderRepo.findOneOrFail({
+        where: {
+            code: orderCode,
+            company: { id: currentUser.companyId },
+        },
+    });
+    const factor = isReverse ? -1 : 1;
+    // ✅ receivedAmount güncelle (increment/decrement)
+    await orderRepo.increment({ id: order.id }, "receivedAmount", factor * amount);
+    // Güncellenmiş order'ı tekrar çek
+    const updatedOrder = await orderRepo.findOneOrFail({
+        where: { id: order.id },
+    });
+    // ✅ remainingAmount ve status hesapla
+    const remainingAmount = Number(updatedOrder.totalAmount) - Number(updatedOrder.receivedAmount);
+    const status = remainingAmount <= 0 ? "COLLECTED" : "PARTIAL";
+    updatedOrder.remainingAmount = remainingAmount;
+    updatedOrder.status = status;
+    updatedOrder.updatedBy = { id: currentUser.userId };
+    updatedOrder.updatedatetime = new Date();
+    // Kaydet
+    return await orderRepo.save(updatedOrder);
+};
+exports.updateOrderPaymentStatusNew = updateOrderPaymentStatusNew;

@@ -12,7 +12,7 @@ router.use(authMiddleware_1.authMiddleware);
 // 🔐 Only superadmin can post – validation + business logic
 router.post("/", (0, requestMiddleware_1.validateArrayBody)(validations_1.financeTransactionSchema), 
 /*validateFinanceArrayBody,*/ companyFinance_controller_1.postCompanyFinanceTransactionHandler);
-router.patch("/:code", 
+router.patch("/:id", 
 /*validateFinanceArrayBody,*/ companyFinance_controller_1.patchCompanyFinanceTransactionHandler);
 router.get("/", companyFinance_controller_1.getCompanyFinanceTransactionsHandler);
 router.get("/:id", companyFinance_controller_1.getCompanyFinanceTransactionByIdHandler);

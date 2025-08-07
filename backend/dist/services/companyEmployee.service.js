@@ -28,8 +28,11 @@ const createCompanyEmployee = async (data, currentUser, manager = data_source_1.
     await employeeRepo.save(employee);
     // 🔗 Projeleri ilişkilendir
     if (data.projectCodes?.length) {
-        const projects = await projectRepo.findBy({
-            code: (0, typeorm_1.In)(data.projectCodes),
+        const projects = await projectRepo.find({
+            where: {
+                code: (0, typeorm_1.In)(data.projectCodes),
+                company: { id: currentUser.companyId }, // 🔒 sadece yetkili şirketin projeleri
+            },
         });
         if (projects.length !== data.projectCodes.length) {
             throw new Error("Bazı projectCode'lar geçersiz.");
@@ -57,7 +60,7 @@ const getCompanyEmployees = async (currentUser, manager = data_source_1.AppDataS
         where: {
             company: { id: currentUser.companyId },
         },
-        relations: ["company", "employeeProjects", "employeeProjects.project"],
+        relations: ["employeeProjects", "employeeProjects.project"],
         order: { createdatetime: "DESC" },
     });
     return employees;
@@ -70,7 +73,7 @@ const getCompanyEmployeeById = async (id, currentUser, manager = data_source_1.A
             id,
             company: { id: currentUser.companyId },
         },
-        relations: ["company", "employeeProjects", "employeeProjects.project"],
+        relations: ["employeeProjects", "employeeProjects.project"],
     });
     if (!employee) {
         throw new Error("İlgili Çalışan bulunamadı.");
@@ -82,7 +85,9 @@ const updateCompanyEmployee = async (id, data, currentUser, manager = data_sourc
     const employeeRepo = manager.getRepository(CompanyEmployee_1.CompanyEmployee);
     const employeeProjectRepo = manager.getRepository(CompanyEmployeeProject_1.CompanyEmployeeProject);
     const projectRepo = manager.getRepository(CompanyProject_1.CompanyProject);
-    const employee = await employeeRepo.findOneByOrFail({ id });
+    const employee = await employeeRepo.findOneOrFail({
+        where: { id, company: { id: currentUser.companyId } }, // ✅ güvenli filtreleme
+    });
     // 📝 Alanları güncelle
     employee.firstName = data.firstName ?? employee.firstName;
     employee.lastName = data.lastName ?? employee.lastName;
@@ -93,10 +98,12 @@ const updateCompanyEmployee = async (id, data, currentUser, manager = data_sourc
     employee.position = data.position ?? employee.position;
     employee.department = data.department ?? employee.department;
     employee.paidLeaveAmount = data.paidLeaveAmount ?? employee.paidLeaveAmount;
-    employee.unpaidLeaveAmount = data.unpaidLeaveAmount ?? employee.unpaidLeaveAmount;
+    employee.unpaidLeaveAmount =
+        data.unpaidLeaveAmount ?? employee.unpaidLeaveAmount;
     employee.sickLeaveAmount = data.sickLeaveAmount ?? employee.sickLeaveAmount;
     employee.roadLeaveAmount = data.roadLeaveAmount ?? employee.roadLeaveAmount;
-    employee.excuseLeaveAmount = data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
+    employee.excuseLeaveAmount =
+        data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
     employee.code = `${employee.position}-${employee.firstName}${employee.lastName}`;
     employee.updatedBy = { id: currentUser.userId };
     await employeeRepo.save(employee);
@@ -107,6 +114,7 @@ const updateCompanyEmployee = async (id, data, currentUser, manager = data_sourc
         // Yeni eşleşmeleri ekle
         const projectEntities = await projectRepo.findBy({
             code: (0, typeorm_1.In)(data.projectCodes),
+            company: { id: currentUser.companyId }, // ✅ Şirket doğrulaması
         });
         const projectAssignments = projectEntities.map((project) => employeeProjectRepo.create({
             employee: { id: employee.id },

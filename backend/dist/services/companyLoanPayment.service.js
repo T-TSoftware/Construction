@@ -3,70 +3,69 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportCompanyLoanPaymentsToPdf = exports.exportCompanyLoanPaymentsToCsv = exports.updateCompanyLoanPayment = exports.getCompanyLoanPaymentById = exports.getCompanyLoanPayments = exports.createCompanyLoanPayment = void 0;
+exports.exportCompanyLoanPaymentsToPdf = exports.exportCompanyLoanPaymentsToCsv = exports.updateLoanPaymentStatusNew = exports.updateLoanPaymentStatus = exports.updateCompanyLoanPayment = exports.getCompanyLoanPaymentsByLoanId = exports.getCompanyLoanPaymentById = exports.getCompanyLoanPayments = exports.createCompanyLoanPayment = void 0;
 const data_source_1 = require("../config/data-source");
 const CompanyLoanPayment_1 = require("../entities/CompanyLoanPayment");
 const CompanyLoan_1 = require("../entities/CompanyLoan");
 const CompanyFinance_1 = require("../entities/CompanyFinance");
-const companyFinance_service_1 = require("./companyFinance.service");
 const companyLoan_service_1 = require("./companyLoan.service");
 const json2csv_1 = require("json2csv");
 const pdfmake_1 = __importDefault(require("pdfmake"));
 const path_1 = __importDefault(require("path"));
-const createCompanyLoanPayment = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
+const errorHandler_1 = require("../utils/errorHandler");
+const createCompanyLoanPayment = async (loanId, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const loanRepo = manager.getRepository(CompanyLoan_1.CompanyLoan);
     const paymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
     const loan = await loanRepo.findOneOrFail({
-        where: { code: data.loanCode, company: { id: currentUser.companyId } },
+        where: {
+            id: loanId,
+            company: { id: currentUser.companyId }, // ✅ Şirket kontrolü burada yapılmış
+        },
         relations: ["bank", "project"],
     });
-    // 💸 Duruma göre otomatik finansal işlem oluştur
-    let transaction = null;
-    if (data.status === "PAID") {
-        transaction = await (0, companyFinance_service_1.createLoanTransactionFromPaymentData)({
-            paymentCode: `${data.loanCode}-TAKSIT:${data.installmentNumber}`,
-            amount: data.paymentAmount ?? data.totalAmount,
-            transactionDate: data.paymentDate ?? new Date(),
-            bankId: loan.bank.id,
-            loanName: loan.name,
-            installmentNumber: data.installmentNumber,
-            projectId: loan.project?.id,
-            description: data.description,
-        }, currentUser, manager);
-        await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(loan.id, data.principalAmount, data.interestAmount, data.interestAmount + data.principalAmount + data.penaltyAmount, currentUser.userId, manager);
-    }
     // 🧾 LoanPayment oluşturuluyor
     const payment = paymentRepo.create({
         loan: { id: loan.id },
-        code: `${data.loanCode}-TAKSIT:${data.installmentNumber}`,
+        code: `${loan.code}-TAKSIT:${data.installmentNumber}`,
         installmentNumber: data.installmentNumber,
         dueDate: data.dueDate,
-        totalAmount: data.totalAmount,
+        totalAmount: data.principalAmount + data.interestAmount, //data.totalAmount,
         interestAmount: data.interestAmount,
         principalAmount: data.principalAmount,
-        paymentAmount: data.paymentAmount,
+        paymentAmount: 0,
         penaltyAmount: data.penaltyAmount,
+        remainingAmount: data.totalAmount,
         status: data.status ?? "PENDING",
         paymentDate: data.paymentDate,
-        financeTransaction: transaction ?? undefined,
+        company: { id: currentUser.companyId }, // ✅ Şirkete ait olarak kaydediliyor
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
     });
-    return await paymentRepo.save(payment);
+    /*try {
+      return await paymentRepo.save(payment);
+    } catch (error: any) {
+      if (error.code === "23505") {
+        throw new Error("Bu Taksit Numarası zaten mevcut. Lütfen farklı bir taksit numarası seçin.");
+      }
+      throw new Error("Taksit kaydı sırasında bir hata oluştu.");
+    }*/
+    /*return await handleSaveWithUniqueConstraint(
+      () => paymentRepo.save(payment),
+      "Taksit kaydı oluşturulamadı."
+    );*/
+    return await (0, errorHandler_1.handleSaveWithUniqueConstraint)(() => paymentRepo.save(payment), "CompanyLoanPayment");
 };
 exports.createCompanyLoanPayment = createCompanyLoanPayment;
 const getCompanyLoanPayments = async (currentUser, manager = data_source_1.AppDataSource.manager) => {
     const repo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
     const transactions = await repo.find({
         where: {
-            loan: { company: { id: currentUser.companyId } },
+            company: { id: currentUser.companyId }, // ✅ doğrudan companyId ile filtreleme
         },
         relations: [
-            "loan",
-            "loan.company",
+            "loan", // ✔ sadece gerekli ilişkiler kaldı
             "loan.project",
             "loan.bank",
-            "financeTransaction",
         ],
         order: { installmentNumber: "ASC" },
     });
@@ -78,15 +77,9 @@ const getCompanyLoanPaymentById = async (id, currentUser, manager = data_source_
     const payment = await repo.findOne({
         where: {
             id,
-            loan: { company: { id: currentUser.companyId } },
+            company: { id: currentUser.companyId },
         },
-        relations: [
-            "loan",
-            "loan.company",
-            "loan.project",
-            "loan.bank",
-            "financeTransaction",
-        ],
+        relations: ["loan", "loan.project", "loan.bank"],
     });
     if (!payment) {
         throw new Error("İlgili kredi taksiti bulunamadı.");
@@ -94,6 +87,19 @@ const getCompanyLoanPaymentById = async (id, currentUser, manager = data_source_
     return payment;
 };
 exports.getCompanyLoanPaymentById = getCompanyLoanPaymentById;
+const getCompanyLoanPaymentsByLoanId = async (loanId, currentUser, manager = data_source_1.AppDataSource.manager) => {
+    const repo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
+    const payments = await repo.find({
+        where: {
+            company: { id: currentUser.companyId },
+            loan: { id: loanId },
+        },
+        relations: ["loan", "loan.project", "loan.bank"],
+        order: { installmentNumber: "ASC" },
+    });
+    return payments;
+};
+exports.getCompanyLoanPaymentsByLoanId = getCompanyLoanPaymentsByLoanId;
 const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const paymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
     const transactionRepo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
@@ -102,10 +108,10 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
         where: { id },
         relations: [
             "loan",
-            "loan.company",
             "loan.bank",
             "loan.project",
             "financeTransaction",
+            "company",
         ],
     });
     const loan = await loanRepo.findOneOrFail({
@@ -127,62 +133,78 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
     console.log(newPaymentAmount, "    !!!");
     const code = payment.code;
     // const code = payment.code; ❌ bunu tamamen sil
-    // 🔁 1. Eğer eski status PAID ama yeni değilse → geri al + transaction sil
+    /* 🔁 1. Eğer eski status PAID ama yeni değilse → geri al + transaction sil
     if (oldStatus === "PAID" && newStatus !== "PAID") {
-        await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(payment.loan.id, payment.principalAmount, payment.interestAmount, newPaymentAmount ?? payment.paymentAmount, currentUser.userId, manager, true // reverse
-        );
-        if (payment.financeTransaction) {
-            await (0, companyFinance_service_1.deleteCompanyFinanceTransactionById)(payment.financeTransaction.id, currentUser, manager);
-        }
+      await updateCompanyLoanPaymentChange(
+        payment.loan.id,
+        newPaymentAmount ?? payment.paymentAmount,
+        currentUser.userId,
+        manager,
+        true // reverse
+      );
     }
-    // 🔁 2. Eğer yeni status PAID ama eski değeri PAID değilse → apply et
+  */
+    /* 🔁 2. Eğer yeni status PAID ama eski değeri PAID değilse → apply et
     if (oldStatus !== "PAID" && newStatus === "PAID") {
-        let transaction = null;
-        transaction = await (0, companyFinance_service_1.createLoanTransactionFromPaymentData)({
-            paymentCode: `${payment.code}-TAKSIT:${data.installmentNumber}`,
-            amount: newPaymentAmount ?? payment.paymentAmount,
-            transactionDate: data.paymentDate ?? new Date(),
-            bankId: loan.bank.id,
-            loanName: loan.name,
-            installmentNumber: payment.installmentNumber,
-            projectId: loan.project?.id,
-            description: data.description,
-        }, currentUser, manager);
-        await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(payment.loan.id, data.principalAmount ?? payment.principalAmount, data.interestAmount ?? payment.interestAmount, newPaymentAmount ?? payment.paymentAmount, currentUser.userId, manager);
+      await updateCompanyLoanPaymentChange(
+        payment.loan.id,
+        newPaymentAmount ?? payment.paymentAmount,
+        currentUser.userId,
+        manager
+      );
     }
-    // 🔁 3. Hem eski hem yeni PAID → amount veya tarih değiştiyse transaction güncelle
+    */
+    /* 🔁 3. Hem eski hem yeni PAID → amount veya tarih değiştiyse transaction güncelle
     if (oldStatus === "PAID" && newStatus === "PAID") {
-        const transactionCode = payment.financeTransaction?.code;
-        if (!transactionCode) {
-            throw new Error("Bu ödeme kaydına ait bir finansal işlem bulunamadı.");
-        }
-        const amountChanged = data.paymentAmount !== undefined &&
-            data.paymentAmount !== payment.paymentAmount;
-        const interestChanged = data.interestAmount !== undefined &&
-            data.interestAmount !== payment.interestAmount;
-        const principalChanged = data.principalAmount !== undefined &&
-            data.principalAmount !== payment.principalAmount;
-        const penaltyChanged = data.penaltyAmount !== undefined &&
-            data.penaltyAmount !== payment.penaltyAmount;
-        if (amountChanged ||
-            interestChanged ||
-            principalChanged ||
-            penaltyChanged ||
-            data.paymentDate) {
-            await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(payment.loan.id, payment.principalAmount, payment.interestAmount, oldAmount, currentUser.userId, manager, true // reverse
-            );
-            // 2. Loan yeniden güncelle (yeni değerle)
-            await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(payment.loan.id, data.principalAmount ?? payment.principalAmount, data.interestAmount ?? payment.interestAmount, newPaymentAmount, currentUser.userId, manager);
-            await (0, companyFinance_service_1.updateCompanyFinanceTransaction)(transactionCode, {
-                amount: newAmount,
-                //description: data.description ?? payment.description,
-                transactionDate: data.paymentDate ?? payment.paymentDate,
-            }, currentUser, manager);
-        }
+      const transactionCode = payment.financeTransaction?.code;
+  
+      if (!transactionCode) {
+        throw new Error("Bu ödeme kaydına ait bir finansal işlem bulunamadı.");
+      }
+      const amountChanged =
+        data.paymentAmount !== undefined &&
+        data.paymentAmount !== payment.paymentAmount;
+  
+      const interestChanged =
+        data.interestAmount !== undefined &&
+        data.interestAmount !== payment.interestAmount;
+  
+      const principalChanged =
+        data.principalAmount !== undefined &&
+        data.principalAmount !== payment.principalAmount;
+  
+      const penaltyChanged =
+        data.penaltyAmount !== undefined &&
+        data.penaltyAmount !== payment.penaltyAmount;
+  
+      if (
+        amountChanged ||
+        interestChanged ||
+        principalChanged ||
+        penaltyChanged ||
+        data.paymentDate
+      ) {
+        await updateCompanyLoanPaymentChange(
+          payment.loan.id,
+          oldAmount,
+          currentUser.userId,
+          manager,
+          true // reverse
+        );
+  
+        // 2. Loan yeniden güncelle (yeni değerle)
+        await updateCompanyLoanPaymentChange(
+          payment.loan.id,
+          newPaymentAmount,
+          currentUser.userId,
+          manager
+        );
+      
+      }
     }
+    */
     // 🧾 Son olarak payment kaydını güncelle
     await paymentRepo.update({ id }, {
-        installmentNumber: data.installmentNumber,
         dueDate: data.dueDate,
         totalAmount: data.totalAmount,
         interestAmount: data.interestAmount,
@@ -197,6 +219,72 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
     });
 };
 exports.updateCompanyLoanPayment = updateCompanyLoanPayment;
+const updateLoanPaymentStatus = async (paymentCode, amountPaid, transactionDate, currentUser, manager) => {
+    const paymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
+    const payment = await paymentRepo.findOneOrFail({
+        where: {
+            code: paymentCode,
+            company: { id: currentUser.companyId },
+        },
+        relations: ["loan"],
+    });
+    const totalPaid = Number(payment.paymentAmount ?? 0) + amountPaid;
+    const totalExpected = Number(payment.totalAmount ?? 0);
+    const rawRemaining = totalExpected - totalPaid;
+    const remainingAmount = rawRemaining < 0 ? 0 : rawRemaining;
+    const penaltyAmount = totalPaid > totalExpected ? totalPaid - totalExpected : 0;
+    const status = totalPaid >= totalExpected ? "PAID" : "PARTIAL";
+    // 🔁 Güncelle
+    payment.paymentAmount = totalPaid;
+    payment.penaltyAmount = penaltyAmount;
+    payment.remainingAmount = remainingAmount;
+    payment.status = status;
+    payment.paymentDate = transactionDate;
+    payment.updatedBy = { id: currentUser.userId };
+    await paymentRepo.save(payment);
+    // 🔄 Loan üzerindeki tutarları güncelle
+    await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(payment.loan.id, payment.principalAmount ?? 0, payment.interestAmount ?? 0, totalExpected, currentUser.userId, manager);
+    return { payment };
+};
+exports.updateLoanPaymentStatus = updateLoanPaymentStatus;
+const updateLoanPaymentStatusNew = async (paymentCode, amount, 
+//transactionDate: Date,
+currentUser, manager, isReverse = false) => {
+    const paymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
+    const payment = await paymentRepo.findOneOrFail({
+        where: {
+            code: paymentCode,
+            company: { id: currentUser.companyId },
+        },
+        relations: ["loan"],
+    });
+    const factor = isReverse ? -1 : 1;
+    // ✅ paymentAmount güncelle (increment/decrement)
+    await paymentRepo.increment({ id: payment.id }, "paymentAmount", factor * amount);
+    // Güncellenmiş payment tekrar çek
+    const updatedPayment = await paymentRepo.findOneOrFail({
+        where: { id: payment.id },
+        relations: ["loan"],
+    });
+    // ✅ Durum, kalan ve ceza hesapla
+    const totalExpected = Number(updatedPayment.totalAmount ?? 0);
+    const totalPaid = Number(updatedPayment.paymentAmount ?? 0);
+    const rawRemaining = totalExpected - totalPaid;
+    const remainingAmount = rawRemaining < 0 ? 0 : rawRemaining;
+    const penaltyAmount = totalPaid > totalExpected ? totalPaid - totalExpected : 0;
+    const status = totalPaid >= totalExpected ? "PAID" : "PARTIAL";
+    updatedPayment.remainingAmount = remainingAmount;
+    updatedPayment.penaltyAmount = penaltyAmount;
+    updatedPayment.status = status;
+    //updatedPayment.paymentDate = transactionDate;
+    updatedPayment.updatedBy = { id: currentUser.userId };
+    updatedPayment.updatedatetime = new Date();
+    await paymentRepo.save(updatedPayment);
+    // 🔄 Loan üzerindeki kalan borçları güncelle
+    await (0, companyLoan_service_1.updateCompanyLoanPaymentChange)(updatedPayment.loan.id, updatedPayment.principalAmount ?? 0, updatedPayment.interestAmount ?? 0, totalExpected, currentUser.userId, manager);
+    return { payment: updatedPayment };
+};
+exports.updateLoanPaymentStatusNew = updateLoanPaymentStatusNew;
 /*---------------------------------------------------------------------------------------------------*/
 const exportCompanyLoanPaymentsToCsv = async (payments) => {
     const fields = [

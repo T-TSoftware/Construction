@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCompanyFinanceTransactionById = exports.createLoanTransactionFromPaymentData = exports.getCompanyFinanceTransactionById = exports.getCompanyFinanceTransactions = exports.updateCompanyBalanceAfterTransaction = exports.updateCompanyFinanceTransaction = exports.createCompanyFinanceTransaction = void 0;
+exports.deleteCompanyFinanceTransactionById = exports.createBarterTransactionFromCashDetailData = exports.createLoanTransactionFromPaymentData = exports.getCompanyFinanceTransactionById = exports.getCompanyFinanceTransactions = exports.updateCompanyBalanceAfterTransaction = exports.updateCompanyFinanceTransaction = exports.createCompanyFinanceTransaction = void 0;
 const CompanyFinance_1 = require("../entities/CompanyFinance");
 const CompanyBalance_1 = require("../entities/CompanyBalance");
 const CompanyProject_1 = require("../entities/CompanyProject");
@@ -24,7 +24,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         ? await orderRepo.findOneByOrFail({ code: data.orderCode })
         : null;
     const project = data.projectCode
-        ? await projectRepo.findOneByOrFail({ id: data.projectCode })
+        ? await projectRepo.findOneByOrFail({ code: data.projectCode })
         : null;
     const results = [];
     // TRANSFER işlemiyse çift kayıt oluştur
@@ -52,7 +52,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             category: data.category,
             invoiceYN: data.invoiceYN ?? "N",
             invoiceCode: data.invoiceCode,
-            checkCode: data.checkCode,
+            //checkCode: data.checkCode,
             description: `Transfer to ${toAccount.name}`,
             company: { id: currentUser.companyId },
             project: project ? { id: project.id } : null,
@@ -101,7 +101,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         category: data.category,
         invoiceYN: data.invoiceYN ?? "N",
         invoiceCode: data.invoiceCode,
-        checkCode: data.checkCode,
+        //checkCode: data.checkCode,
         description: data.description,
         company: { id: currentUser.companyId },
         project: project ? { id: project.id } : null,
@@ -127,7 +127,6 @@ const updateCompanyFinanceTransaction = async (code, data, currentUser, manager 
         where: { code, company: { id: currentUser.companyId } },
         relations: ["fromAccount", "toAccount", "company", "project", "order"],
     });
-    console.log(existing);
     if (!existing) {
         throw new Error("Finansal işlem bulunamadı.");
     }
@@ -163,7 +162,7 @@ const updateCompanyFinanceTransaction = async (code, data, currentUser, manager 
     existing.category = data.category ?? existing.category;
     existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
     existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
-    existing.checkCode = data.checkCode ?? existing.checkCode;
+    existing.referenceCode = data.referenceCode ?? existing.referenceCode;
     existing.description = data.description ?? existing.description;
     //existing.order = newOrder;
     existing.project = newProject;
@@ -201,6 +200,7 @@ const updateCompanyBalanceAfterTransaction = async (type, fromAccountId, toAccou
     // Tahsilatta: normalde +amount → ters işlemde -amount
     const sign = isReverse ? 1 : -1; // PAYMENT ve TRANSFER işlemlerinde kullanılır
     const reverseSign = isReverse ? -1 : 1; // COLLECTION işlemi için
+    console.log("enter updateee", fromAccountId, " ", type);
     // 🔻 Ödeme (PAYMENT): Paranın çıktığı hesabın bakiyesi azalır
     if (type === "PAYMENT" && fromAccountId) {
         await repo.increment({ id: fromAccountId }, "amount", sign * amount);
@@ -263,10 +263,10 @@ const createLoanTransactionFromPaymentData = async (payment, currentUser, manage
         targetName: payment.loanName,
         transactionDate: payment.transactionDate,
         method: "BANK",
-        category: "Kredi Ödeme",
+        category: "KREDI",
         source: `${payment.paymentCode} Ödemesi`,
         invoiceYN: "Y",
-        loanCode: payment.paymentCode,
+        referenceCode: payment.paymentCode,
         description: payment.description,
         company: { id: currentUser.companyId },
         project: payment.projectId ? { id: payment.projectId } : null,
@@ -278,16 +278,44 @@ const createLoanTransactionFromPaymentData = async (payment, currentUser, manage
     return saved;
 };
 exports.createLoanTransactionFromPaymentData = createLoanTransactionFromPaymentData;
+const createBarterTransactionFromCashDetailData = async (cashDetail, currentUser, manager = data_source_1.AppDataSource.manager) => {
+    const repo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
+    const type = cashDetail.direction === "OUT" ? "PAYMENT" : "COLLECTION";
+    const code = await (0, generateCode_1.generateFinanceTransactionCode)(type, cashDetail.transactionDate, manager);
+    const transaction = repo.create({
+        type,
+        code,
+        amount: cashDetail.amount,
+        currency: cashDetail.currency,
+        fromAccount: { id: cashDetail.fromAccountId },
+        targetName: cashDetail.barterName,
+        transactionDate: cashDetail.transactionDate,
+        method: "BANK",
+        category: "BARTER",
+        source: `${cashDetail.barterItemCode} Takas`,
+        //barterCode: cashDetail.barterItemCode,
+        description: cashDetail.description,
+        company: { id: currentUser.companyId },
+        project: cashDetail.projectId ? { id: cashDetail.projectId } : null,
+        createdBy: { id: currentUser.userId },
+        updatedBy: { id: currentUser.userId },
+    });
+    const saved = await repo.save(transaction);
+    await (0, exports.updateCompanyBalanceAfterTransaction)(type, cashDetail.fromAccountId, null, cashDetail.amount, manager);
+    return saved;
+};
+exports.createBarterTransactionFromCashDetailData = createBarterTransactionFromCashDetailData;
 const deleteCompanyFinanceTransactionById = async (id, currentUser, manager) => {
     const transactionRepo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
     const transaction = await transactionRepo.findOneOrFail({
         where: { id },
-        relations: ["company"],
+        relations: ["company", "fromAccount", "toAccount"],
     });
     if (transaction.company.id !== currentUser.companyId) {
         throw new Error("Bu finansal işlem kaydına erişim yetkiniz yok.");
     }
-    await (0, exports.updateCompanyBalanceAfterTransaction)(transaction.type, transaction.fromAccount?.id ?? null, transaction.toAccount?.id ?? null, transaction.amount, manager, true);
+    console.log("from account from: ", transaction.fromAccount);
+    await (0, exports.updateCompanyBalanceAfterTransaction)(transaction.type, transaction.fromAccount.id, transaction.toAccount?.id ?? null, transaction.amount, manager, true);
     await transactionRepo.delete({ id: transaction.id });
 };
 exports.deleteCompanyFinanceTransactionById = deleteCompanyFinanceTransactionById;

@@ -15,6 +15,8 @@ const CompanyProject_1 = require("./CompanyProject");
 const QuantityItem_1 = require("./QuantityItem");
 const User_1 = require("./User");
 const ProjectQuantity_1 = require("./ProjectQuantity");
+const Company_1 = require("./Company");
+const CompanyFinance_1 = require("./CompanyFinance");
 let ProjectSupplier = class ProjectSupplier {
 };
 exports.ProjectSupplier = ProjectSupplier;
@@ -26,6 +28,11 @@ __decorate([
     (0, typeorm_1.Column)({ unique: true }),
     __metadata("design:type", String)
 ], ProjectSupplier.prototype, "code", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }),
+    __metadata("design:type", Company_1.Company)
+], ProjectSupplier.prototype, "company", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyProject_1.CompanyProject),
     (0, typeorm_1.JoinColumn)({ name: "projectid" }) // camelCase → FK
@@ -41,10 +48,10 @@ __decorate([
 __decorate([
     (0, typeorm_1.ManyToOne)(() => ProjectQuantity_1.ProjectQuantity, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: "projectquantityid" }),
-    __metadata("design:type", ProjectQuantity_1.ProjectQuantity)
+    __metadata("design:type", Object)
 ], ProjectSupplier.prototype, "projectQuantity", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "addedfromquantityyn", type: "varchar", default: 'N' }),
+    (0, typeorm_1.Column)({ name: "addedfromquantityyn", type: "varchar", default: "N" }),
     __metadata("design:type", String)
 ], ProjectSupplier.prototype, "addedFromQuantityYN", void 0);
 __decorate([
@@ -120,6 +127,10 @@ __decorate([
     ,
     __metadata("design:type", User_1.User)
 ], ProjectSupplier.prototype, "updatedBy", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => CompanyFinance_1.CompanyFinanceTransaction, (financeTransaction) => financeTransaction.supplier),
+    __metadata("design:type", Array)
+], ProjectSupplier.prototype, "transactions", void 0);
 exports.ProjectSupplier = ProjectSupplier = __decorate([
     (0, typeorm_1.Entity)({ name: "projectsuppliers" })
 ], ProjectSupplier);

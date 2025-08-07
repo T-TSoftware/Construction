@@ -67,7 +67,7 @@ __decorate([
     __metadata("design:type", Number)
 ], CompanyOrder.prototype, "remainingAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: "UNPAID" }),
+    (0, typeorm_1.Column)({ default: "UNCOLLECTED" }),
     __metadata("design:type", String)
 ], CompanyOrder.prototype, "status", void 0);
 __decorate([

@@ -9,7 +9,7 @@ router.post("/:employeeId",
 /* validateBody, */ companyEmployeeLeave_controller_1.postCompanyEmployeeLeaveHandler);
 router.patch("/:leaveId", companyEmployeeLeave_controller_1.patchCompanyEmployeeLeaveHandler);
 router.get("/", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesHandler);
-router.get("/:employeeId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesByEmployeeIdHandler);
-router.get("/:employeeId/leaves/:leaveId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
+router.get("/employee/:employeeId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesByEmployeeIdHandler);
+router.get("/:leaveId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
 router.delete("/:employeeId/leaves/:leaveId", companyEmployeeLeave_controller_1.deleteCompanyEmployeeLeaveHandler);
 exports.default = router;

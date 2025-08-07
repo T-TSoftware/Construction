@@ -15,6 +15,7 @@ const postProjectSubcontractorHandler = async (req, res) => {
             return;
         }
         const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
         const newSubcontractor = await (0, projectSubcontractor_service_1.createProjectSubcontractor)({
             projectId,
             category,
@@ -26,7 +27,7 @@ const postProjectSubcontractorHandler = async (req, res) => {
             paidAmount,
             status,
             description,
-        }, { userId });
+        }, { userId, companyId });
         res.status(201).json(newSubcontractor);
     }
     catch (error) {
@@ -39,7 +40,9 @@ exports.postProjectSubcontractorHandler = postProjectSubcontractorHandler;
 const getProjectSubcontractorsHandler = async (req, res) => {
     try {
         const { projectId } = req.params;
-        const subcontractors = await (0, projectSubcontractor_service_1.getProjectSubcontractors)(projectId);
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const subcontractors = await (0, projectSubcontractor_service_1.getProjectSubcontractors)(projectId, companyId);
         res.status(200).json(subcontractors);
     }
     catch (error) {
@@ -57,7 +60,8 @@ const patchProjectSubcontractorHandler = async (req, res) => {
     try {
         const { projectId, code } = req.params;
         const userId = req.user.userId.toString();
-        const updatedSubcontractor = await (0, projectSubcontractor_service_1.updateProjectSubcontractor)(projectId, code, req.body, { userId });
+        const companyId = req.user.companyId;
+        const updatedSubcontractor = await (0, projectSubcontractor_service_1.updateProjectSubcontractor)(projectId, code, req.body, { userId, companyId });
         res.status(200).json(updatedSubcontractor);
     }
     catch (error) {

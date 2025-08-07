@@ -36,6 +36,10 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyCheck.prototype, "transactionDate", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: "duedate", type: "date" }),
+    __metadata("design:type", Date)
+], CompanyCheck.prototype, "dueDate", void 0);
+__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], CompanyCheck.prototype, "firm", void 0);
@@ -64,6 +68,13 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "bankid" }),
     __metadata("design:type", CompanyBalance_1.CompanyBalance)
 ], CompanyCheck.prototype, "bank", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: "remainingamount",
+        type: "numeric",
+    }),
+    __metadata("design:type", Number)
+], CompanyCheck.prototype, "remainingAmount", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyFinance_1.CompanyFinanceTransaction, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: "transactionid" }),

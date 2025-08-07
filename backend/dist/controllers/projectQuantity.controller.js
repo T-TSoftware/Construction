@@ -10,11 +10,12 @@ const postProjectQuantityHandler = async (req, res) => {
     try {
         const { projectId } = req.params;
         const { quantityItemCode, quantity, unit, description, category } = req.body;
-        if (!quantityItemCode || !quantity || !unit) {
+        if (!quantity || !unit) {
             res.status(400).json({ error: "Gerekli alanlar eksik." });
             return;
         }
         const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
         const newRecord = await (0, projectQuantity_service_1.createProjectQuantity)({
             projectId,
             quantityItemCode,
@@ -22,7 +23,7 @@ const postProjectQuantityHandler = async (req, res) => {
             unit,
             description,
             category,
-        }, { userId });
+        }, { userId, companyId });
         res.status(201).json({
             message: "Metraj başarıyla eklendi.",
             id: newRecord.id,
@@ -30,7 +31,9 @@ const postProjectQuantityHandler = async (req, res) => {
     }
     catch (error) {
         console.error("❌ POST project quantity error:", error);
-        res.status(500).json({ error: "Metraj kaydı oluşturulamadı." });
+        res
+            .status(500)
+            .json({ error: error.message || "Metraj kaydı oluşturulamadı." });
         return;
     }
 };
@@ -38,11 +41,13 @@ exports.postProjectQuantityHandler = postProjectQuantityHandler;
 const getProjectQuantitiesHandler = async (req, res) => {
     try {
         const { projectId } = req.params;
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
         if (!projectId) {
             res.status(400).json({ error: "projectId parametresi zorunludur." });
             return;
         }
-        const result = await (0, projectQuantity_service_1.getProjectQuantities)(projectId);
+        const result = await (0, projectQuantity_service_1.getProjectQuantities)(projectId, { userId, companyId });
         res.status(200).json(result);
     }
     catch (error) {

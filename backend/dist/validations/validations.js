@@ -71,13 +71,13 @@ const checkSchema = (mode) => zod_1.z.object({
         .refine((val) => val instanceof Date, {
         message: "Geçerli bir çek kesim tarihi giriniz.",
     }),
-    transactionDate: zod_1.z
-        .coerce
-        .date()
-        .optional()
-        .refine((val) => val instanceof Date, {
+    /*transactionDate: z
+      .coerce
+      .date()
+      .optional()
+      .refine((val) => val instanceof Date, {
         message: "Geçerli bir Ödeme/Tahsilat tarihi giriniz.",
-    }),
+      }),*/
     firm: mode === "create" ? zod_1.z.string().min(1, "Firma zorunludur") : zod_1.z.string().optional(),
     amount: mode === "create"
         ? zod_1.z
@@ -95,11 +95,11 @@ const checkSchema = (mode) => zod_1.z.object({
             required_error: "İşlem tipi zorunludur.",
         })
         : zod_1.z.enum(["PAYMENT", "COLLECTION"]).optional(),
-    status: mode === "create"
-        ? zod_1.z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED", "NOTDUE"], {
-            required_error: "Durum zorunludur.",
+    /*status: mode === "create"
+      ? z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED","NOTDUE"], {
+          required_error: "Durum zorunludur.",
         })
-        : zod_1.z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"]).optional(),
+      : z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"]).optional(),*/
     projectId: zod_1.z.string().optional(),
     description: zod_1.z.string().optional(),
 });

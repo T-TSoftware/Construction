@@ -137,9 +137,9 @@ const getCompanyEmployeeLeaveByIdHandler = async (req, res) => {
         const { employeeId, leaveId } = req.params;
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        if (!employeeId || !leaveId) {
-            throw new Error("Geçerli bir çalışan veya izin ID'si belirtilmelidir.");
-        }
+        /*if (!employeeId || !leaveId) {
+          throw new Error("Geçerli bir çalışan veya izin ID'si belirtilmelidir.");
+        }*/
         const getEmployeeLeave = await (0, companyEmployeeLeave_service_1.getCompanyEmployeeLeaveById)(employeeId, leaveId, { userId, companyId }, data_source_1.AppDataSource.manager);
         res.status(200).json(getEmployeeLeave);
     }
