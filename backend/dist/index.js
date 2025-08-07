@@ -37,9 +37,13 @@ const quantityItem_routes_1 = __importDefault(require("./routes/quantityItem.rou
 const stockItem_routes_1 = __importDefault(require("./routes/stockItem.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+const allowedOrigins = [
+    "https://artikonsept.vercel.app", // ✅ Canlı frontend URL'in
+    "http://localhost:5173", // ✅ Geliştirme için (Vite default)
+];
 // ✨ CORS middleware
 app.use((0, cors_1.default)({
-    origin: "http://localhost:5173", // sadece Vite frontend'den istek gelsin
+    origin: allowedOrigins, // sadece Vite frontend'den istek gelsin
     credentials: true, // eğer cookie/token gibi bilgiler gönderiyorsan
 }));
 app.use(express_1.default.json());

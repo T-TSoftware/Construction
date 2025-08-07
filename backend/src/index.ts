@@ -40,10 +40,15 @@ dotenv.config();
 
 const app = express();
 
+const allowedOrigins = [
+  "https://artikonsept.vercel.app", // ✅ Canlı frontend URL'in
+  "http://localhost:5173", // ✅ Geliştirme için (Vite default)
+];
+
 // ✨ CORS middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // sadece Vite frontend'den istek gelsin
+    origin: allowedOrigins, // sadece Vite frontend'den istek gelsin
     credentials: true, // eğer cookie/token gibi bilgiler gönderiyorsan
   })
 );
