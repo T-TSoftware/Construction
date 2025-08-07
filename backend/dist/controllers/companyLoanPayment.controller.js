@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportLoanPaymentsPdfHandler = exports.exportLoanPaymentsHandler = exports.getCompanyLoanPaymentByIdHandler = exports.getCompanyLoanPaymentsHandler = exports.patchCompanyLoanPaymentHandler = exports.postCompanyLoanPaymentHandler = void 0;
+exports.exportLoanPaymentsPdfHandler = exports.exportLoanPaymentsHandler = exports.getCompanyLoanPaymentsByLoanIdHandler = exports.getCompanyLoanPaymentByIdHandler = exports.getCompanyLoanPaymentsHandler = exports.patchCompanyLoanPaymentHandler = exports.postCompanyLoanPaymentHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const companyLoanPayment_service_1 = require("../services/companyLoanPayment.service");
 const postCompanyLoanPaymentHandler = async (req, res) => {
@@ -28,7 +28,7 @@ const postCompanyLoanPaymentHandler = async (req, res) => {
         }
         const results = [];
         for (const item of body) {
-            const newPayment = await (0, companyLoanPayment_service_1.createCompanyLoanPayment)({ ...item, loanId }, { userId, companyId }, queryRunner.manager);
+            const newPayment = await (0, companyLoanPayment_service_1.createCompanyLoanPayment)(loanId, { ...item }, { userId, companyId }, queryRunner.manager);
             results.push(newPayment);
         }
         await queryRunner.commitTransaction();
@@ -131,6 +131,26 @@ const getCompanyLoanPaymentByIdHandler = async (req, res) => {
     }
 };
 exports.getCompanyLoanPaymentByIdHandler = getCompanyLoanPaymentByIdHandler;
+const getCompanyLoanPaymentsByLoanIdHandler = async (req, res) => {
+    try {
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const loanId = req.params.loanId;
+        if (!loanId) {
+            res.status(400).json({ errorMessage: "Loan ID zorunludur." });
+            return;
+        }
+        const loanPayments = await (0, companyLoanPayment_service_1.getCompanyLoanPaymentsByLoanId)(loanId, { userId, companyId }, data_source_1.AppDataSource.manager);
+        res.status(200).json({ loanPayments });
+    }
+    catch (error) {
+        console.error("❌ GET loan payments by loanId error:", error);
+        res.status(500).json({
+            errorMessage: error.message || "Loan ödemeleri getirilemedi.",
+        });
+    }
+};
+exports.getCompanyLoanPaymentsByLoanIdHandler = getCompanyLoanPaymentsByLoanIdHandler;
 const exportLoanPaymentsHandler = async (req, res) => {
     const userId = req.user.userId.toString();
     const companyId = req.user.companyId;

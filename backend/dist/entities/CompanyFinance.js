@@ -18,6 +18,9 @@ const Company_1 = require("./Company");
 const CompanyCheck_1 = require("./CompanyCheck");
 const CompanyOrder_1 = require("./CompanyOrder");
 const CompanyLoanPayment_1 = require("./CompanyLoanPayment");
+const ProjectSubcontractor_1 = require("./ProjectSubcontractor");
+const ProjectSupplier_1 = require("./ProjectSupplier");
+const CompanyBarterAgreementItem_1 = require("./CompanyBarterAgreementItem");
 let CompanyFinanceTransaction = class CompanyFinanceTransaction {
 };
 exports.CompanyFinanceTransaction = CompanyFinanceTransaction;
@@ -61,10 +64,6 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "targetType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "source", nullable: true }),
-    __metadata("design:type", String)
-], CompanyFinanceTransaction.prototype, "source", void 0);
-__decorate([
     (0, typeorm_1.Column)({ name: "targetid", nullable: true }),
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "targetId", void 0);
@@ -77,11 +76,11 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyFinanceTransaction.prototype, "transactionDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "method" }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "method", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "category" }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "category", void 0);
 __decorate([
@@ -93,30 +92,52 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "invoiceCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "checkcode", nullable: true }),
-    __metadata("design:type", String)
-], CompanyFinanceTransaction.prototype, "checkCode", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: "checkstatus", nullable: true }),
-    __metadata("design:type", String)
-], CompanyFinanceTransaction.prototype, "checkstatus", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: "loancode", nullable: true }),
-    __metadata("design:type", String)
-], CompanyFinanceTransaction.prototype, "loanCode", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: "loanstatus", nullable: true }),
-    __metadata("design:type", String)
-], CompanyFinanceTransaction.prototype, "loanStatus", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: "text", nullable: true }),
     __metadata("design:type", String)
 ], CompanyFinanceTransaction.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "source", nullable: true }),
+    __metadata("design:type", String)
+], CompanyFinanceTransaction.prototype, "source", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "referencecode", nullable: true }),
+    __metadata("design:type", String)
+], CompanyFinanceTransaction.prototype, "referenceCode", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyProject_1.CompanyProject, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: "projectid" }),
     __metadata("design:type", Object)
 ], CompanyFinanceTransaction.prototype, "project", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => CompanyCheck_1.CompanyCheck, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "checkid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "check", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => CompanyOrder_1.CompanyOrder, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "orderid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "order", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => CompanyLoanPayment_1.CompanyLoanPayment, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "loanpaymentid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "loanPayment", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => ProjectSubcontractor_1.ProjectSubcontractor, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "subcontractorid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "subcontractor", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => ProjectSupplier_1.ProjectSupplier, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "supplierid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "supplier", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => CompanyBarterAgreementItem_1.CompanyBarterAgreementItem, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: "barteritemid" }),
+    __metadata("design:type", Object)
+], CompanyFinanceTransaction.prototype, "barterItem", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User),
     (0, typeorm_1.JoinColumn)({ name: "createdby" }),
@@ -124,8 +145,7 @@ __decorate([
 ], CompanyFinanceTransaction.prototype, "createdBy", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User),
-    (0, typeorm_1.JoinColumn)({ name: "updatedby" }) // camelCase → fix
-    ,
+    (0, typeorm_1.JoinColumn)({ name: "updatedby" }),
     __metadata("design:type", User_1.User)
 ], CompanyFinanceTransaction.prototype, "updatedBy", void 0);
 __decorate([
@@ -144,21 +164,6 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], CompanyFinanceTransaction.prototype, "updatedatetime", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => CompanyCheck_1.CompanyCheck, (check) => check.checkNo),
-    __metadata("design:type", Array)
-], CompanyFinanceTransaction.prototype, "checks", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => CompanyOrder_1.CompanyOrder, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: "orderid" }),
-    __metadata("design:type", Object)
-], CompanyFinanceTransaction.prototype, "order", void 0);
-__decorate([
-    (0, typeorm_1.OneToOne)(() => CompanyLoanPayment_1.CompanyLoanPayment, (payment) => payment.financeTransaction, {
-        nullable: true,
-    }),
-    __metadata("design:type", Object)
-], CompanyFinanceTransaction.prototype, "loanPayment", void 0);
 exports.CompanyFinanceTransaction = CompanyFinanceTransaction = __decorate([
     (0, typeorm_1.Entity)({ name: "companyfinancetransactions" })
 ], CompanyFinanceTransaction);

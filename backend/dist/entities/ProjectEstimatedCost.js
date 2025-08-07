@@ -13,6 +13,7 @@ exports.ProjectEstimatedCost = void 0;
 const typeorm_1 = require("typeorm");
 const User_1 = require("./User");
 const CompanyProject_1 = require("./CompanyProject");
+const Company_1 = require("./Company");
 let ProjectEstimatedCost = class ProjectEstimatedCost {
 };
 exports.ProjectEstimatedCost = ProjectEstimatedCost;
@@ -52,6 +53,19 @@ __decorate([
     (0, typeorm_1.Column)({ name: "totalcost", type: "numeric" }),
     __metadata("design:type", Number)
 ], ProjectEstimatedCost.prototype, "totalCost", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "sourcetype", type: "varchar", default: "manual" }),
+    __metadata("design:type", String)
+], ProjectEstimatedCost.prototype, "sourceType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: "referencecode", nullable: true }),
+    __metadata("design:type", String)
+], ProjectEstimatedCost.prototype, "referenceCode", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }),
+    __metadata("design:type", Company_1.Company)
+], ProjectEstimatedCost.prototype, "company", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyProject_1.CompanyProject, (project) => project.estimatedCosts),
     (0, typeorm_1.JoinColumn)({ name: "projectid" }),

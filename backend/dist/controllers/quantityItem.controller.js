@@ -13,9 +13,11 @@ const postQuantityItemHandler = async (req, res) => {
             res.status(400).json({ error: "Code ve name alanları zorunludur." });
             return;
         }
-        const user = req.user;
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
         const newItem = await (0, quantityItem_service_1.createQuantityItem)({ code, name, description }, {
-            userId: user.userId.toString(),
+            userId,
+            companyId,
         });
         res.status(201).json(newItem);
     }
@@ -69,7 +71,9 @@ exports.postQuantityItemHandler = postQuantityItemHandler;
 // };
 const getQuantityItemsHandler = async (req, res) => {
     try {
-        const items = await (0, quantityItem_service_1.getQuantityItems)();
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const items = await (0, quantityItem_service_1.getQuantityItems)({ userId, companyId });
         res.status(200).json(items);
         return;
     }

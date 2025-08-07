@@ -15,6 +15,7 @@ const typeorm_1 = require("typeorm");
 const CompanyEmployee_1 = require("./CompanyEmployee");
 const CompanyProject_1 = require("./CompanyProject");
 const User_1 = require("./User");
+const Company_1 = require("./Company");
 let CompanyEmployeeProject = class CompanyEmployeeProject {
 };
 exports.CompanyEmployeeProject = CompanyEmployeeProject;
@@ -27,6 +28,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "employeeid" }),
     __metadata("design:type", CompanyEmployee_1.CompanyEmployee)
 ], CompanyEmployeeProject.prototype, "employee", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }),
+    __metadata("design:type", Company_1.Company)
+], CompanyEmployeeProject.prototype, "company", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => CompanyProject_1.CompanyProject, (project) => project.projectEmployees),
     (0, typeorm_1.JoinColumn)({ name: "projectid" }),

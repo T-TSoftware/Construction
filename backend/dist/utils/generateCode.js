@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateNextOrderCode = exports.generateFinanceTransactionCode = exports.generateNextEntityCode = exports.generateStockCode = void 0;
+exports.generateNextBarterAgreementItemCode = exports.generateNextOrderCode = exports.generateFinanceTransactionCode = exports.generateNextEntityCode = exports.generateStockCode = void 0;
 exports.generateNextCompanyCode = generateNextCompanyCode;
 exports.generateNextBalanceCode = generateNextBalanceCode;
 exports.generateUserCode = generateUserCode;
@@ -10,8 +10,10 @@ const data_source_1 = require("../config/data-source");
 const CompanyStock_1 = require("../entities/CompanyStock");
 const ProjectSupplier_1 = require("../entities/ProjectSupplier"); // ya da ProjectSubcontractor
 const ProjectSubcontractor_1 = require("../entities/ProjectSubcontractor");
+const CompanyBarterAgreement_1 = require("../entities/CompanyBarterAgreement");
 const CompanyFinance_1 = require("../entities/CompanyFinance");
 const CompanyOrder_1 = require("../entities/CompanyOrder");
+const CompanyBarterAgreementItem_1 = require("../entities/CompanyBarterAgreementItem");
 function generateNextCompanyCode(latestCode, name) {
     const prefix = name.slice(0, 3).toUpperCase();
     if (!latestCode || !latestCode.startsWith(prefix))
@@ -72,12 +74,20 @@ const generateStockCode = async (category, manager = data_source_1.AppDataSource
     return `${prefix}-${nextNumber}`;
 };
 exports.generateStockCode = generateStockCode;
-const generateNextEntityCode = async (manager, projectCode, category, typePrefix, // TED = Tedarikçi, TAS = Taşeron
-entity // ✅ Entity tipi
-) => {
-    const repo = entity === "ProjectSupplier"
-        ? manager.getRepository(ProjectSupplier_1.ProjectSupplier)
-        : manager.getRepository(ProjectSubcontractor_1.ProjectSubcontractor);
+const generateNextEntityCode = async (manager, projectCode, category, typePrefix, // TED = Tedarikçi, TAS = Taşeron, BRT = Barter
+entity) => {
+    const repo = (() => {
+        switch (entity) {
+            case "ProjectSupplier":
+                return manager.getRepository(ProjectSupplier_1.ProjectSupplier);
+            case "ProjectSubcontractor":
+                return manager.getRepository(ProjectSubcontractor_1.ProjectSubcontractor);
+            case "CompanyBarterAgreement":
+                return manager.getRepository(CompanyBarterAgreement_1.CompanyBarterAgreement);
+            default:
+                throw new Error("Unknown entity type.");
+        }
+    })();
     const projectSuffix = projectCode.split("-")[1].toUpperCase();
     const categoryPrefix = category.trim().slice(0, 3).toUpperCase();
     const fullPrefix = `${projectSuffix}-${typePrefix}-${categoryPrefix}`;
@@ -182,3 +192,18 @@ manager, }) => {
     return `${prefix}-${nextNumber}`;
 };
 exports.generateNextOrderCode = generateNextOrderCode;
+const generateNextBarterAgreementItemCode = async (manager, barterAgreementCode, itemType) => {
+    const repo = manager.getRepository(CompanyBarterAgreementItem_1.CompanyBarterAgreementItem);
+    const itemTypePrefix = itemType.slice(0, 3).toUpperCase(); // e.g. "SER", "CAS"
+    const prefix = `${barterAgreementCode}-${itemTypePrefix}`;
+    const latest = await repo
+        .createQueryBuilder("item")
+        .where("item.code LIKE :prefix", { prefix: `${prefix}%` })
+        .orderBy("item.code", "DESC")
+        .getOne();
+    const nextNumber = latest
+        ? (parseInt(latest.code.replace(prefix, "")) + 1).toString().padStart(3, "0")
+        : "001";
+    return `${prefix}${nextNumber}`;
+};
+exports.generateNextBarterAgreementItemCode = generateNextBarterAgreementItemCode;

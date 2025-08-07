@@ -13,6 +13,7 @@ exports.CompanyEmployeeLeave = exports.LeaveType = void 0;
 const typeorm_1 = require("typeorm");
 const CompanyEmployee_1 = require("./CompanyEmployee");
 const User_1 = require("./User");
+const Company_1 = require("./Company");
 var LeaveType;
 (function (LeaveType) {
     LeaveType["PAID"] = "PAID";
@@ -33,6 +34,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "employeeid" }),
     __metadata("design:type", CompanyEmployee_1.CompanyEmployee)
 ], CompanyEmployeeLeave.prototype, "employee", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }),
+    __metadata("design:type", Company_1.Company)
+], CompanyEmployeeLeave.prototype, "company", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: "startdate", type: "timestamp", nullable: true }),
     __metadata("design:type", Date)

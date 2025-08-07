@@ -14,10 +14,11 @@ const postProjectSupplierHandler = async (req, res) => {
     try {
         const { projectId } = req.params;
         const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
         // 🔁 Artık her zaman array geleceği için döngüyle ilerliyoruz
         const results = [];
         for (const body of req.body) {
-            const { quantityItemCode, category, companyName, unit, unitPrice, quantity, contractAmount, paidAmount, status, description, } = body;
+            const { quantityItemCode, category, companyName, unit, unitPrice, quantity, contractAmount, paidAmount, status, description, projectQuantityCode, addedFromQuantityYn, } = body;
             // ❗ Her item için zorunlu alan kontrolü
             /*if (!quantityItemCode || !category || !unit || !status) {
               res.status(400).json({ error: "Zorunlu alanlar eksik." });
@@ -38,7 +39,9 @@ const postProjectSupplierHandler = async (req, res) => {
                 paidAmount,
                 status,
                 description,
-            }, { userId });
+                projectQuantityCode,
+                addedFromQuantityYn,
+            }, { userId, companyId });
             results.push(newSupplier);
         }
         await queryRunner.commitTransaction(); // ✅ Hepsi başarılıysa commit
@@ -55,7 +58,12 @@ exports.postProjectSupplierHandler = postProjectSupplierHandler;
 const getProjectSuppliersHandler = async (req, res) => {
     try {
         const { projectId } = req.params;
-        const suppliers = await (0, projectSupplier_service_1.getProjectSuppliers)(projectId);
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const suppliers = await (0, projectSupplier_service_1.getProjectSuppliers)(projectId, {
+            userId,
+            companyId,
+        });
         res.status(200).json(suppliers);
     }
     catch (error) {
@@ -77,6 +85,7 @@ const patchProjectSupplierHandler = async (req, res) => {
     await queryRunner.startTransaction();
     try {
         const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
         const projectId = req.params.projectId;
         const updatedSuppliers = [];
         for (const body of req.body) {
@@ -84,7 +93,7 @@ const patchProjectSupplierHandler = async (req, res) => {
             if (!code) {
                 throw new Error("Güncellenecek kaydın 'code' alanı zorunludur.");
             }
-            const updated = await (0, projectSupplier_service_1.updateProjectSupplier)(projectId, code, updateData, { userId }, queryRunner.manager);
+            const updated = await (0, projectSupplier_service_1.updateProjectSupplier)(projectId, code, updateData, { userId, companyId }, queryRunner.manager);
             updatedSuppliers.push(updated);
         }
         await queryRunner.commitTransaction();

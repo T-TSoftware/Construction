@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const CompanyLoan_1 = require("./CompanyLoan");
 const CompanyFinance_1 = require("./CompanyFinance");
 const User_1 = require("./User");
+const Company_1 = require("./Company");
 let CompanyLoanPayment = class CompanyLoanPayment {
 };
 exports.CompanyLoanPayment = CompanyLoanPayment;
@@ -26,6 +27,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "loanid" }),
     __metadata("design:type", CompanyLoan_1.CompanyLoan)
 ], CompanyLoanPayment.prototype, "loan", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: "companyid" }),
+    __metadata("design:type", Company_1.Company)
+], CompanyLoanPayment.prototype, "company", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: "code", type: "varchar", length: 100, unique: true }),
     __metadata("design:type", String)
@@ -55,6 +61,10 @@ __decorate([
     __metadata("design:type", Number)
 ], CompanyLoanPayment.prototype, "paymentAmount", void 0);
 __decorate([
+    (0, typeorm_1.Column)("numeric", { name: "remainingamount" }),
+    __metadata("design:type", Number)
+], CompanyLoanPayment.prototype, "remainingAmount", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: "status", type: "varchar", length: 20, default: "PENDING" }),
     __metadata("design:type", String)
 ], CompanyLoanPayment.prototype, "status", void 0);
@@ -72,10 +82,9 @@ __decorate([
     __metadata("design:type", Number)
 ], CompanyLoanPayment.prototype, "penaltyAmount", void 0);
 __decorate([
-    (0, typeorm_1.OneToOne)(() => CompanyFinance_1.CompanyFinanceTransaction, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: "financetransactionid" }),
-    __metadata("design:type", CompanyFinance_1.CompanyFinanceTransaction)
-], CompanyLoanPayment.prototype, "financeTransaction", void 0);
+    (0, typeorm_1.OneToMany)(() => CompanyFinance_1.CompanyFinanceTransaction, (financeTransaction) => financeTransaction.loanPayment),
+    __metadata("design:type", Array)
+], CompanyLoanPayment.prototype, "transactions", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User, { nullable: false }),
     (0, typeorm_1.JoinColumn)({ name: "createdby" }),

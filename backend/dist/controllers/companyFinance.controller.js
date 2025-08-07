@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCompanyFinanceTransactionByIdHandler = exports.getCompanyFinanceTransactionByIdHandler = exports.getCompanyFinanceTransactionsHandler = exports.patchCompanyFinanceTransactionHandler = exports.postCompanyFinanceTransactionHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const companyFinance_service_1 = require("../services/companyFinance.service");
+const companyFinanceTransaction_service_1 = require("../services/companyFinanceTransaction.service");
 const postCompanyFinanceTransactionHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
         res
@@ -18,8 +19,8 @@ const postCompanyFinanceTransactionHandler = async (req, res) => {
         const companyId = req.user.companyId;
         const results = [];
         for (const body of req.body) {
-            const { type, amount, currency, fromAccountCode, toAccountCode, targetType, targetId, targetName, transactionDate, method, category, invoiceYN, invoiceCode, checkCode, description, projectCode, source, orderCode, } = body;
-            const transaction = await (0, companyFinance_service_1.createCompanyFinanceTransaction)({
+            const { type, amount, currency, fromAccountCode, toAccountCode, targetType, targetId, targetName, transactionDate, method, category, invoiceYN, invoiceCode, referenceCode, description, projectCode, source, } = body;
+            const transaction = await (0, companyFinanceTransaction_service_1.createCompanyFinanceTransaction)({
                 type,
                 amount,
                 currency,
@@ -33,11 +34,10 @@ const postCompanyFinanceTransactionHandler = async (req, res) => {
                 category,
                 invoiceYN,
                 invoiceCode,
-                checkCode,
+                referenceCode,
                 description,
                 projectCode,
                 source,
-                orderCode,
             }, { userId, companyId }, queryRunner.manager);
             results.push(transaction);
         }
@@ -69,13 +69,13 @@ const patchCompanyFinanceTransactionHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const code = req.params.code;
+        const id = req.params.id;
         const body = req.body;
         console.log(req.body);
-        if (!code || typeof code !== "string") {
+        if (!id || typeof id !== "string") {
             throw new Error("Geçerli bir 'code' parametresi gereklidir.");
         }
-        const updatedTransaction = await (0, companyFinance_service_1.updateCompanyFinanceTransaction)(code, body, { userId, companyId }, queryRunner.manager);
+        const updatedTransaction = await (0, companyFinanceTransaction_service_1.updateCompanyFinanceTransaction)(id, body, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
         res.status(200).json(updatedTransaction);
         return;

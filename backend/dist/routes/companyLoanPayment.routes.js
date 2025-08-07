@@ -12,6 +12,7 @@ router.get("/:id", companyLoanPayment_controller_1.getCompanyLoanPaymentByIdHand
 // POST → Yeni taksit kaydı (loanId route paramı olarak kullanılabilir)
 router.post("/:loanId", /* validateBody, */ companyLoanPayment_controller_1.postCompanyLoanPaymentHandler);
 router.patch("/:id", companyLoanPayment_controller_1.patchCompanyLoanPaymentHandler);
+router.get("/loan/:loanId", companyLoanPayment_controller_1.getCompanyLoanPaymentsByLoanIdHandler);
 router.get("/loanpayments/export/csv", companyLoanPayment_controller_1.exportLoanPaymentsHandler);
 router.get("/loanpayments/export/pdf", companyLoanPayment_controller_1.exportLoanPaymentsPdfHandler);
 exports.default = router;
