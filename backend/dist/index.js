@@ -81,7 +81,7 @@ data_source_1.AppDataSource.initialize()
     app.get("/", (_, res) => {
         res.send("TypeORM + Multi-Tenant API is live 💼");
     });
-    app.listen(3000, () => {
+    app.listen(PORT, () => {
         console.log(`🚀 Server is running at http://localhost:${PORT}`);
     });
 })
