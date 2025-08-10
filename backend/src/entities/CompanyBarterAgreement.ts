@@ -42,7 +42,7 @@ export class CompanyBarterAgreement {
   @Column({ name: "agreementdate", type: "timestamp", nullable: false })
   agreementDate!: Date; // 📅 Anlaşmanın yapıldığı tarih
 
-  @Column({ default: "DRAFT" })
+  @Column({ default: "ACTIVE" })
   status!: "DRAFT" | "PROPOSED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   // 📌 Anlaşmanın durumu
 

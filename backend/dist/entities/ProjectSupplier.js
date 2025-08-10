@@ -43,7 +43,7 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => QuantityItem_1.QuantityItem),
     (0, typeorm_1.JoinColumn)({ name: "quantityitemid" }) // camelCase → FK
     ,
-    __metadata("design:type", QuantityItem_1.QuantityItem)
+    __metadata("design:type", Object)
 ], ProjectSupplier.prototype, "quantityItem", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => ProjectQuantity_1.ProjectQuantity, { nullable: true }),
@@ -86,7 +86,7 @@ __decorate([
     __metadata("design:type", Number)
 ], ProjectSupplier.prototype, "contractAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "paidamount", type: "numeric", nullable: true }) // camelCase → fix
+    (0, typeorm_1.Column)({ name: "paidamount", type: "numeric", nullable: true, default: 0 }) // camelCase → fix
     ,
     __metadata("design:type", Number)
 ], ProjectSupplier.prototype, "paidAmount", void 0);

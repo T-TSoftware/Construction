@@ -36,8 +36,8 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
     const fromAccount = await balanceRepo.findOneByOrFail({
         code: data.fromAccountCode,
     });
-    const project = data.projectCode
-        ? await projectRepo.findOneByOrFail({ code: data.projectCode })
+    const project = data.projectId
+        ? await projectRepo.findOneByOrFail({ id: data.projectId })
         : null;
     const results = [];
     // 🔁 TRANSFER işlemi → çift kayıt (OUT & IN)
@@ -265,8 +265,8 @@ const updateCompanyFinanceTransaction = async (id, data, currentUser, manager = 
     const newToAccount = data.toAccountCode && data.toAccountCode !== existing.toAccount?.code
         ? await balanceRepo.findOneByOrFail({ code: data.toAccountCode })
         : existing.toAccount;
-    const newProject = data.projectCode && data.projectCode !== existing.project?.id
-        ? await projectRepo.findOneByOrFail({ code: data.projectCode })
+    const newProject = data.projectId && data.projectId !== existing.project?.id
+        ? await projectRepo.findOneByOrFail({ id: data.projectId })
         : existing.project;
     // 🛠️ Alanları güncelle
     existing.type = data.type ?? existing.type;

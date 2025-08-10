@@ -32,8 +32,5 @@ router.get(
   getCompanyEmployeeLeavesByEmployeeIdHandler
 );
 router.get("/:leaveId", getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
-router.delete(
-  "/:employeeId/leaves/:leaveId",
-  deleteCompanyEmployeeLeaveHandler
-);
+router.delete("/:leaveId", deleteCompanyEmployeeLeaveHandler);
 export default router;

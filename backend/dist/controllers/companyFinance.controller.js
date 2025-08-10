@@ -19,7 +19,7 @@ const postCompanyFinanceTransactionHandler = async (req, res) => {
         const companyId = req.user.companyId;
         const results = [];
         for (const body of req.body) {
-            const { type, amount, currency, fromAccountCode, toAccountCode, targetType, targetId, targetName, transactionDate, method, category, invoiceYN, invoiceCode, referenceCode, description, projectCode, source, } = body;
+            const { type, amount, currency, fromAccountCode, toAccountCode, targetType, targetId, targetName, transactionDate, method, category, invoiceYN, invoiceCode, referenceCode, description, projectId, source, } = body;
             const transaction = await (0, companyFinanceTransaction_service_1.createCompanyFinanceTransaction)({
                 type,
                 amount,
@@ -36,7 +36,7 @@ const postCompanyFinanceTransactionHandler = async (req, res) => {
                 invoiceCode,
                 referenceCode,
                 description,
-                projectCode,
+                projectId,
                 source,
             }, { userId, companyId }, queryRunner.manager);
             results.push(transaction);

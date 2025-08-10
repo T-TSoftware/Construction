@@ -4,6 +4,8 @@ import { EntityManager, In } from "typeorm";
 import { CompanyProject } from "../entities/CompanyProject";
 import { LeaveType } from "../entities/CompanyEmployeeLeave";
 import { CompanyEmployeeProject } from "../entities/CompanyEmployeeProject";
+import { Company } from "../entities/Company";
+import { User } from "../entities/User";
 
 interface CreateCompanyEmployeeInput {
   code: string;
@@ -64,6 +66,7 @@ export const createCompanyEmployee = async (
       return employeeProjectRepo.create({
         employee: { id: employee.id },
         project: { id: project.id },
+        company: { id: currentUser.companyId },
         position: data.position,
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
@@ -73,7 +76,15 @@ export const createCompanyEmployee = async (
     await employeeProjectRepo.save(projectAssignments);
   }
 
-  return employee;
+  const fullEmployee = await employeeRepo.findOneOrFail({
+    where: { id: employee.id, company: { id: currentUser.companyId } },
+    relations: [
+      // join-tablosu üzerinden projeleri getir
+      "employeeProjects",
+      "employeeProjects.project",
+    ],
+  });
+  return fullEmployee;
 };
 
 export const getCompanyEmployees = async (
@@ -161,7 +172,8 @@ export const updateCompanyEmployee = async (
   employee.excuseLeaveAmount =
     data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
   employee.code = `${employee.position}-${employee.firstName}${employee.lastName}`;
-  employee.updatedBy = { id: currentUser.userId } as any;
+  employee.updatedBy = { id: currentUser.userId } as User;
+  employee.company = { id: currentUser.companyId } as Company;
 
   await employeeRepo.save(employee);
 
@@ -180,6 +192,7 @@ export const updateCompanyEmployee = async (
       employeeProjectRepo.create({
         employee: { id: employee.id },
         project: { id: project.id },
+        company: { id: currentUser.companyId },
         position: employee.position,
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
@@ -189,7 +202,15 @@ export const updateCompanyEmployee = async (
     await employeeProjectRepo.save(projectAssignments);
   }
 
-  return employee;
+  const fullEmployee = await employeeRepo.findOneOrFail({
+    where: { id: employee.id, company: { id: currentUser.companyId } },
+    relations: [
+      // join-tablosu üzerinden projeleri getir
+      "employeeProjects",
+      "employeeProjects.project",
+    ],
+  });
+  return fullEmployee;
 };
 
 export const updateCompanyEmployeeLeaveChange = async (

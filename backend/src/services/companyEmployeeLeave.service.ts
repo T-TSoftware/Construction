@@ -55,7 +55,12 @@ export const postCompanyEmployeeLeave = async (
 
   await leaveRepo.save(leave);
 
-  return leave;
+  const leaveWithUpdatedLeaveCounts = await leaveRepo.findOneOrFail({
+    where: { id: leave.id, company: { id: currentUser.companyId } },
+    relations: ["employee"],
+  });
+
+  return leaveWithUpdatedLeaveCounts;
 };
 
 export const updateCompanyEmployeeLeave = async (
@@ -72,9 +77,9 @@ export const updateCompanyEmployeeLeave = async (
   const leaveRepo = manager.getRepository(CompanyEmployeeLeave);
   const employeeRepo = manager.getRepository(CompanyEmployee);
 
-  const leave = await leaveRepo.findOneByOrFail({
-    id,
-    company: { id: currentUser.companyId }, // ✅ doğrudan company kontrolü
+  const leave = await leaveRepo.findOneOrFail({
+    where: { id, company: { id: currentUser.companyId } },
+    relations: ["employee"],
   });
 
   if (!leave) {
@@ -119,7 +124,12 @@ export const updateCompanyEmployeeLeave = async (
   leave.updatedBy = { id: currentUser.userId } as any;
 
   await leaveRepo.save(leave);
-  return leave;
+  const leaveWithUpdatedLeaveCounts = await leaveRepo.findOneOrFail({
+    where: { id: leave.id, company: { id: currentUser.companyId } },
+    relations: ["employee"],
+  });
+
+  return leaveWithUpdatedLeaveCounts;
 };
 
 export const getCompanyEmployeeLeaves = async (
@@ -181,7 +191,7 @@ export const getCompanyEmployeeLeaveById = async (
 };
 
 export const deleteCompanyEmployeeLeave = async (
-  employeeId: string,
+  //employeeId: string,
   leaveId: string,
   currentUser: { userId: string; companyId: string },
   manager: EntityManager = AppDataSource.manager
@@ -191,10 +201,10 @@ export const deleteCompanyEmployeeLeave = async (
   const leave = await leaveRepo.findOne({
     where: {
       id: leaveId,
-      employee: { id: employeeId },
+      //employee: { id: employeeId },
       company: { id: currentUser.companyId }, // ✅ Daha güvenli ve performanslı kontrol
     },
-    // relations: ["employee"], // ❌ Sadece UI’da employee bilgisi gerekiyorsa eklenmeli
+     relations: ["employee"], // ❌ Sadece UI’da employee bilgisi gerekiyorsa eklenmeli
   });
 
   if (!leave) throw new Error("İzin kaydı bulunamadı.");

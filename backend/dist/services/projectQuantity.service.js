@@ -32,7 +32,7 @@ const createProjectQuantity = async (data, currentUser, manager = data_source_1.
         project: { id: project.id },
         quantityItem: quantityItem ? { id: quantityItem.id } : null,
         quantity: data.quantity,
-        unit: data.unit.trim(),
+        unit: data.unit.trim().toUpperCase(),
         description: data.description?.trim(),
         category: data.category.trim(),
         company: { id: currentUser.companyId }, // ✅ companyId atanıyor

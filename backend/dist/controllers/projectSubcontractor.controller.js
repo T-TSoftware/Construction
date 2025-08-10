@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.patchProjectSubcontractorHandler = exports.getProjectSubcontractorsHandler = exports.postProjectSubcontractorHandler = void 0;
+exports.patchProjectSubcontractorHandler = exports.getProjectSubcontractorByIdHandler = exports.getProjectSubcontractorsHandler = exports.postProjectSubcontractorHandler = void 0;
 const projectSubcontractor_service_1 = require("../services/projectSubcontractor.service");
 const postProjectSubcontractorHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
@@ -9,7 +9,9 @@ const postProjectSubcontractorHandler = async (req, res) => {
     }
     try {
         const { projectId } = req.params;
-        const { category, companyName, unit, unitPrice, quantity, contractAmount, paidAmount, status, description, } = req.body;
+        const { category, companyName, unit, unitPrice, quantity, contractAmount, 
+        //paidAmount,
+        status, description, } = req.body;
         if (!category) {
             res.status(400).json({ error: "Kategori zorunludur." });
             return;
@@ -24,7 +26,7 @@ const postProjectSubcontractorHandler = async (req, res) => {
             unitPrice,
             quantity,
             contractAmount,
-            paidAmount,
+            //paidAmount,
             status,
             description,
         }, { userId, companyId });
@@ -52,16 +54,31 @@ const getProjectSubcontractorsHandler = async (req, res) => {
     }
 };
 exports.getProjectSubcontractorsHandler = getProjectSubcontractorsHandler;
+const getProjectSubcontractorByIdHandler = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const supplier = await (0, projectSubcontractor_service_1.getProjectSubcontractorById)(id, { userId, companyId });
+        res.status(200).json(supplier);
+    }
+    catch (error) {
+        console.error("❌ GET project suppliers error:", error);
+        res.status(500).json({ error: "Tedarikçiler alınamadı." });
+        return;
+    }
+};
+exports.getProjectSubcontractorByIdHandler = getProjectSubcontractorByIdHandler;
 const patchProjectSubcontractorHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
         res.status(403).json({ error: "Yalnızca superadmin işlemi yapabilir." });
         return;
     }
     try {
-        const { projectId, code } = req.params;
+        const { id } = req.params;
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const updatedSubcontractor = await (0, projectSubcontractor_service_1.updateProjectSubcontractor)(projectId, code, req.body, { userId, companyId });
+        const updatedSubcontractor = await (0, projectSubcontractor_service_1.updateProjectSubcontractor)(id, req.body, { userId, companyId });
         res.status(200).json(updatedSubcontractor);
     }
     catch (error) {

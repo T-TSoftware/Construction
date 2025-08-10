@@ -17,15 +17,15 @@ const postCompanyBarterAgreementItemHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const { agreementId } = req.params;
-        const { direction, itemType, description, agreedValue, relatedStockCode, relatedSubcontractorCode, relatedSupplierCode, assetDetails, } = req.body;
-        const newItem = await (0, companyBarterAgreementItem_service_1.postCompanyBarterAgreementItem)(agreementId, {
+        const { barterId } = req.params;
+        const { direction, itemType, description, agreedValue, relatedStockCode, relatedSubcontractorId, relatedSupplierCode, assetDetails, } = req.body;
+        const newItem = await (0, companyBarterAgreementItem_service_1.postCompanyBarterAgreementItem)(barterId, {
             direction,
             itemType,
             description,
             agreedValue,
             relatedStockCode,
-            relatedSubcontractorCode,
+            relatedSubcontractorId,
             relatedSupplierCode,
             assetDetails,
         }, { userId, companyId }, queryRunner.manager);

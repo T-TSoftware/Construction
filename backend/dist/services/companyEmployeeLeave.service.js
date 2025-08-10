@@ -27,15 +27,19 @@ const postCompanyEmployeeLeave = async (employeeId, data, currentUser, manager =
         updatedBy: { id: currentUser.userId },
     });
     await leaveRepo.save(leave);
-    return leave;
+    const leaveWithUpdatedLeaveCounts = await leaveRepo.findOneOrFail({
+        where: { id: leave.id, company: { id: currentUser.companyId } },
+        relations: ["employee"],
+    });
+    return leaveWithUpdatedLeaveCounts;
 };
 exports.postCompanyEmployeeLeave = postCompanyEmployeeLeave;
 const updateCompanyEmployeeLeave = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const leaveRepo = manager.getRepository(CompanyEmployeeLeave_1.CompanyEmployeeLeave);
     const employeeRepo = manager.getRepository(CompanyEmployee_1.CompanyEmployee);
-    const leave = await leaveRepo.findOneByOrFail({
-        id,
-        company: { id: currentUser.companyId }, // ✅ doğrudan company kontrolü
+    const leave = await leaveRepo.findOneOrFail({
+        where: { id, company: { id: currentUser.companyId } },
+        relations: ["employee"],
     });
     if (!leave) {
         throw new Error("İzin kaydı bulunamadı.");
@@ -57,7 +61,11 @@ const updateCompanyEmployeeLeave = async (id, data, currentUser, manager = data_
     leave.leaveDayCount = newDayCount;
     leave.updatedBy = { id: currentUser.userId };
     await leaveRepo.save(leave);
-    return leave;
+    const leaveWithUpdatedLeaveCounts = await leaveRepo.findOneOrFail({
+        where: { id: leave.id, company: { id: currentUser.companyId } },
+        relations: ["employee"],
+    });
+    return leaveWithUpdatedLeaveCounts;
 };
 exports.updateCompanyEmployeeLeave = updateCompanyEmployeeLeave;
 const getCompanyEmployeeLeaves = async (currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -99,15 +107,17 @@ const getCompanyEmployeeLeaveById = async (employeeId, leaveId, currentUser, man
     return leave;
 };
 exports.getCompanyEmployeeLeaveById = getCompanyEmployeeLeaveById;
-const deleteCompanyEmployeeLeave = async (employeeId, leaveId, currentUser, manager = data_source_1.AppDataSource.manager) => {
+const deleteCompanyEmployeeLeave = async (
+//employeeId: string,
+leaveId, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const leaveRepo = manager.getRepository(CompanyEmployeeLeave_1.CompanyEmployeeLeave);
     const leave = await leaveRepo.findOne({
         where: {
             id: leaveId,
-            employee: { id: employeeId },
+            //employee: { id: employeeId },
             company: { id: currentUser.companyId }, // ✅ Daha güvenli ve performanslı kontrol
         },
-        // relations: ["employee"], // ❌ Sadece UI’da employee bilgisi gerekiyorsa eklenmeli
+        relations: ["employee"], // ❌ Sadece UI’da employee bilgisi gerekiyorsa eklenmeli
     });
     if (!leave)
         throw new Error("İzin kaydı bulunamadı.");

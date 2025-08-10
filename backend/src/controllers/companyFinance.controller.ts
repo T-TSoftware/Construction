@@ -50,7 +50,7 @@ export const postCompanyFinanceTransactionHandler = async (
         invoiceCode,
         referenceCode,
         description,
-        projectCode,
+        projectId,
         source,
       } = body;
 
@@ -71,7 +71,7 @@ export const postCompanyFinanceTransactionHandler = async (
           invoiceCode,
           referenceCode,
           description,
-          projectCode,
+          projectId,
           source,
         },
         { userId, companyId },

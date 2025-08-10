@@ -26,7 +26,7 @@ export const postCompanyBarterAgreementItemHandler = async (
   try {
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
-    const { agreementId } = req.params;
+    const { barterId } = req.params;
 
     const {
       direction,
@@ -34,20 +34,20 @@ export const postCompanyBarterAgreementItemHandler = async (
       description,
       agreedValue,
       relatedStockCode,
-      relatedSubcontractorCode,
+      relatedSubcontractorId,
       relatedSupplierCode,
       assetDetails,
     } = req.body;
 
     const newItem = await postCompanyBarterAgreementItem(
-      agreementId,
+      barterId,
       {
         direction,
         itemType,
         description,
         agreedValue,
         relatedStockCode,
-        relatedSubcontractorCode,
+        relatedSubcontractorId,
         relatedSupplierCode,
         assetDetails,
       },

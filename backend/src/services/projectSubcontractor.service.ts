@@ -18,7 +18,7 @@ export const createProjectSubcontractor = async (
     unitPrice?: number;
     quantity?: number;
     contractAmount?: number;
-    paidAmount?: number;
+    //paidAmount?: number;
     status: string;
     description?: string;
   },
@@ -47,16 +47,15 @@ export const createProjectSubcontractor = async (
     "ProjectSubcontractor"
   );
 
-  const remainingAmount =
-    typeof data.contractAmount === "number" &&
-    typeof data.paidAmount === "number"
-      ? data.contractAmount - data.paidAmount
-      : undefined;
+  const normalizedCategory = data.category.trim().toUpperCase();
+  const normalizedUnit = data.unit.trim().toUpperCase();
 
   const subcontractor = subcontractorRepo.create({
     ...data,
+    category: normalizedCategory,
+    unit: normalizedUnit,
     code,
-    remainingAmount,
+    remainingAmount: data.contractAmount,
     project: { id: project.id },
     company: { id: currentUser.companyId },
     createdBy: { id: currentUser.userId },
@@ -99,14 +98,29 @@ export const getProjectSubcontractors = async (
   }));
 };
 
+export const getProjectSubcontractorById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string }
+) => {
+  const subcontractor = await subcontractorRepo.findOne({
+    where: {
+      id,
+      company: { id: currentUser.companyId },
+    },
+    relations: ["createdBy", "updatedBy", "project", "projectQuantity"],
+  });
+
+  return subcontractor;
+};
+
 export const updateProjectSubcontractor = async (
-  projectId: string,
-  code: string,
+  id: string,
   data: {
     companyName?: string;
     unit?: string;
     unitPrice?: number;
     quantity?: number;
+    category?: string;
     contractAmount?: number;
     paidAmount?: number;
     status?: string;
@@ -123,11 +137,10 @@ export const updateProjectSubcontractor = async (
 
   const subcontractor = await subcontractorRepo.findOne({
     where: {
-      code,
-      project: { id: projectId },
+      id,
       company: { id: currentUser.companyId },
     },
-    relations: ["project", "company", "projectQuantity", "quantityItem"], // ✅ Ek ilişkiler AGREED kısmı için
+    relations: ["project", "company", "projectQuantity"], // ✅ Ek ilişkiler AGREED kısmı için
   });
 
   if (!subcontractor) {
@@ -144,20 +157,7 @@ export const updateProjectSubcontractor = async (
 
     if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
       subcontractor.contractAmount = data.contractAmount!;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(data, "paidAmount")) {
-      subcontractor.paidAmount = data.paidAmount!;
-    }
-
-    if (
-      subcontractor.contractAmount !== undefined &&
-      subcontractor.paidAmount !== undefined
-    ) {
-      subcontractor.remainingAmount =
-        Number(subcontractor.contractAmount) - Number(subcontractor.paidAmount);
-    } else {
-      subcontractor.remainingAmount = null;
+      subcontractor.remainingAmount = Number(data.contractAmount ?? 0) - Number(subcontractor.paidAmount ?? 0);
     }
   } else {
     // 🔧 Güncellenebilir alanlar (locked değilse)
@@ -167,25 +167,11 @@ export const updateProjectSubcontractor = async (
     subcontractor.companyName = data.companyName ?? subcontractor.companyName;
     subcontractor.description = data.description ?? subcontractor.description;
     subcontractor.status = data.status ?? subcontractor.status;
-    subcontractor.status = data.status ?? subcontractor.status;
-    subcontractor.companyName = data.companyName ?? subcontractor.companyName;
+    subcontractor.category = data.category ?? subcontractor.category;
 
     if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
       subcontractor.contractAmount = data.contractAmount!;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(data, "paidAmount")) {
-      subcontractor.paidAmount = data.paidAmount!;
-    }
-
-    if (
-      subcontractor.contractAmount !== undefined &&
-      subcontractor.paidAmount !== undefined
-    ) {
-      subcontractor.remainingAmount =
-        Number(subcontractor.contractAmount) - Number(subcontractor.paidAmount);
-    } else {
-      subcontractor.remainingAmount = null;
+      subcontractor.remainingAmount = Number(data.contractAmount ?? 0) - Number(subcontractor.paidAmount ?? 0);
     }
   }
 
@@ -195,7 +181,7 @@ export const updateProjectSubcontractor = async (
   const saved = await subcontractorRepo.save(subcontractor);
 
   // ✅ AGREED durumunda tahmini maliyet oluştur
-  if (data.status === "AGREED") {
+  /*if (data.status === "AGREED") {
     const existingEstimate = await estimatedCostRepo.findOne({
       where: {
         project: { id: projectId },
@@ -235,7 +221,7 @@ export const updateProjectSubcontractor = async (
 
       await estimatedCostRepo.save(estimatedCost);
     }
-  }
+  }*/
 
   return saved;
 };
@@ -255,12 +241,14 @@ export const updateProjectSubcontractorStatus = async (
     },
   });
 
-  subcontractor.paidAmount = Number(subcontractor.paidAmount ?? 0) + amountReceived;
-  subcontractor.remainingAmount = Number(subcontractor.contractAmount) - subcontractor.paidAmount;
-  subcontractor.status = subcontractor.remainingAmount <= 0 ? "PAID" : "PARTIAL";
+  subcontractor.paidAmount =
+    Number(subcontractor.paidAmount ?? 0) + amountReceived;
+  subcontractor.remainingAmount =
+    Number(subcontractor.contractAmount) - subcontractor.paidAmount;
+  subcontractor.status =
+    subcontractor.remainingAmount <= 0 ? "PAID" : "PARTIAL";
   //order.updatedatetime = new Date();
   subcontractor.updatedBy = { id: currentUser.userId } as User;
-  
 
   return await subcontractorRepo.save(subcontractor);
 };
@@ -296,7 +284,9 @@ export const updateProjectSubcontractorStatusNew = async (
   });
 
   // ✅ remainingAmount ve status hesapla
-  const remainingAmount = Number(updatedSubcontractor.contractAmount) - Number(updatedSubcontractor.paidAmount);
+  const remainingAmount =
+    Number(updatedSubcontractor.contractAmount) -
+    Number(updatedSubcontractor.paidAmount);
   const status = remainingAmount <= 0 ? "PAID" : "PARTIAL";
 
   // Güncelleme

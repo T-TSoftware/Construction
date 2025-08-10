@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.patchProjectSupplierHandler = exports.getProjectSuppliersHandler = exports.postProjectSupplierHandler = void 0;
+exports.patchProjectSupplierHandler = exports.getProjectSupplierByIdHandler = exports.getProjectSuppliersHandler = exports.postProjectSupplierHandler = void 0;
 const projectSupplier_service_1 = require("../services/projectSupplier.service");
 const data_source_1 = require("../config/data-source"); // transaction için gerekli
 const postProjectSupplierHandler = async (req, res) => {
@@ -10,48 +10,37 @@ const postProjectSupplierHandler = async (req, res) => {
     }
     const queryRunner = data_source_1.AppDataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction(); // 🔁 transaction başlatılır
+    await queryRunner.startTransaction();
     try {
         const { projectId } = req.params;
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        // 🔁 Artık her zaman array geleceği için döngüyle ilerliyoruz
-        const results = [];
-        for (const body of req.body) {
-            const { quantityItemCode, category, companyName, unit, unitPrice, quantity, contractAmount, paidAmount, status, description, projectQuantityCode, addedFromQuantityYn, } = body;
-            // ❗ Her item için zorunlu alan kontrolü
-            /*if (!quantityItemCode || !category || !unit || !status) {
-              res.status(400).json({ error: "Zorunlu alanlar eksik." });
-              return;
-            }*/
-            /*if (!quantityItemCode || !category || !unit || !status) {
-              throw new Error("Zorunlu alanlar eksik."); // ❌ Hata fırlat → transaction rollback
-            }*/
-            const newSupplier = await (0, projectSupplier_service_1.createProjectSupplier)({
-                projectId,
-                quantityItemCode,
-                category,
-                companyName,
-                unit,
-                unitPrice,
-                quantity,
-                contractAmount,
-                paidAmount,
-                status,
-                description,
-                projectQuantityCode,
-                addedFromQuantityYn,
-            }, { userId, companyId });
-            results.push(newSupplier);
-        }
-        await queryRunner.commitTransaction(); // ✅ Hepsi başarılıysa commit
-        res.status(201).json(results);
+        const { category, companyName, unit, unitPrice, quantity, contractAmount, status, description, projectQuantityId, addedFromQuantityYN, } = req.body;
+        const newSupplier = await (0, projectSupplier_service_1.createProjectSupplier)({
+            projectId,
+            category,
+            companyName,
+            unit,
+            unitPrice,
+            quantity,
+            contractAmount,
+            status,
+            description,
+            projectQuantityId,
+            addedFromQuantityYN,
+        }, { userId, companyId }, queryRunner.manager);
+        await queryRunner.commitTransaction();
+        res.status(201).json(newSupplier);
     }
     catch (error) {
-        await queryRunner.rollbackTransaction(); // ❌ Hata varsa tüm kayıtlar geri alınır
+        await queryRunner.rollbackTransaction();
         console.error("❌ POST project supplier error:", error);
-        res.status(500).json({ error: "Tedarikçi oluşturulamadı." });
-        return;
+        res.status(500).json({
+            error: error.message || "Tedarikçi oluşturulamadı.",
+        });
+    }
+    finally {
+        await queryRunner.release();
     }
 };
 exports.postProjectSupplierHandler = postProjectSupplierHandler;
@@ -73,11 +62,26 @@ const getProjectSuppliersHandler = async (req, res) => {
     }
 };
 exports.getProjectSuppliersHandler = getProjectSuppliersHandler;
+const getProjectSupplierByIdHandler = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const supplier = await (0, projectSupplier_service_1.getProjectSupplierById)(id, { userId, companyId });
+        res.status(200).json(supplier);
+    }
+    catch (error) {
+        console.error("❌ GET project suppliers error:", error);
+        res.status(500).json({ error: "Tedarikçiler alınamadı." });
+        return;
+    }
+};
+exports.getProjectSupplierByIdHandler = getProjectSupplierByIdHandler;
 const patchProjectSupplierHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
         res
             .status(403)
-            .json({ errorMessage: "Yalnızca superadmin işlemi yapabilir." });
+            .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
         return;
     }
     const queryRunner = data_source_1.AppDataSource.createQueryRunner();
@@ -86,25 +90,20 @@ const patchProjectSupplierHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const projectId = req.params.projectId;
-        const updatedSuppliers = [];
-        for (const body of req.body) {
-            const { code, ...updateData } = body;
-            if (!code) {
-                throw new Error("Güncellenecek kaydın 'code' alanı zorunludur.");
-            }
-            const updated = await (0, projectSupplier_service_1.updateProjectSupplier)(projectId, code, updateData, { userId, companyId }, queryRunner.manager);
-            updatedSuppliers.push(updated);
-        }
+        // 💡 Route'u mümkünse /projects/:projectId/suppliers/:id yapın.
+        // Aşağıda supplier id'yi alıyoruz:
+        const { id } = req.params; // supplier id
+        const updateData = req.body; // tek obje
+        const updated = await (0, projectSupplier_service_1.updateProjectSupplier)(id, updateData, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
-        res.status(200).json(updatedSuppliers);
+        res.status(200).json(updated);
     }
     catch (error) {
         await queryRunner.rollbackTransaction();
-        console.error("❌ PATCH project suppliers error:", error);
-        res
-            .status(500)
-            .json({ errorMessage: error.message || "Tedarikçiler güncellenemedi." });
+        console.error("❌ PATCH project supplier error:", error);
+        res.status(500).json({
+            errorMessage: error.message || "Tedarikçi güncellenemedi.",
+        });
     }
     finally {
         await queryRunner.release();

@@ -17,7 +17,7 @@ export const postCompanyBarterAgreementItem = async (
     description: string;
     agreedValue: number;
     relatedStockCode?: string;
-    relatedSubcontractorCode?: string;
+    relatedSubcontractorId?: string;
     relatedSupplierCode?: string;
     assetDetails?: Record<string, any>;
   },
@@ -44,9 +44,9 @@ export const postCompanyBarterAgreementItem = async (
       })
     : null;
 
-  const relatedSubcontractor = data.relatedSubcontractorCode
+  const relatedSubcontractor = data.relatedSubcontractorId
     ? await subcontractorRepo.findOneBy({
-        code: data.relatedSubcontractorCode,
+        id: data.relatedSubcontractorId,
         company: { id: currentUser.companyId },
       })
     : null;
