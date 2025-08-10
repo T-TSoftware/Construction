@@ -26,9 +26,9 @@ const postCompanyBarterAgreementItem = async (agreementId, data, currentUser, ma
             company: { id: currentUser.companyId },
         })
         : null;
-    const relatedSubcontractor = data.relatedSubcontractorCode
+    const relatedSubcontractor = data.relatedSubcontractorId
         ? await subcontractorRepo.findOneBy({
-            code: data.relatedSubcontractorCode,
+            id: data.relatedSubcontractorId,
             company: { id: currentUser.companyId },
         })
         : null;

@@ -4,6 +4,7 @@ import {
   postProjectSubcontractorHandler,
   getProjectSubcontractorsHandler,
   patchProjectSubcontractorHandler,
+  getProjectSubcontractorByIdHandler,
 } from "../controllers/projectSubcontractor.controller";
 
 const router = Router();
@@ -19,10 +20,8 @@ router.get(
   "/projects/:projectId/subcontractors",
   getProjectSubcontractorsHandler
 );
+router.get("/subcontractor/:id", getProjectSubcontractorByIdHandler);
 
-router.patch(
-  "/projects/:projectId/subcontractors/:code",
-  patchProjectSubcontractorHandler
-);
+router.patch("/projects/subcontractors/:id", patchProjectSubcontractorHandler);
 
 export default router;

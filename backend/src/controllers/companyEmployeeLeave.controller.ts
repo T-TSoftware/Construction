@@ -79,7 +79,7 @@ export const patchCompanyEmployeeLeaveHandler = async (
   await queryRunner.startTransaction();
 
   try {
-    const { id: employeeId, leaveId } = req.params;
+    const { leaveId } = req.params;
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
@@ -217,12 +217,12 @@ export const deleteCompanyEmployeeLeaveHandler = async (
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
-    if (!employeeId || !leaveId) {
+    if (!leaveId) {
       throw new Error("Geçerli bir çalışan veya izin ID'si belirtilmelidir.");
     }
 
     const result = await deleteCompanyEmployeeLeave(
-      employeeId,
+      //employeeId,
       leaveId,
       { userId, companyId },
       AppDataSource.manager

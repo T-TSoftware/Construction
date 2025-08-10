@@ -33,3 +33,6 @@ views
     "migrate": "prisma migrate dev",
     "generate": "prisma generate"
   },
+
+npm run build
+npm run start:prod

@@ -86,7 +86,7 @@ __decorate([
     __metadata("design:type", Number)
 ], ProjectSubcontractor.prototype, "contractAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "paidamount", type: "numeric", nullable: true }),
+    (0, typeorm_1.Column)({ name: "paidamount", type: "numeric", nullable: true, default: 0, }),
     __metadata("design:type", Number)
 ], ProjectSubcontractor.prototype, "paidAmount", void 0);
 __decorate([

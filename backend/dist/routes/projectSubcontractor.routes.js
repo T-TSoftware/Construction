@@ -7,5 +7,6 @@ const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authMiddleware);
 router.post("/projects/:projectId/subcontractors", projectSubcontractor_controller_1.postProjectSubcontractorHandler);
 router.get("/projects/:projectId/subcontractors", projectSubcontractor_controller_1.getProjectSubcontractorsHandler);
-router.patch("/projects/:projectId/subcontractors/:code", projectSubcontractor_controller_1.patchProjectSubcontractorHandler);
+router.get("/subcontractor/:id", projectSubcontractor_controller_1.getProjectSubcontractorByIdHandler);
+router.patch("/projects/subcontractors/:id", projectSubcontractor_controller_1.patchProjectSubcontractorHandler);
 exports.default = router;

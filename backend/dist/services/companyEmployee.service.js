@@ -44,6 +44,7 @@ const createCompanyEmployee = async (data, currentUser, manager = data_source_1.
             return employeeProjectRepo.create({
                 employee: { id: employee.id },
                 project: { id: project.id },
+                company: { id: currentUser.companyId },
                 position: data.position,
                 createdBy: { id: currentUser.userId },
                 updatedBy: { id: currentUser.userId },
@@ -51,7 +52,15 @@ const createCompanyEmployee = async (data, currentUser, manager = data_source_1.
         });
         await employeeProjectRepo.save(projectAssignments);
     }
-    return employee;
+    const fullEmployee = await employeeRepo.findOneOrFail({
+        where: { id: employee.id, company: { id: currentUser.companyId } },
+        relations: [
+            // join-tablosu üzerinden projeleri getir
+            "employeeProjects",
+            "employeeProjects.project",
+        ],
+    });
+    return fullEmployee;
 };
 exports.createCompanyEmployee = createCompanyEmployee;
 const getCompanyEmployees = async (currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -106,6 +115,7 @@ const updateCompanyEmployee = async (id, data, currentUser, manager = data_sourc
         data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
     employee.code = `${employee.position}-${employee.firstName}${employee.lastName}`;
     employee.updatedBy = { id: currentUser.userId };
+    employee.company = { id: currentUser.companyId };
     await employeeRepo.save(employee);
     // 🔄 Proje atamalarını güncelle
     if (data.projectCodes) {
@@ -119,13 +129,22 @@ const updateCompanyEmployee = async (id, data, currentUser, manager = data_sourc
         const projectAssignments = projectEntities.map((project) => employeeProjectRepo.create({
             employee: { id: employee.id },
             project: { id: project.id },
+            company: { id: currentUser.companyId },
             position: employee.position,
             createdBy: { id: currentUser.userId },
             updatedBy: { id: currentUser.userId },
         }));
         await employeeProjectRepo.save(projectAssignments);
     }
-    return employee;
+    const fullEmployee = await employeeRepo.findOneOrFail({
+        where: { id: employee.id, company: { id: currentUser.companyId } },
+        relations: [
+            // join-tablosu üzerinden projeleri getir
+            "employeeProjects",
+            "employeeProjects.project",
+        ],
+    });
+    return fullEmployee;
 };
 exports.updateCompanyEmployee = updateCompanyEmployee;
 const updateCompanyEmployeeLeaveChange = async (employeeId, leaveDayCount, type, userId, manager, isReverse = false) => {

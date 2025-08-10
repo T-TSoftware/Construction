@@ -53,7 +53,7 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyBarterAgreement.prototype, "agreementDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: "DRAFT" }),
+    (0, typeorm_1.Column)({ default: "ACTIVE" }),
     __metadata("design:type", String)
 ], CompanyBarterAgreement.prototype, "status", void 0);
 __decorate([

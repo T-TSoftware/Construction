@@ -11,5 +11,5 @@ router.patch("/:leaveId", companyEmployeeLeave_controller_1.patchCompanyEmployee
 router.get("/", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesHandler);
 router.get("/employee/:employeeId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesByEmployeeIdHandler);
 router.get("/:leaveId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeaveByIdHandler); // 👈 YENİ
-router.delete("/:employeeId/leaves/:leaveId", companyEmployeeLeave_controller_1.deleteCompanyEmployeeLeaveHandler);
+router.delete("/:leaveId", companyEmployeeLeave_controller_1.deleteCompanyEmployeeLeaveHandler);
 exports.default = router;

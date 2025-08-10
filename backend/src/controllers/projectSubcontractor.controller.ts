@@ -3,6 +3,7 @@ import {
   createProjectSubcontractor,
   getProjectSubcontractors,
   updateProjectSubcontractor,
+  getProjectSubcontractorById
 } from "../services/projectSubcontractor.service";
 
 export const postProjectSubcontractorHandler = async (
@@ -22,7 +23,7 @@ export const postProjectSubcontractorHandler = async (
       unitPrice,
       quantity,
       contractAmount,
-      paidAmount,
+      //paidAmount,
       status,
       description,
     } = req.body;
@@ -44,7 +45,7 @@ export const postProjectSubcontractorHandler = async (
         unitPrice,
         quantity,
         contractAmount,
-        paidAmount,
+        //paidAmount,
         status,
         description,
       },
@@ -78,6 +79,25 @@ export const getProjectSubcontractorsHandler = async (
   }
 };
 
+export const getProjectSubcontractorByIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const supplier = await getProjectSubcontractorById(id, { userId, companyId });
+
+    res.status(200).json(supplier);
+  } catch (error) {
+    console.error("❌ GET project suppliers error:", error);
+    res.status(500).json({ error: "Tedarikçiler alınamadı." });
+    return;
+  }
+};
+
 export const patchProjectSubcontractorHandler = async (
   req: Request,
   res: Response
@@ -88,13 +108,12 @@ export const patchProjectSubcontractorHandler = async (
   }
 
   try {
-    const { projectId, code } = req.params;
+    const { id } = req.params;
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
     const updatedSubcontractor = await updateProjectSubcontractor(
-      projectId,
-      code,
+      id,
       req.body,
       { userId, companyId }
     );

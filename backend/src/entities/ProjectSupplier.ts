@@ -33,7 +33,7 @@ export class ProjectSupplier {
 
   @ManyToOne(() => QuantityItem)
   @JoinColumn({ name: "quantityitemid" }) // camelCase → FK
-  quantityItem!: QuantityItem;
+  quantityItem?: QuantityItem | null;
 
   @ManyToOne(() => ProjectQuantity, { nullable: true })
   @JoinColumn({ name: "projectquantityid" })
@@ -63,7 +63,7 @@ export class ProjectSupplier {
   @Column({ name: "contractamount", type: "numeric", nullable: true }) // camelCase → fix
   contractAmount?: number;
 
-  @Column({ name: "paidamount", type: "numeric", nullable: true }) // camelCase → fix
+  @Column({ name: "paidamount", type: "numeric", nullable: true, default: 0 }) // camelCase → fix
   paidAmount?: number;
 
   @Column({ name: "remainingamount", type: "numeric", nullable: true }) // camelCase → fix

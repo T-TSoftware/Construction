@@ -66,7 +66,7 @@ export class ProjectSubcontractor {
   @Column({ name: "contractamount", type: "numeric", nullable: true })
   contractAmount?: number;
 
-  @Column({ name: "paidamount", type: "numeric", nullable: true })
+  @Column({ name: "paidamount", type: "numeric", nullable: true, default: 0, })
   paidAmount?: number;
 
   @Column({ name: "remainingamount", type: "numeric", nullable: true })

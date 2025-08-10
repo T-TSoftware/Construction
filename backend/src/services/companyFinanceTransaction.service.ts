@@ -62,7 +62,7 @@ export const createCompanyFinanceTransaction = async (
     invoiceCode?: string;
     referenceCode?: string;
     description?: string;
-    projectCode?: string;
+    projectId?: string;
     source?: string;
   },
   currentUser: {
@@ -85,8 +85,8 @@ export const createCompanyFinanceTransaction = async (
     code: data.fromAccountCode,
   });
 
-  const project = data.projectCode
-    ? await projectRepo.findOneByOrFail({ code: data.projectCode })
+  const project = data.projectId
+    ? await projectRepo.findOneByOrFail({ id: data.projectId })
     : null;
 
   const results: CompanyFinanceTransaction[] = [];
@@ -379,7 +379,7 @@ export const updateCompanyFinanceTransaction = async (
     invoiceCode?: string;
     referenceCode?: string;
     description?: string;
-    projectCode?: string;
+    projectId?: string;
   },
   currentUser: {
     userId: string;
@@ -496,8 +496,8 @@ export const updateCompanyFinanceTransaction = async (
       : existing.toAccount;
 
   const newProject =
-    data.projectCode && data.projectCode !== existing.project?.id
-      ? await projectRepo.findOneByOrFail({ code: data.projectCode })
+    data.projectId && data.projectId !== existing.project?.id
+      ? await projectRepo.findOneByOrFail({ id: data.projectId })
       : existing.project;
 
   // 🛠️ Alanları güncelle
