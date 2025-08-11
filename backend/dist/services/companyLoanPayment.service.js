@@ -7,7 +7,6 @@ exports.exportCompanyLoanPaymentsToPdf = exports.exportCompanyLoanPaymentsToCsv 
 const data_source_1 = require("../config/data-source");
 const CompanyLoanPayment_1 = require("../entities/CompanyLoanPayment");
 const CompanyLoan_1 = require("../entities/CompanyLoan");
-const CompanyFinance_1 = require("../entities/CompanyFinance");
 const companyLoan_service_1 = require("./companyLoan.service");
 const json2csv_1 = require("json2csv");
 const pdfmake_1 = __importDefault(require("pdfmake"));
@@ -102,7 +101,6 @@ const getCompanyLoanPaymentsByLoanId = async (loanId, currentUser, manager = dat
 exports.getCompanyLoanPaymentsByLoanId = getCompanyLoanPaymentsByLoanId;
 const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const paymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
-    const transactionRepo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
     const loanRepo = manager.getRepository(CompanyLoan_1.CompanyLoan);
     const payment = await paymentRepo.findOneOrFail({
         where: { id },
@@ -110,7 +108,6 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
             "loan",
             "loan.bank",
             "loan.project",
-            "financeTransaction",
             "company",
         ],
     });
@@ -118,9 +115,6 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
         where: { id: payment.loan.id, company: { id: currentUser.companyId } },
         relations: ["bank", "project"],
     });
-    if (payment.loan.company.id !== currentUser.companyId) {
-        throw new Error("Bu ödeme kaydına erişim yetkiniz yok.");
-    }
     const oldStatus = payment.status;
     const newStatus = data.status ?? oldStatus;
     const oldAmount = payment.paymentAmount ??
@@ -213,7 +207,7 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
         status: data.status,
         paymentDate: data.paymentDate,
         penaltyAmount: data.penaltyAmount,
-        //description: data.description, // Burada hata oluyorsa entity'de name kontrolü yap
+        description: data.description, // Burada hata oluyorsa entity'de name kontrolü yap
         updatedBy: { id: currentUser.userId },
         updatedatetime: new Date(),
     });

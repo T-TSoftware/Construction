@@ -29,7 +29,7 @@ export const postCompanyCheckHandler = async (req: Request, res: Response) => {
       transactionDate,
       firm,
       amount,
-      bankCode,
+      bankId,
       type,
       projectId,
       description,
@@ -44,7 +44,7 @@ export const postCompanyCheckHandler = async (req: Request, res: Response) => {
         transactionDate,
         firm,
         amount,
-        bankCode,
+        bankId,
         type,
         projectId,
         description,
@@ -84,17 +84,13 @@ export const patchCompanyCheckHandler = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
-    const code = req.params.code;
+    const id = req.params.id;
     const body = req.body;
 
-    // 📌 Parametreden gelen 'code' kontrolü
-    if (!code || typeof code !== "string") {
-      throw new Error("Geçerli bir 'code' parametresi gereklidir.");
-    }
 
     // 🔁 Check güncelleme işlemi
     const updatedCheck = await updateCompanyCheck(
-      code,
+      id,
       body,
       { userId, companyId },
       queryRunner.manager

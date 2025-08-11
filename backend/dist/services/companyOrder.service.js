@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOrderPaymentStatusNew = exports.getCompanyOrderById = exports.getCompanyOrders = exports.updateOrderPaymentStatus = exports.createCompanyOrder = void 0;
+exports.updateOrderPaymentStatusNew = exports.getCompanyOrdersByProjectId = exports.getCompanyOrderById = exports.getCompanyOrders = exports.updateOrderPaymentStatus = exports.createCompanyOrder = void 0;
 const data_source_1 = require("../config/data-source");
 const CompanyOrder_1 = require("../entities/CompanyOrder");
 const CompanyStock_1 = require("../entities/CompanyStock");
@@ -14,16 +14,16 @@ const createCompanyOrder = async (data, currentUser, manager = data_source_1.App
     // 1. Stock'u bul
     const stock = await stockRepo.findOneOrFail({
         where: {
-            code: data.stockCode,
+            id: data.stockId,
             company: { id: currentUser.companyId },
         },
     });
     // 2. Project opsiyonel
     let project = null;
-    if (data.projectCode) {
+    if (data.projectId) {
         project = await projectRepo.findOneOrFail({
             where: {
-                code: data.projectCode,
+                id: data.projectId,
                 company: { id: currentUser.companyId },
             },
         });
@@ -54,7 +54,12 @@ const createCompanyOrder = async (data, currentUser, manager = data_source_1.App
         stockId: stock.id,
         quantity: 1, // şu an için sabit 1 olarak kabul ettik
     }, manager);
-    return await orderRepo.save(order);
+    const savedOrder = await orderRepo.save(order);
+    const fullOrder = await orderRepo.findOneOrFail({
+        where: { id: savedOrder.id, company: { id: currentUser.companyId } },
+        relations: ["project", "stock", "createdBy", "updatedBy"],
+    });
+    return fullOrder;
 };
 exports.createCompanyOrder = createCompanyOrder;
 const updateOrderPaymentStatus = async (orderCode, amountReceived, currentUser, manager) => {
@@ -101,6 +106,21 @@ const getCompanyOrderById = async (id, currentUser, manager = data_source_1.AppD
     return order;
 };
 exports.getCompanyOrderById = getCompanyOrderById;
+const getCompanyOrdersByProjectId = async (projectId, currentUser, manager = data_source_1.AppDataSource.manager) => {
+    const repo = manager.getRepository(CompanyOrder_1.CompanyOrder);
+    const order = await repo.find({
+        where: {
+            project: { id: projectId, company: { id: currentUser.companyId } },
+            company: { id: currentUser.companyId },
+        },
+        relations: ["stock", "project", "createdBy", "updatedBy"],
+    });
+    if (!order) {
+        throw new Error("İlgili satış bulunamadı.");
+    }
+    return order;
+};
+exports.getCompanyOrdersByProjectId = getCompanyOrdersByProjectId;
 const updateOrderPaymentStatusNew = async (orderCode, amount, currentUser, manager, isReverse = false) => {
     const orderRepo = manager.getRepository(CompanyOrder_1.CompanyOrder);
     const order = await orderRepo.findOneOrFail({

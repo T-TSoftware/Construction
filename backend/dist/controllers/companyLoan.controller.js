@@ -17,13 +17,13 @@ const postCompanyLoanHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const { code, name, accountNo, bankCode, projectCode, totalAmount, remainingPrincipal, remainingInstallmentAmount, currency, interestRate, totalInstallmentCount, remainingInstallmentCount, loanDate, purpose, loanType, status, description, } = req.body;
+        const { code, name, accountNo, bankId, projectId, totalAmount, remainingPrincipal, remainingInstallmentAmount, currency, interestRate, totalInstallmentCount, remainingInstallmentCount, loanDate, purpose, loanType, status, description, } = req.body;
         const newLoan = await (0, companyLoan_service_1.createCompanyLoan)({
             code,
             name,
             accountNo,
-            bankCode,
-            projectCode,
+            bankId,
+            projectId,
             totalAmount,
             remainingPrincipal,
             remainingInstallmentAmount,

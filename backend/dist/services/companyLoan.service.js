@@ -10,15 +10,15 @@ const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppD
     const balanceRepo = manager.getRepository(CompanyBalance_1.CompanyBalance);
     const projectRepo = manager.getRepository(CompanyProject_1.CompanyProject);
     const bank = await balanceRepo.findOneByOrFail({
-        code: data.bankCode,
+        id: data.bankId,
         company: { id: currentUser.companyId },
     });
     // 2. Project opsiyonel
     let project = null;
-    if (data.projectCode) {
+    if (data.projectId) {
         project = await projectRepo.findOneOrFail({
             where: {
-                code: data.projectCode,
+                id: data.projectId,
                 company: { id: currentUser.companyId },
             },
         });

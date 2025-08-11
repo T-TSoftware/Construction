@@ -26,8 +26,8 @@ router.post(
   postCompanyCheckHandler
 );
 router.patch(
-  "/:code",
-  validateBody(checkSchema("update")),
+  "/:id",
+  //validateBody(checkSchema("update")),
   patchCompanyCheckHandler
 );
 

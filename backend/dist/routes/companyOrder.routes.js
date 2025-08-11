@@ -8,4 +8,5 @@ router.use(authMiddleware_1.authMiddleware);
 router.post("/", /*validateBody,*/ companyOrder_controller_1.postCompanyOrderHandler);
 router.get("/", companyOrder_controller_1.getCompanyOrdersHandler);
 router.get("/:id", companyOrder_controller_1.getCompanyOrderByIdHandler);
+router.get("/project/:projectId", companyOrder_controller_1.getCompanyOrdersByProjectIdHandler);
 exports.default = router;

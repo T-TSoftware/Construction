@@ -9,8 +9,8 @@ export const createCompanyLoan = async (
     code: string;
     name: string;
     accountNo: string;
-    bankCode: string;
-    projectCode?: string;
+    bankId: string;
+    projectId?: string;
     totalAmount: number;
     remainingPrincipal: number;
     remainingInstallmentAmount: number;
@@ -32,16 +32,16 @@ export const createCompanyLoan = async (
   const projectRepo = manager.getRepository(CompanyProject);
 
   const bank = await balanceRepo.findOneByOrFail({
-    code: data.bankCode,
+    id: data.bankId,
     company: { id: currentUser.companyId },
   });
 
   // 2. Project opsiyonel
   let project = null;
-  if (data.projectCode) {
+  if (data.projectId) {
     project = await projectRepo.findOneOrFail({
       where: {
-        code: data.projectCode,
+        id: data.projectId,
         company: { id: currentUser.companyId },
       },
     });

@@ -16,14 +16,14 @@ const postCompanyCheckHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const { checkNo, checkDate, transactionDate, firm, amount, bankCode, type, projectId, description, status, dueDate, } = req.body;
+        const { checkNo, checkDate, transactionDate, firm, amount, bankId, type, projectId, description, status, dueDate, } = req.body;
         const newCheck = await (0, companyCheck_service_1.createCompanyCheck)({
             checkNo,
             checkDate,
             transactionDate,
             firm,
             amount,
-            bankCode,
+            bankId,
             type,
             projectId,
             description,
@@ -59,14 +59,10 @@ const patchCompanyCheckHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const code = req.params.code;
+        const id = req.params.id;
         const body = req.body;
-        // 📌 Parametreden gelen 'code' kontrolü
-        if (!code || typeof code !== "string") {
-            throw new Error("Geçerli bir 'code' parametresi gereklidir.");
-        }
         // 🔁 Check güncelleme işlemi
-        const updatedCheck = await (0, companyCheck_service_1.updateCompanyCheck)(code, body, { userId, companyId }, queryRunner.manager);
+        const updatedCheck = await (0, companyCheck_service_1.updateCompanyCheck)(id, body, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
         res.status(200).json(updatedCheck);
         return;

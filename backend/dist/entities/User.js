@@ -13,6 +13,7 @@ exports.User = void 0;
 // src/entities/User.ts
 const typeorm_1 = require("typeorm");
 const Company_1 = require("./Company");
+const class_transformer_1 = require("class-transformer");
 let User = class User {
 };
 exports.User = User;
@@ -30,6 +31,8 @@ __decorate([
 ], User.prototype, "email", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
+    (0, class_transformer_1.Exclude)() // 🚫 response’ta gösterme
+    ,
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
 __decorate([

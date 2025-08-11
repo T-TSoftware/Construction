@@ -8,7 +8,9 @@ import {
   UpdateDateColumn,
   JoinColumn,
 } from "typeorm";
+
 import { Company } from "./Company";
+import { Exclude } from "class-transformer";
 
 @Entity({ name: "users" })
 export class User {
@@ -22,6 +24,7 @@ export class User {
   email!: string;
 
   @Column()
+  @Exclude() // 🚫 response’ta gösterme
   password!: string;
 
   @Column()

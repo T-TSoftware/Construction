@@ -5,6 +5,7 @@ import {
   getCompanyOrderByIdHandler,
   getCompanyOrdersHandler,
   postCompanyOrderHandler,
+  getCompanyOrdersByProjectIdHandler,
 } from "../controllers/companyOrder.controller";
 
 const router = Router();
@@ -16,5 +17,7 @@ router.post("/", /*validateBody,*/ postCompanyOrderHandler);
 router.get("/", getCompanyOrdersHandler);
 
 router.get("/:id", getCompanyOrderByIdHandler);
+
+router.get("/project/:projectId", getCompanyOrdersByProjectIdHandler);
 
 export default router;

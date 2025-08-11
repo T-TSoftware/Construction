@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCompanyOrderByIdHandler = exports.getCompanyOrdersHandler = exports.postCompanyOrderHandler = void 0;
+exports.getCompanyOrdersByProjectIdHandler = exports.getCompanyOrderByIdHandler = exports.getCompanyOrdersHandler = exports.postCompanyOrderHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const companyOrder_service_1 = require("../services/companyOrder.service");
 const postCompanyOrderHandler = async (req, res) => {
@@ -17,16 +17,10 @@ const postCompanyOrderHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const { stockCode, projectCode, customerName, totalAmount, description, stockType, } = req.body;
-        if (!stockCode || !customerName || !totalAmount) {
-            res.status(400).json({
-                errorMessage: "Zorunlu alanlar: stockCode, customerName, totalAmount.",
-            });
-            return;
-        }
+        const { stockId, projectId, customerName, totalAmount, description, stockType, } = req.body;
         const newOrder = await (0, companyOrder_service_1.createCompanyOrder)({
-            stockCode,
-            projectCode,
+            stockId,
+            projectId,
             customerName,
             totalAmount,
             description,
@@ -90,3 +84,21 @@ const getCompanyOrderByIdHandler = async (req, res) => {
     }
 };
 exports.getCompanyOrderByIdHandler = getCompanyOrderByIdHandler;
+const getCompanyOrdersByProjectIdHandler = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const orders = await (0, companyOrder_service_1.getCompanyOrdersByProjectId)(projectId, {
+            userId,
+            companyId,
+        });
+        res.status(200).json(orders);
+    }
+    catch (error) {
+        console.error("❌ GET project suppliers error:", error);
+        res.status(500).json({ error: "Tedarikçiler alınamadı." });
+        return;
+    }
+};
+exports.getCompanyOrdersByProjectIdHandler = getCompanyOrdersByProjectIdHandler;
