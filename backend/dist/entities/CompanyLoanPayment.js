@@ -69,6 +69,10 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyLoanPayment.prototype, "status", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: "description", type: "text", nullable: true }),
+    __metadata("design:type", String)
+], CompanyLoanPayment.prototype, "description", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: "paymentdate", type: "date", nullable: true }),
     __metadata("design:type", Date)
 ], CompanyLoanPayment.prototype, "paymentDate", void 0);

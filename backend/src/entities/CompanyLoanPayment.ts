@@ -54,6 +54,9 @@ export class CompanyLoanPayment {
   @Column({ name: "status", type: "varchar", length: 20, default: "PENDING" })
   status!: "PENDING" | "PAID" | "OVERDUE";
 
+  @Column({ name: "description", type: "text", nullable: true })
+  description?: string;
+
   @Column({ name: "paymentdate", type: "date", nullable: true })
   paymentDate?: Date;
 

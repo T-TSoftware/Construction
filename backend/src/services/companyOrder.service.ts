@@ -9,8 +9,8 @@ import { User } from "../entities/User";
 
 export const createCompanyOrder = async (
   data: {
-    stockCode: string;
-    projectCode?: string;
+    stockId: string;
+    projectId?: string;
     customerName: string;
     totalAmount: number;
     description?: string;
@@ -26,17 +26,17 @@ export const createCompanyOrder = async (
   // 1. Stock'u bul
   const stock = await stockRepo.findOneOrFail({
     where: {
-      code: data.stockCode,
+      id: data.stockId,
       company: { id: currentUser.companyId },
     },
   });
 
   // 2. Project opsiyonel
   let project = null;
-  if (data.projectCode) {
+  if (data.projectId) {
     project = await projectRepo.findOneOrFail({
       where: {
-        code: data.projectCode,
+        id: data.projectId,
         company: { id: currentUser.companyId },
       },
     });
@@ -73,7 +73,13 @@ export const createCompanyOrder = async (
     manager
   );
 
-  return await orderRepo.save(order);
+  const savedOrder = await orderRepo.save(order);
+  const fullOrder = await orderRepo.findOneOrFail({
+    where: { id: savedOrder.id, company: { id: currentUser.companyId } },
+    relations: ["project", "stock", "createdBy", "updatedBy"],
+  });
+
+  return fullOrder;
 };
 
 export const updateOrderPaymentStatus = async (
@@ -140,6 +146,28 @@ export const getCompanyOrderById = async (
   return order;
 };
 
+export const getCompanyOrdersByProjectId = async (
+  projectId: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyOrder);
+
+  const order = await repo.find({
+    where: {
+      project: { id: projectId, company: { id: currentUser.companyId } },
+      company: { id: currentUser.companyId },
+    },
+    relations: ["stock", "project", "createdBy", "updatedBy"],
+  });
+
+  if (!order) {
+    throw new Error("İlgili satış bulunamadı.");
+  }
+
+  return order;
+};
+
 export const updateOrderPaymentStatusNew = async (
   orderCode: string,
   amount: number,
@@ -171,7 +199,8 @@ export const updateOrderPaymentStatusNew = async (
   });
 
   // ✅ remainingAmount ve status hesapla
-  const remainingAmount = Number(updatedOrder.totalAmount) - Number(updatedOrder.receivedAmount);
+  const remainingAmount =
+    Number(updatedOrder.totalAmount) - Number(updatedOrder.receivedAmount);
   const status = remainingAmount <= 0 ? "COLLECTED" : "PARTIAL";
 
   updatedOrder.remainingAmount = remainingAmount;

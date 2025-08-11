@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../config/data-source";
-import { createCompanyOrder, getCompanyOrderById, getCompanyOrders } from "../services/companyOrder.service";
+import { createCompanyOrder, getCompanyOrderById, getCompanyOrders,getCompanyOrdersByProjectId } from "../services/companyOrder.service";
 
 export const postCompanyOrderHandler = async (req: Request, res: Response) => {
   // 🔐 Yalnızca superadmin işlem yapabilir
@@ -20,25 +20,19 @@ export const postCompanyOrderHandler = async (req: Request, res: Response) => {
     const companyId = req.user!.companyId;
 
     const {
-      stockCode,
-      projectCode,
+      stockId,
+      projectId,
       customerName,
       totalAmount,
       description,
       stockType,
     } = req.body;
 
-    if (!stockCode || !customerName || !totalAmount) {
-      res.status(400).json({
-        errorMessage: "Zorunlu alanlar: stockCode, customerName, totalAmount.",
-      });
-      return;
-    }
 
     const newOrder = await createCompanyOrder(
       {
-        stockCode,
-        projectCode,
+        stockId,
+        projectId,
         customerName,
         totalAmount,
         description,
@@ -109,5 +103,27 @@ export const getCompanyOrderByIdHandler = async (req: Request, res: Response) =>
   } catch (error: any) {
     console.error("❌ GET order by ID error:", error);
     res.status(500).json({ error: error.message || "Satış bilgisi alınamadı." });
+  }
+};
+
+export const getCompanyOrdersByProjectIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const orders = await getCompanyOrdersByProjectId(projectId, {
+      userId,
+      companyId,
+    });
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("❌ GET project suppliers error:", error);
+    res.status(500).json({ error: "Tedarikçiler alınamadı." });
+    return;
   }
 };

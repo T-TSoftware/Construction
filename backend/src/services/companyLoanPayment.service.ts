@@ -164,7 +164,6 @@ export const updateCompanyLoanPayment = async (
   manager: EntityManager = AppDataSource.manager
 ) => {
   const paymentRepo = manager.getRepository(CompanyLoanPayment);
-  const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
   const loanRepo = manager.getRepository(CompanyLoan);
   const payment = await paymentRepo.findOneOrFail({
     where: { id },
@@ -172,7 +171,6 @@ export const updateCompanyLoanPayment = async (
       "loan",
       "loan.bank",
       "loan.project",
-      "financeTransaction",
       "company",
     ],
   });
@@ -180,10 +178,6 @@ export const updateCompanyLoanPayment = async (
     where: { id: payment.loan.id, company: { id: currentUser.companyId } },
     relations: ["bank", "project"],
   });
-
-  if (payment.loan.company.id !== currentUser.companyId) {
-    throw new Error("Bu ödeme kaydına erişim yetkiniz yok.");
-  }
 
   const oldStatus = payment.status;
   const newStatus = data.status ?? oldStatus;
@@ -287,7 +281,7 @@ export const updateCompanyLoanPayment = async (
       status: data.status,
       paymentDate: data.paymentDate,
       penaltyAmount: data.penaltyAmount,
-      //description: data.description, // Burada hata oluyorsa entity'de name kontrolü yap
+      description: data.description, // Burada hata oluyorsa entity'de name kontrolü yap
       updatedBy: { id: currentUser.userId },
       updatedatetime: new Date(),
     }
