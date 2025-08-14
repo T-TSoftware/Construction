@@ -8,6 +8,9 @@ const generateCode_1 = require("../utils/generateCode");
 const QuantityItem_1 = require("../entities/QuantityItem");
 const ProjectQuantity_1 = require("../entities/ProjectQuantity");
 const ProjectEstimatedCost_1 = require("../entities/ProjectEstimatedCost");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const persist_1 = require("../utils/persist");
+const sanitize_1 = require("../utils/sanitize");
 const supplierRepo = data_source_1.AppDataSource.getRepository(ProjectSupplier_1.ProjectSupplier);
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
 const quantityItemRepo = data_source_1.AppDataSource.getRepository(QuantityItem_1.QuantityItem);
@@ -48,7 +51,7 @@ const createProjectSupplier = async (data, currentUser, manager = data_source_1.
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
     });
-    await supplierRepo.save(supplier);
+    //await supplierRepo.save(supplier);
     // 🔄 Eğer AGREED ise EstimatedCost oluştur
     /*if (data.status === "AGREED") {
       const estimatedCostRepo = manager.getRepository(ProjectEstimatedCost);
@@ -80,7 +83,23 @@ const createProjectSupplier = async (data, currentUser, manager = data_source_1.
       });
       await estimatedCostRepo.save(estimatedCost);
     }*/
-    return supplier;
+    //return supplier;
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "ProjectSupplier",
+        save: () => supplierRepo.save(supplier),
+        refetch: () => supplierRepo.findOneOrFail({
+            where: { id: supplier.id, company: { id: currentUser.companyId } },
+            relations: [
+                "project",
+                "company",
+                "projectQuantity",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Tedarik kaydı oluşturulamadı.",
+    });
 };
 exports.createProjectSupplier = createProjectSupplier;
 const getProjectSuppliers = async (projectId, currentUser) => {
@@ -89,28 +108,11 @@ const getProjectSuppliers = async (projectId, currentUser) => {
             project: { id: projectId, company: { id: currentUser.companyId } },
             company: { id: currentUser.companyId },
         },
-        relations: ["createdBy", "updatedBy", "projectQuantity"],
+        relations: ["createdBy", "updatedBy", "project", "projectQuantity"],
         order: { createdatetime: "DESC" },
     });
-    return suppliers.map((supplier) => ({
-        id: supplier.id,
-        code: supplier.code,
-        category: supplier.category,
-        quantityItemCode: supplier.quantityItem?.code ?? null,
-        companyName: supplier.companyName,
-        unit: supplier.unit,
-        unitPrice: supplier.unitPrice,
-        quantity: supplier.quantity,
-        contractAmount: supplier.contractAmount,
-        paidAmount: supplier.paidAmount,
-        remainingAmount: supplier.remainingAmount,
-        status: supplier.status,
-        description: supplier.description,
-        createdBy: supplier.createdBy?.name ?? null,
-        updatedBy: supplier.updatedBy?.name ?? null,
-        createdatetime: supplier.createdatetime,
-        updatedatetime: supplier.updatedatetime,
-    }));
+    //return suppliers;
+    return (0, sanitize_1.sanitizeEntity)(suppliers, "ProjectSupplier", sanitizeRules_1.sanitizeRules);
 };
 exports.getProjectSuppliers = getProjectSuppliers;
 const getProjectSupplierById = async (id, currentUser) => {
@@ -121,7 +123,8 @@ const getProjectSupplierById = async (id, currentUser) => {
         },
         relations: ["createdBy", "updatedBy", "project", "projectQuantity"],
     });
-    return supplier;
+    //return supplier;
+    return (0, sanitize_1.sanitizeEntity)(supplier, "ProjectSupplier", sanitizeRules_1.sanitizeRules);
 };
 exports.getProjectSupplierById = getProjectSupplierById;
 const updateProjectSupplier = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -152,7 +155,7 @@ const updateProjectSupplier = async (id, data, currentUser, manager = data_sourc
     supplier.description = data.description ?? supplier.description;
     supplier.updatedBy = { id: currentUser.userId };
     supplier.updatedatetime = new Date();
-    const saved = await supplierRepo.save(supplier);
+    //const saved = await supplierRepo.save(supplier);
     // ✅ AGREED durumunda EstimatedCost oluştur
     /*if (data.status === "AGREED") {
       const existingEstimate = await estimatedCostRepo.findOne({
@@ -195,7 +198,23 @@ const updateProjectSupplier = async (id, data, currentUser, manager = data_sourc
         await estimatedCostRepo.save(estimatedCost);
       }
     }*/
-    return saved;
+    //return saved;
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "ProjectSupplier",
+        save: () => supplierRepo.save(supplier),
+        refetch: () => supplierRepo.findOneOrFail({
+            where: { id: supplier.id, company: { id: currentUser.companyId } },
+            relations: [
+                "project",
+                "company",
+                "projectQuantity",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Tedarik kaydı oluşturulamadı.",
+    });
 };
 exports.updateProjectSupplier = updateProjectSupplier;
 const updateProjectSupplierStatus = async (supplierCode, amountReceived, currentUser, manager) => {

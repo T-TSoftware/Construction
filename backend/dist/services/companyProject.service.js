@@ -4,29 +4,14 @@ exports.getProjectById = exports.getCompanyProjects = exports.createProject = vo
 const data_source_1 = require("../config/data-source");
 const CompanyProject_1 = require("../entities/CompanyProject");
 const Company_1 = require("../entities/Company");
-const generateCode_1 = require("../utils/generateCode");
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
 const companyRepo = data_source_1.AppDataSource.getRepository(Company_1.Company);
 const createProject = async (data, currentUser) => {
     const company = await companyRepo.findOneByOrFail({
         id: currentUser.companyId,
     });
-    const projectPrefix = data.site
-        .trim()
-        .split(" ")[0]
-        .slice(0, 3)
-        .toUpperCase();
-    const codePrefix = `${company.code
-        .slice(0, 3)
-        .toUpperCase()}-${projectPrefix}`;
-    const latestProject = await projectRepo
-        .createQueryBuilder("project")
-        .where("project.code LIKE :prefix", { prefix: `${codePrefix}%` })
-        .andWhere("project.companyId = :companyId", { companyId: company.id })
-        .orderBy("project.code", "DESC")
-        .getOne();
-    const latestCode = latestProject?.code ?? null;
-    const code = (0, generateCode_1.generateNextProjectCode)(latestCode, company.code, data.site);
+    //const projectName = data.name.trim().replace(/\s+/g, "").toUpperCase();
+    const code = `${company.code}-${data.name}`;
     const project = projectRepo.create({
         ...data,
         code,

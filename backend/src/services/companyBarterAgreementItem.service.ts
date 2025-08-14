@@ -8,6 +8,8 @@ import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { processBarterItem } from "./processBarterItem.serivce";
 import { generateNextBarterAgreementItemCode } from "../utils/generateCode";
 import { User } from "../entities/User";
+import { sanitizeEntity } from "../utils/sanitize";
+import { sanitizeRules } from "../utils/sanitizeRules";
 
 export const postCompanyBarterAgreementItem = async (
   agreementId: string,
@@ -83,7 +85,7 @@ export const postCompanyBarterAgreementItem = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  return await itemRepo.save(item);
+  //return await itemRepo.save(item);
 };
 
 export const getAllCompanyBarterAgreementItems = async (
@@ -92,7 +94,7 @@ export const getAllCompanyBarterAgreementItems = async (
 ) => {
   const itemRepo = manager.getRepository(CompanyBarterAgreementItem);
 
-  return await itemRepo.find({
+  const agreementItems = await itemRepo.find({
     where: {
       company: { id: currentUser.companyId },
     },
@@ -102,8 +104,16 @@ export const getAllCompanyBarterAgreementItems = async (
       relatedStock: true,
       relatedSubcontractor: true,
       relatedSupplier: true,
+      company: true,
+      createdBy: true,
+      updatedBy: true,
     },
   });
+  return sanitizeEntity(
+    agreementItems,
+    "CompanyBarterAgreementItem",
+    sanitizeRules
+  );
 };
 
 export const getCompanyBarterAgreementItemsByAgreementId = async (
@@ -113,18 +123,27 @@ export const getCompanyBarterAgreementItemsByAgreementId = async (
 ) => {
   const itemRepo = manager.getRepository(CompanyBarterAgreementItem);
 
-  return await itemRepo.find({
+  const agreementItems = await itemRepo.find({
     where: {
       barterAgreement: { id: barterId },
       company: { id: currentUser.companyId },
     },
     order: { createdatetime: "DESC" },
     relations: {
+      barterAgreement: true,
       relatedStock: true,
       relatedSubcontractor: true,
       relatedSupplier: true,
+      company: true,
+      createdBy: true,
+      updatedBy: true,
     },
   });
+  return sanitizeEntity(
+    agreementItems,
+    "CompanyBarterAgreementItem",
+    sanitizeRules
+  );
 };
 
 export const getCompanyBarterAgreementItemById = async (
@@ -134,7 +153,7 @@ export const getCompanyBarterAgreementItemById = async (
 ) => {
   const itemRepo = manager.getRepository(CompanyBarterAgreementItem);
 
-  return await itemRepo.findOneOrFail({
+  const agreementItem = await itemRepo.findOneOrFail({
     where: {
       id: itemId,
       company: { id: currentUser.companyId },
@@ -144,8 +163,16 @@ export const getCompanyBarterAgreementItemById = async (
       relatedStock: true,
       relatedSubcontractor: true,
       relatedSupplier: true,
+      company: true,
+      createdBy: true,
+      updatedBy: true,
     },
   });
+  return sanitizeEntity(
+    agreementItem,
+    "CompanyBarterAgreementItem",
+    sanitizeRules
+  );
 };
 
 export const updateBarterItemPaymentStatus = async (

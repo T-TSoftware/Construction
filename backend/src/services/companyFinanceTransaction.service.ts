@@ -17,10 +17,7 @@ import { CompanyCheck } from "../entities/CompanyCheck";
 import { User } from "../entities/User";
 import { updateCompanyLoanPaymentChange } from "./companyLoan.service";
 import { CompanyLoanPayment } from "../entities/CompanyLoanPayment";
-import {
-  updateLoanPaymentStatus,
-  updateLoanPaymentStatusNew,
-} from "./companyLoanPayment.service";
+import { updateLoanPaymentStatusNew } from "./companyLoanPayment.service";
 import {
   updateCheckPaymentStatus,
   updateCheckPaymentStatusNew,
@@ -225,11 +222,12 @@ export const createCompanyFinanceTransaction = async (
 
     transaction.order = { id: order.id } as CompanyOrder;
 
-    await updateOrderPaymentStatus(
+    await updateOrderPaymentStatusNew(
       data.referenceCode,
       data.amount,
       currentUser,
-      manager
+      manager,
+      false
     );
   }
 
@@ -245,11 +243,13 @@ export const createCompanyFinanceTransaction = async (
 
     transaction.check = { id: check.id } as CompanyCheck;
 
-    await updateCheckPaymentStatus(
+    await updateCheckPaymentStatusNew(
       data.referenceCode,
       Number(data.amount),
+      data.transactionDate,
       currentUser,
-      manager
+      manager,
+      false
     );
   }
 
@@ -265,12 +265,13 @@ export const createCompanyFinanceTransaction = async (
 
     transaction.loanPayment = { id: loanPayment.id } as CompanyLoanPayment;
 
-    await updateLoanPaymentStatus(
+    await updateLoanPaymentStatusNew(
       data.referenceCode,
       data.amount,
-      data.transactionDate,
+      //data.transactionDate,
       currentUser,
-      manager
+      manager,
+      false
     );
 
     /*const expectedTotal =
@@ -293,12 +294,13 @@ export const createCompanyFinanceTransaction = async (
       id: subcontractor.id,
     } as ProjectSubcontractor;
 
-    await updateProjectSubcontractorStatus(
+    await updateProjectSubcontractorStatusNew(
       data.referenceCode,
       data.amount,
       //data.transactionDate,
       currentUser,
-      manager
+      manager,
+      false
     );
 
     /*const expectedTotal =
@@ -321,12 +323,13 @@ export const createCompanyFinanceTransaction = async (
       id: supplier.id,
     } as ProjectSupplier;
 
-    await updateProjectSupplierStatus(
+    await updateProjectSupplierStatusNew(
       data.referenceCode,
       data.amount,
       //data.transactionDate,
       currentUser,
-      manager
+      manager,
+      false
     );
 
     /*const expectedTotal =
@@ -349,11 +352,12 @@ export const createCompanyFinanceTransaction = async (
       id: barterItem.id,
     } as CompanyBarterAgreementItem;
 
-    await updateBarterItemPaymentStatus(
+    await updateBarterItemPaymentStatusNew(
       data.referenceCode,
       Number(data.amount),
       currentUser,
-      manager
+      manager,
+      false
     );
   }
 
@@ -442,9 +446,11 @@ export const updateCompanyFinanceTransaction = async (
 
   // 🔁 Move Back Old Check
   if (existing.category === "CHECK" && existing.referenceCode) {
+    console.log("burada");
     await updateCheckPaymentStatusNew(
       existing.referenceCode,
       existing.amount,
+      existing.transactionDate,
       currentUser,
       manager,
       true
@@ -576,6 +582,7 @@ export const updateCompanyFinanceTransaction = async (
     await updateCheckPaymentStatusNew(
       updated.referenceCode,
       updated.amount,
+      updated.transactionDate,
       currentUser,
       manager,
       false

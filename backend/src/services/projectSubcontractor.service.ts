@@ -5,6 +5,9 @@ import { CompanyProject } from "../entities/CompanyProject";
 import { generateNextEntityCode } from "../utils/generateCode";
 import { ProjectEstimatedCost } from "../entities/ProjectEstimatedCost";
 import { User } from "../entities/User";
+import { sanitizeEntity } from "../utils/sanitize";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { saveRefetchSanitize } from "../utils/persist";
 
 const subcontractorRepo = AppDataSource.getRepository(ProjectSubcontractor);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -62,7 +65,24 @@ export const createProjectSubcontractor = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  return await subcontractorRepo.save(subcontractor);
+  //return await subcontractorRepo.save(subcontractor);
+  return await saveRefetchSanitize({
+    entityName: "ProjectSubcontractor",
+    save: () => subcontractorRepo.save(subcontractor),
+    refetch: () =>
+      subcontractorRepo.findOneOrFail({
+        where: { id: subcontractor.id, company: { id: currentUser.companyId } },
+        relations: [
+          "project",
+          "company",
+          "projectQuantity",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Taşeron kaydı oluşturulamadı.",
+  });
 };
 
 export const getProjectSubcontractors = async (
@@ -74,28 +94,11 @@ export const getProjectSubcontractors = async (
       project: { id: projectId },
       company: { id: companyId },
     },
-    relations: ["createdBy", "updatedBy"],
+    relations: ["createdBy", "updatedBy", "project", "projectQuantity"],
     order: { createdatetime: "DESC" },
   });
 
-  return subcontractors.map((s) => ({
-    id: s.id,
-    code: s.code,
-    category: s.category,
-    companyName: s.companyName,
-    unit: s.unit,
-    unitPrice: s.unitPrice,
-    quantity: s.quantity,
-    contractAmount: s.contractAmount,
-    paidAmount: s.paidAmount,
-    remainingAmount: s.remainingAmount,
-    status: s.status,
-    description: s.description,
-    createdBy: s.createdBy?.name ?? null,
-    updatedBy: s.updatedBy?.name ?? null,
-    createdatetime: s.createdatetime,
-    updatedatetime: s.updatedatetime,
-  }));
+  return sanitizeEntity(subcontractors, "ProjectSubcontractor", sanitizeRules);
 };
 
 export const getProjectSubcontractorById = async (
@@ -110,7 +113,7 @@ export const getProjectSubcontractorById = async (
     relations: ["createdBy", "updatedBy", "project", "projectQuantity"],
   });
 
-  return subcontractor;
+  return sanitizeEntity(subcontractor, "ProjectSubcontractor", sanitizeRules);
 };
 
 export const updateProjectSubcontractor = async (
@@ -140,7 +143,13 @@ export const updateProjectSubcontractor = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["project", "company", "projectQuantity"], // ✅ Ek ilişkiler AGREED kısmı için
+    relations: [
+      "project",
+      "company",
+      "projectQuantity",
+      "createdBy",
+      "updatedBy",
+    ], // ✅ Ek ilişkiler AGREED kısmı için
   });
 
   if (!subcontractor) {
@@ -157,7 +166,9 @@ export const updateProjectSubcontractor = async (
 
     if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
       subcontractor.contractAmount = data.contractAmount!;
-      subcontractor.remainingAmount = Number(data.contractAmount ?? 0) - Number(subcontractor.paidAmount ?? 0);
+      subcontractor.remainingAmount =
+        Number(data.contractAmount ?? 0) -
+        Number(subcontractor.paidAmount ?? 0);
     }
   } else {
     // 🔧 Güncellenebilir alanlar (locked değilse)
@@ -171,14 +182,14 @@ export const updateProjectSubcontractor = async (
 
     if (Object.prototype.hasOwnProperty.call(data, "contractAmount")) {
       subcontractor.contractAmount = data.contractAmount!;
-      subcontractor.remainingAmount = Number(data.contractAmount ?? 0) - Number(subcontractor.paidAmount ?? 0);
+      subcontractor.remainingAmount =
+        Number(data.contractAmount ?? 0) -
+        Number(subcontractor.paidAmount ?? 0);
     }
   }
 
   subcontractor.updatedBy = { id: currentUser.userId } as any;
   subcontractor.updatedatetime = new Date();
-
-  const saved = await subcontractorRepo.save(subcontractor);
 
   // ✅ AGREED durumunda tahmini maliyet oluştur
   /*if (data.status === "AGREED") {
@@ -223,7 +234,24 @@ export const updateProjectSubcontractor = async (
     }
   }*/
 
-  return saved;
+  //return saved;
+  return await saveRefetchSanitize({
+    entityName: "ProjectSubcontractor",
+    save: () => subcontractorRepo.save(subcontractor),
+    refetch: () =>
+      subcontractorRepo.findOneOrFail({
+        where: { id: subcontractor.id, company: { id: currentUser.companyId } },
+        relations: [
+          "project",
+          "company",
+          "projectQuantity",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Taşeron kaydı oluşturulamadı.",
+  });
 };
 
 export const updateProjectSubcontractorStatus = async (

@@ -23,7 +23,7 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyEmployee.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ unique: true }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], CompanyEmployee.prototype, "code", void 0);
 __decorate([
@@ -88,7 +88,9 @@ __decorate([
     __metadata("design:type", Company_1.Company)
 ], CompanyEmployee.prototype, "company", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => CompanyEmployeeProject_1.CompanyEmployeeProject, (project) => project.employee, { cascade: true }),
+    (0, typeorm_1.OneToMany)(() => CompanyEmployeeProject_1.CompanyEmployeeProject, (project) => project.employee, {
+        cascade: true,
+    }),
     __metadata("design:type", Array)
 ], CompanyEmployee.prototype, "employeeProjects", void 0);
 __decorate([

@@ -23,7 +23,7 @@ export class CompanyLoan {
   @JoinColumn({ name: "companyid" })
   company!: Company;
 
-  @Column({ name: "code", type: "varchar", length: 100, unique: true })
+  @Column({ name: "code", type: "varchar", length: 100 })
   code!: string; // e.g., KRD-ZIRAAT-2025-001
 
   @Column({ name: "name", type: "varchar", length: 100, unique: true })
@@ -46,8 +46,13 @@ export class CompanyLoan {
   @Column({ name: "remainingprincipal", type: "numeric" })
   remainingPrincipal!: number; // Kalan anapara borç bakiyesi !!!
 
-  @Column({ name: "remaininginstallmentamount", type: "numeric", precision: 15, scale: 2 })
-  remainingInstallmentAmount!: number; // toplam taksit borcu !!! 
+  @Column({
+    name: "remaininginstallmentamount",
+    type: "numeric",
+    precision: 15,
+    scale: 2,
+  })
+  remainingInstallmentAmount!: number; // toplam taksit borcu !!!
 
   @Column({ name: "currency", type: "varchar", length: 3, default: "TRY" })
   currency!: string;

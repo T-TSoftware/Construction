@@ -3,7 +3,11 @@ import { AppDataSource } from "../config/data-source";
 import { Company } from "../entities/Company";
 import { CompanyProject } from "../entities/CompanyProject";
 import { CompanyStock } from "../entities/CompanyStock";
-import { generateStockCode } from "../utils/generateCode";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { slug } from "../utils/slugHelper";
+import { sanitizeEntity } from "../utils/sanitize";
+//import { generateStockCode } from "../utils/generateCode";
 
 const stockRepo = AppDataSource.getRepository(CompanyStock);
 const companyRepo = AppDataSource.getRepository(Company);
@@ -42,7 +46,7 @@ export const createCompanyStock = async (
     ? await projectRepo.findOneByOrFail({ id: data.projectId })
     : null;
 
-  const existing = await stockRepo.findOne({
+  /*const existing = await stockRepo.findOne({
     where: {
       category: data.category,
       name: data.name,
@@ -51,23 +55,37 @@ export const createCompanyStock = async (
 
   if (existing) {
     throw new Error(`${data.category} - ${data.name} stoğu zaten mevcut.`);
-  }
-  const code = await generateStockCode(data.category, manager);
+  }*/
+  //const code = await generateStockCode(data.category, manager);
+  const categorySlug = slug(data.category).toUpperCase(); // CATEGORY kısmı büyük
+  const nameSlug = slug(data.name).toLowerCase(); // name kısmı küçük (istersen upper yap)
+  const code = `STK-${categorySlug}-${nameSlug}`;
 
   const stock = stockRepo.create({
     ...data,
     code,
-    company: { id: company.id },
+    company: { id: currentUser.companyId },
     project: project ? { id: data.projectId } : null,
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
   });
 
-  return await stockRepo.save(stock);
+  //return await stockRepo.save(stock);
+  return await saveRefetchSanitize({
+    entityName: "CompanyStock",
+    save: () => stockRepo.save(stock),
+    refetch: () =>
+      stockRepo.findOneOrFail({
+        where: { id: stock.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Stok kaydı oluşturulamadı.",
+  });
 };
 
 export const updateCompanyStock = async (
-  code: string,
+  id: string,
   data: {
     name?: string;
     category?: string;
@@ -89,10 +107,10 @@ export const updateCompanyStock = async (
   const projectRepo = manager.getRepository(CompanyProject);
   const stock = await stockRepo.findOne({
     where: {
-      code,
+      id,
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "project"],
+    relations: ["company", "project","createdBy", "updatedBy"],
   });
 
   if (!stock) {
@@ -120,33 +138,43 @@ export const updateCompanyStock = async (
   stock.updatedBy = { id: currentUser.userId } as any;
   stock.updatedatetime = new Date();
 
-  return await stockRepo.save(stock);
+  //return await stockRepo.save(stock);
+  return await saveRefetchSanitize({
+    entityName: "CompanyStock",
+    save: () => stockRepo.save(stock),
+    refetch: () =>
+      stockRepo.findOneOrFail({
+        where: { id: stock.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Stok kaydı güncellenemedi.",
+  });
 };
 
 export const getCompanyStocks = async (companyId: string) => {
   const stocks = await stockRepo.find({
     where: { company: { id: companyId } },
-    relations: ["createdBy", "updatedBy", "project"],
+    relations: ["createdBy", "updatedBy", "project","company"],
     order: { createdatetime: "DESC" },
   });
 
-  return stocks.map((s) => ({
-    id: s.id,
-    code: s.code,
-    name: s.name,
-    category: s.category,
-    unit: s.unit,
-    quantity: s.quantity,
-    minimumQuantity: s.minimumQuantity,
-    description: s.description,
-    location: s.location,
-    stockDate: s.stockDate,
-    projectCode: s.project?.code ?? null,
-    createdBy: s.createdBy?.name ?? null,
-    updatedBy: s.updatedBy?.name ?? null,
-    createdatetime: s.createdatetime,
-    updatedatetime: s.updatedatetime,
-  }));
+  return sanitizeEntity(stocks, "CompanyStock", sanitizeRules);
+};
+
+export const getCompanyStockById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string }
+) => {
+  const stock = await stockRepo.findOne({
+    where: {
+      id,
+      company: { id: currentUser.companyId },
+    },
+    relations: ["createdBy", "updatedBy", "project", "company"],
+  });
+
+  return sanitizeEntity(stock, "CompanyStock", sanitizeRules);
 };
 
 export const decreaseStockQuantity = async (

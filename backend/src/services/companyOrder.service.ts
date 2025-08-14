@@ -6,6 +6,9 @@ import { EntityManager } from "typeorm";
 import { generateNextOrderCode } from "../utils/generateCode";
 import { decreaseStockQuantity } from "./companyStock.service";
 import { User } from "../entities/User";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { sanitizeEntity } from "../utils/sanitize";
 
 export const createCompanyOrder = async (
   data: {
@@ -73,13 +76,30 @@ export const createCompanyOrder = async (
     manager
   );
 
-  const savedOrder = await orderRepo.save(order);
+  /*const savedOrder = await orderRepo.save(order);
   const fullOrder = await orderRepo.findOneOrFail({
     where: { id: savedOrder.id, company: { id: currentUser.companyId } },
     relations: ["project", "stock", "createdBy", "updatedBy"],
   });
 
-  return fullOrder;
+  return fullOrder;*/
+    return await saveRefetchSanitize({
+      entityName: "CompanyOrder",
+      save: () => orderRepo.save(order),
+      refetch: () =>
+        orderRepo.findOneOrFail({
+          where: { id: order.id, company: { id: currentUser.companyId } },
+          relations: [
+            "project",
+            "company",
+            "stock",
+            "createdBy",
+            "updatedBy",
+          ],
+        }),
+      rules: sanitizeRules,
+      defaultError: "Satıs kaydı oluşturulamadı.",
+    });
 };
 
 export const updateOrderPaymentStatus = async (
@@ -117,11 +137,11 @@ export const getCompanyOrders = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["stock", "project"],
+    relations: ["stock", "project","createdBy","updatedBy","company"],
     //order: { transactionDate: "DESC" },
   });
 
-  return orders;
+  return sanitizeEntity(orders, "CompanyOrder", sanitizeRules);
 };
 
 export const getCompanyOrderById = async (
@@ -136,14 +156,14 @@ export const getCompanyOrderById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["stock", "project"],
+    relations: ["stock", "project","createdBy","updatedBy","company"],
   });
 
   if (!order) {
     throw new Error("İlgili satış bulunamadı.");
   }
 
-  return order;
+  return sanitizeEntity(order, "CompanyOrder", sanitizeRules);
 };
 
 export const getCompanyOrdersByProjectId = async (
@@ -158,14 +178,14 @@ export const getCompanyOrdersByProjectId = async (
       project: { id: projectId, company: { id: currentUser.companyId } },
       company: { id: currentUser.companyId },
     },
-    relations: ["stock", "project", "createdBy", "updatedBy"],
+    relations: ["stock", "project", "createdBy", "updatedBy","company"],
   });
 
   if (!order) {
     throw new Error("İlgili satış bulunamadı.");
   }
 
-  return order;
+  return sanitizeEntity(order, "CompanyOrder", sanitizeRules);
 };
 
 export const updateOrderPaymentStatusNew = async (

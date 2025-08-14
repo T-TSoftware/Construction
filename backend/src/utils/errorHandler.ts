@@ -1,50 +1,15 @@
-// utils/errorHandlers.ts
-/*
-const constraintMessages: Record<string, string> = {
-  UQ_63d62bd759cf2dfef2bfd825940: "Bu taksit kodu zaten kullanılıyor. Lütfen taksit numaralarını kontrol edin.",
-  UQ_projectsupplier_code: "Bu tedarik kodu daha önce kullanılmış.",
-  UQ_company_code: "Bu firma kodu zaten kayıtlı.",
-  // ...
-};
-
-export const handleSaveWithUniqueConstraint = async <T>(
-  saveFn: () => Promise<T>,
-  defaultMessage = "Kayıt oluşturulurken bir hata oluştu."
-): Promise<T> => {
-  try {
-    return await saveFn();
-  } catch (error: any) {
-    if (error.code === "23505") {
-      const constraint = error.constraint;
-      const detail = error.detail || "";
-
-      const mappedMessage = constraintMessages[constraint];
-      if (mappedMessage) throw new Error(mappedMessage);
-
-      // fallback olarak kolon-adı ve değer ile oluştur
-      const match = detail.match(/\(([^)]+)\)=\(([^)]+)\)/);
-      const column = match?.[1];
-      const value = match?.[2];
-
-      const fallback = column && value
-        ? `'${column}' değeri '${value}' olan bir kayıt zaten mevcut.`
-        : "Bu değer zaten kullanılıyor.";
-
-      throw new Error(fallback);
-    }
-
-    throw new Error(defaultMessage);
-  }
-};*/
 type UniqueViolationKey = `${string}.${string}`; // örnek: "CompanyLoanPayment.code"
 
 const generatedFieldMessages: Record<UniqueViolationKey, string> = {
-  "CompanyLoanPayment.code":
-    "Bu taksit numarası için daha önce kayıt oluşturulmuş.",
-  "CompanyLoan.code": "Bu kredi zaten kayıtlı.",
-  "CompanyStock.code": "Bu stok zaten kayıtlı.",
+  "CompanyLoanPayment.code": "Kredi için taksit bu numarası zaten mevcut.",
+  "CompanyLoan.name": "Bu isimde bir kredi zaten mevcut.",
+  "CompanyStock.companyid_category_name": "Bu stok zaten mevcut.",
   "ProjectSubcontractor.projectid_category_unit":
     "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen taşeron kaydı zaten mevcut.",
+  "ProjectSupplier.projectid_category_unit":
+    "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen tedarik kaydı zaten mevcut.",
+  "CompanyCheck.companyid_checknumber":
+    "Bu Çek Numarasıyla bir Çek zaten mevcut.",
   // ...
 };
 export const handleSaveWithUniqueConstraint = async <T>(

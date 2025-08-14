@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   JoinColumn,
   OneToMany,
+  Index,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
 import { ProjectQuantity } from "./ProjectQuantity";
@@ -16,6 +17,11 @@ import { Company } from "./Company";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
 
 @Entity({ name: "projectsubcontractors" })
+@Index(
+  "uq_subcontractor_category_unit_once",                    // index adı
+  ["project", "category", "unit"],                          // sütunlar (entity alan adları)
+  { unique: true, where: "addedfromquantityyn = 'Y'" }      // partial unique koşulu (DB sütun adıyla)
+)
 export class ProjectSubcontractor {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

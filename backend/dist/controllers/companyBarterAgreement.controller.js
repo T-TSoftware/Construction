@@ -17,11 +17,11 @@ const postCompanyBarterAgreementHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const { projectCode, counterpartyType, counterpartyId, counterpartyName, agreementDate, status, description, totalOurValue, totalTheirValue,
+        const { projectId, counterpartyType, counterpartyId, counterpartyName, agreementDate, status, description, totalOurValue, totalTheirValue,
         //items,
          } = req.body;
         const newAgreement = await (0, companyBarterAgreement_service_1.createCompanyBarterAgreement)({
-            projectCode,
+            projectId,
             counterpartyType,
             counterpartyId,
             counterpartyName,

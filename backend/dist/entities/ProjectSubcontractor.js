@@ -128,5 +128,9 @@ __decorate([
     __metadata("design:type", Array)
 ], ProjectSubcontractor.prototype, "transactions", void 0);
 exports.ProjectSubcontractor = ProjectSubcontractor = __decorate([
-    (0, typeorm_1.Entity)({ name: "projectsubcontractors" })
+    (0, typeorm_1.Entity)({ name: "projectsubcontractors" }),
+    (0, typeorm_1.Index)("uq_subcontractor_category_unit_once", // index adı
+    ["project", "category", "unit"], // sütunlar (entity alan adları)
+    { unique: true, where: "addedfromquantityyn = 'Y'" } // partial unique koşulu (DB sütun adıyla)
+    )
 ], ProjectSubcontractor);

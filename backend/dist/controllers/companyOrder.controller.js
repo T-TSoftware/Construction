@@ -97,7 +97,7 @@ const getCompanyOrdersByProjectIdHandler = async (req, res) => {
     }
     catch (error) {
         console.error("❌ GET project suppliers error:", error);
-        res.status(500).json({ error: "Tedarikçiler alınamadı." });
+        res.status(500).json({ error: "Satışlar alınamadı." });
         return;
     }
 };

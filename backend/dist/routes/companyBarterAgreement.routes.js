@@ -6,7 +6,7 @@ const companyBarterAgreement_controller_1 = require("../controllers/companyBarte
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authMiddleware);
 router.post("/", /*validateBody,*/ companyBarterAgreement_controller_1.postCompanyBarterAgreementHandler);
-router.post("/projects/:projectId/barters", 
+router.post("/projects/:projectId", 
 /*validateArrayBody(baterSchema),*/
 companyBarterAgreement_controller_1.postCompanyBarterAgreementFromProjectHandler);
 router.patch("/:id", companyBarterAgreement_controller_1.patchCompanyBarterAgreementHandler);

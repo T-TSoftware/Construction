@@ -25,7 +25,7 @@ __decorate([
     __metadata("design:type", String)
 ], ProjectSupplier.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ unique: true }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], ProjectSupplier.prototype, "code", void 0);
 __decorate([
@@ -132,5 +132,9 @@ __decorate([
     __metadata("design:type", Array)
 ], ProjectSupplier.prototype, "transactions", void 0);
 exports.ProjectSupplier = ProjectSupplier = __decorate([
-    (0, typeorm_1.Entity)({ name: "projectsuppliers" })
+    (0, typeorm_1.Entity)({ name: "projectsuppliers" }),
+    (0, typeorm_1.Index)("uq_supplier_category_unit_once", // index adı
+    ["project", "category", "unit"], // sütunlar (entity alan adları)
+    { unique: true, where: "addedfromquantityyn = 'Y'" } // partial unique koşulu (DB sütun adıyla)
+    )
 ], ProjectSupplier);

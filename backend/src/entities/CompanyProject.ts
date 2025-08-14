@@ -37,16 +37,16 @@ export class CompanyProject {
   @Column({ default: "active" })
   status!: string;
 
-  @Column({ type: "date", name: "estimatedstartdate" })
+  @Column({ type: "date", name: "estimatedstartdate", nullable: true })
   estimatedStartDate?: Date;
 
-  @Column({ type: "date", name: "actualstartdate" })
+  @Column({ type: "date", name: "actualstartdate", nullable: true })
   actualStartDate?: Date;
 
-  @Column({ type: "date", name: "estimatedenddate" })
+  @Column({ type: "date", name: "estimatedenddate", nullable: true })
   estimatedEndDate?: Date;
 
-  @Column({ type: "date", name: "actualenddate" })
+  @Column({ type: "date", name: "actualenddate", nullable: true })
   actualEndDate?: Date;
 
   @CreateDateColumn({

@@ -83,7 +83,7 @@ export function generateNextProjectCode(
   return `${fullPrefix}${nextNum}`;
 }
 
-export const generateStockCode = async (
+/*export const generateStockCode = async (
   category: string,
   manager: EntityManager = AppDataSource.manager
 ): Promise<string> => {
@@ -101,7 +101,7 @@ export const generateStockCode = async (
   const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
 
   return `${prefix}-${nextNumber}`;
-};
+};*/
 
 export const generateNextEntityCode = async (
   manager: EntityManager,
@@ -261,8 +261,21 @@ export const generateNextBarterAgreementItemCode = async (
 ): Promise<string> => {
   const repo = manager.getRepository(CompanyBarterAgreementItem);
 
-  const itemTypePrefix = itemType.slice(0, 3).toUpperCase(); // e.g. "SER", "CAS"
-  const prefix = `${barterAgreementCode}-${itemTypePrefix}`;
+  // İngilizce → Türkçe tam karşılık
+  const itemTypeMap: Record<typeof itemType, string> = {
+    STOCK: "STOK",
+    SERVICE: "HİZMET",
+    ASSET: "VARLIK",
+    CASH: "NAKİT",
+    CHECK: "ÇEK"
+  };
+
+  const labelTR = itemTypeMap[itemType];
+  if (!labelTR) {
+    throw new Error(`Geçersiz itemType: ${itemType}`);
+  }
+
+  const prefix = `${barterAgreementCode}-${labelTR}`;
 
   const latest = await repo
     .createQueryBuilder("item")
@@ -276,3 +289,52 @@ export const generateNextBarterAgreementItemCode = async (
 
   return `${prefix}${nextNumber}`;
 };
+
+
+/**
+ * Format:  {projectCode}-BRT-{TYPE}{###}
+ * Ex:         İZM001-BRT-SUP001
+ * TYPE map:    SUPPLIER→SUP, SUBCONTRACTOR→TAS, CUSTOMER→CUS, EXTERNAL→EXT
+ */
+
+const CounterpartyLabel: Record<string, string> = {
+  SUPPLIER: "TEDARIK",
+  SUBCONTRACTOR: "TASERON",
+  CUSTOMER: "MUSTERI",
+  EXTERNAL: "HARICI",
+};
+export async function generateNextBarterCode(
+  manager: EntityManager,
+  params: {
+    companyId: string;
+    projectCode: string;            // ör: İZM001
+    counterpartyType: string;      // İngilizce gelecek, ör: SUPPLIER
+  }
+): Promise<string> {
+  const { companyId, projectCode, counterpartyType } = params;
+
+  // İngilizce → Türkçe çeviri
+  const labelTR = CounterpartyLabel[counterpartyType.toUpperCase()];
+  if (!labelTR) {
+    throw new Error(`Geçersiz counterpartyLabel: ${counterpartyType}`);
+  }
+
+  const prefix = `${projectCode.toUpperCase()}-BRT-${labelTR}`;
+  const repo = manager.getRepository(CompanyBarterAgreement);
+
+  // 🔎 En son numarayı, aynı şirket içinde tara:
+  const latest = await repo
+    .createQueryBuilder("a")
+    .where("a.companyid = :cid", { cid: companyId })
+    .andWhere("a.code LIKE :prefix", { prefix: `${prefix}%` })
+    .orderBy("a.code", "DESC")
+    .getOne();
+
+  const nextNum = (() => {
+    if (!latest?.code) return 1;
+    const m = latest.code.match(/(\d+)$/);
+    return m ? parseInt(m[1], 10) + 1 : 1;
+  })();
+
+  return `${prefix}${String(nextNum).padStart(3, "0")}`;
+}

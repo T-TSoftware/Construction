@@ -1,19 +1,22 @@
 import { AppDataSource } from "../config/data-source";
 import { CompanyCheck } from "../entities/CompanyCheck";
 import { CompanyBalance } from "../entities/CompanyBalance";
-import { EntityManager } from "typeorm";
+import { EntityManager, Timestamp } from "typeorm";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { generateFinanceTransactionCode } from "../utils/generateCode";
 
 import { updateCompanyBalanceAfterTransaction } from "../services/companyFinance.service";
 import { User } from "../entities/User";
 import { CompanyProject } from "../entities/CompanyProject";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeEntity } from "../utils/sanitize";
 
 export const createCompanyCheck = async (
   data: {
     checkNo: string;
     checkDate: Date;
-    transactionDate: Date;
+    //transactionDate: Date;
     firm: string;
     amount: number;
     bankId: string;
@@ -39,29 +42,12 @@ export const createCompanyCheck = async (
   // 🔄 Duruma göre otomatik transaction oluştur
   let transaction = null;
 
-  /*if (data.status === "PAID" || data.status === "COLLECTED") {
-    transaction = await createCheckTransactionFromCheckData(
-      {
-        checkNo: data.checkNo,
-        transactionDate: data.transactionDate,
-        amount: data.amount,
-        bankId: bank.id,
-        firm: data.firm,
-        projectId: data.projectId,
-        description: data.description,
-        type: data.type,
-      },
-      currentUser,
-      manager
-    );
-  }*/
-
   // 🧾 Check oluşturuluyor
   const check = repo.create({
-    code: data.checkNo,
+    code: `CEK-${data.checkNo}`,
     checkNo: data.checkNo,
     checkDate: data.checkDate,
-    transactionDate: data.dueDate, //data.transactionDate,
+    //transactionDate: data.dueDate, //data.transactionDate,
     firm: data.firm,
     amount: data.amount,
     bank: { id: bank.id },
@@ -76,7 +62,7 @@ export const createCompanyCheck = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  const savedCheck = await repo.save(check);
+  /*const savedCheck = await repo.save(check);
 
   return await repo.findOneOrFail({
     where: { id: savedCheck.id },
@@ -86,7 +72,24 @@ export const createCompanyCheck = async (
       createdBy: true,
       updatedBy: true,
     },
-  });
+  });*/
+  return await saveRefetchSanitize({
+      entityName: "CompanyCheck",
+      save: () => repo.save(check),
+      refetch: () =>
+        repo.findOneOrFail({
+          where: { id: check.id, company: { id: currentUser.companyId } },
+          relations: [
+            "project",
+            "company",
+            "bank",
+            "createdBy",
+            "updatedBy",
+          ],
+        }),
+      rules: sanitizeRules,
+      defaultError: "Çek kaydı oluşturulamadı.",
+    });
 };
 
 export const updateCompanyCheck = async (
@@ -151,7 +154,24 @@ export const updateCompanyCheck = async (
   existing.updatedatetime = new Date();
 
   // 💾 Kaydet ve dön
-  return await repo.save(existing);
+  //return await repo.save(existing);
+  return await saveRefetchSanitize({
+      entityName: "CompanyCheck",
+      save: () => repo.save(existing),
+      refetch: () =>
+        repo.findOneOrFail({
+          where: { id: existing.id, company: { id: currentUser.companyId } },
+          relations: [
+            "project",
+            "company",
+            "bank",
+            "createdBy",
+            "updatedBy",
+          ],
+        }),
+      rules: sanitizeRules,
+      defaultError: "Çek kaydı oluşturulamadı.",
+    });
 };
 
 export const getCompanyChecks = async (
@@ -164,11 +184,12 @@ export const getCompanyChecks = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["bank", "project", "transaction", "createdBy", "updatedBy"],
+    relations: ["bank", "project", "createdBy", "updatedBy"],
     order: { transactionDate: "DESC" },
   });
 
-  return checks;
+  //return checks;
+  return sanitizeEntity(checks, "CompanyCheck", sanitizeRules);
 };
 
 export const getCompanyCheckById = async (
@@ -183,14 +204,15 @@ export const getCompanyCheckById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["bank", "project", "transaction", "createdBy", "updatedBy"],
+    relations: ["bank", "project", "createdBy", "updatedBy"],
   });
 
   if (!check) {
     throw new Error("İlgili çek bulunamadı.");
   }
 
-  return check;
+  //return check;
+  return sanitizeEntity(check, "CompanyCheck", sanitizeRules);
 };
 
 export const updateCheckPaymentStatus = async (
@@ -222,6 +244,7 @@ export const updateCheckPaymentStatus = async (
 export const updateCheckPaymentStatusNew = async (
   checkCode: string,
   amount: number,
+  transactionDate: Date,
   currentUser: { userId: string },
   manager: EntityManager,
   isReverse = false
@@ -232,31 +255,37 @@ export const updateCheckPaymentStatusNew = async (
     where: { code: checkCode },
   });
 
-  const factor = isReverse ? 1 : -1;
+  const factor = isReverse ? -1 : 1;
 
-  // ✅ increment/decrement remainingAmount
+  // ✅ processedAmount güncelle (increment/decrement)
   await checkRepo.increment(
     { id: check.id },
-    "remainingAmount",
+    "processedAmount",
     factor * amount
   );
 
-  // Güncel check'i yeniden al
-  const updatedCheck = await checkRepo.findOneOrFail({
+  // Güncellenmiş veriyi tekrar al
+  const updatedItem = await checkRepo.findOneOrFail({
     where: { id: check.id },
   });
 
-  // ✅ Status hesapla
-  const isPaidOff = Number(updatedCheck.remainingAmount) <= 0;
-  const statusMap = {
-    PAYMENT: isPaidOff ? "PAID" : "PARTIAL",
-    COLLECTION: isPaidOff ? "COLLECTED" : "PARTIAL",
-  };
+  // ✅ remainingAmount hesapla
+  const remainingAmount =
+    Number(updatedItem.amount ?? 0) - Number(updatedItem.processedAmount);
 
-  updatedCheck.status = statusMap[updatedCheck.type];
-  updatedCheck.updatedBy = { id: currentUser.userId } as User;
-  updatedCheck.updatedatetime = new Date();
+  // ✅ status belirle
+  let status: "PAID" | "COLLECTED" | "PARTIAL";
+  if (remainingAmount <= 0) {
+    status = updatedItem.type === "PAYMENT" ? "PAID" : "COLLECTED";
+  } else {
+    status = "PARTIAL";
+  }
 
-  // Kaydet
-  return await checkRepo.save(updatedCheck);
+  updatedItem.remainingAmount = remainingAmount;
+  updatedItem.status = status;
+  updatedItem.updatedBy = { id: currentUser.userId } as User;
+  updatedItem.updatedatetime = new Date();
+  updatedItem.transactionDate = transactionDate;
+
+  return await checkRepo.save(updatedItem);
 };

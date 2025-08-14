@@ -12,9 +12,9 @@ export const createProject = async (
     site: string;
     status?: string;
     estimatedStartDate: Date;
-    actualStartDate: Date;
+    actualStartDate?: Date;
     estimatedEndDate: Date;
-    actualEndDate: Date;
+    actualEndDate?: Date;
   },
   currentUser: {
     userId: string;
@@ -25,25 +25,8 @@ export const createProject = async (
     id: currentUser.companyId,
   });
 
-  const projectPrefix = data.site
-    .trim()
-    .split(" ")[0]
-    .slice(0, 3)
-    .toUpperCase();
-  const codePrefix = `${company.code
-    .slice(0, 3)
-    .toUpperCase()}-${projectPrefix}`;
-
-  const latestProject = await projectRepo
-    .createQueryBuilder("project")
-    .where("project.code LIKE :prefix", { prefix: `${codePrefix}%` })
-    .andWhere("project.companyId = :companyId", { companyId: company.id })
-    .orderBy("project.code", "DESC")
-    .getOne();
-
-  const latestCode = latestProject?.code ?? null;
-
-  const code = generateNextProjectCode(latestCode, company.code, data.site);
+  //const projectName = data.name.trim().replace(/\s+/g, "").toUpperCase();
+  const code = `${company.code}-${data.name}`;
 
   const project = projectRepo.create({
     ...data,
