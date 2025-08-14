@@ -3,6 +3,9 @@ import { AppDataSource } from "../config/data-source";
 import { CompanyLoan } from "../entities/CompanyLoan";
 import { CompanyBalance } from "../entities/CompanyBalance";
 import { CompanyProject } from "../entities/CompanyProject";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { sanitizeEntity } from "../utils/sanitize";
 
 export const createCompanyLoan = async (
   data: {
@@ -64,8 +67,7 @@ export const createCompanyLoan = async (
     currency: data.currency,
     interestRate: data.interestRate,
     totalInstallmentCount: data.totalInstallmentCount,
-    remainingInstallmentCount:
-      data.remainingInstallmentCount ?? data.totalInstallmentCount,
+    remainingInstallmentCount: data.totalInstallmentCount,
     loanDate: data.loanDate,
     purpose: data.purpose,
     loanType: data.loanType,
@@ -76,7 +78,24 @@ export const createCompanyLoan = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  return await loanRepo.save(loan);
+  //return await loanRepo.save(loan);
+  return await saveRefetchSanitize({
+    entityName: "CompanyLoan",
+    save: () => loanRepo.save(loan),
+    refetch: () =>
+      loanRepo.findOneOrFail({
+        where: { id: loan.id, company: { id: currentUser.companyId } },
+        relations: [
+          "bank",
+          "project",
+          "company",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Taksit kaydı oluşturulamadı.",
+  });
 };
 
 export const updateCompanyLoanPaymentChange = async (
@@ -160,11 +179,12 @@ export const getCompanyLoans = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "bank", "project"],
+    relations: ["company", "bank", "project","createdBy","updatedBy"],
     order: { createdatetime: "DESC" },
   });
 
-  return loans;
+  //return loans;
+  return sanitizeEntity(loans, "CompanyLoan", sanitizeRules);
 };
 
 export const getCompanyLoanById = async (
@@ -179,12 +199,13 @@ export const getCompanyLoanById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "bank", "project"],
+    relations: ["company", "bank", "project","createdBy","updatedBy"],
   });
 
   if (!loan) {
     throw new Error("İlgili çek bulunamadı.");
   }
 
-  return loan;
+  //return loan;
+  return sanitizeEntity(loan, "CompanyLoan", sanitizeRules);
 };

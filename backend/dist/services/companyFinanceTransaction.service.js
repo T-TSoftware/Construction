@@ -131,7 +131,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         }
         const order = await orderRepo.findOneByOrFail({ code: data.referenceCode });
         transaction.order = { id: order.id };
-        await (0, companyOrder_service_1.updateOrderPaymentStatus)(data.referenceCode, data.amount, currentUser, manager);
+        await (0, companyOrder_service_1.updateOrderPaymentStatusNew)(data.referenceCode, data.amount, currentUser, manager, false);
     }
     /* 🔄 CHECK */
     if (data.category === "CHECK") {
@@ -142,7 +142,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             code: data.referenceCode,
         });
         transaction.check = { id: check.id };
-        await (0, companyCheck_service_1.updateCheckPaymentStatus)(data.referenceCode, Number(data.amount), currentUser, manager);
+        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(data.referenceCode, Number(data.amount), data.transactionDate, currentUser, manager, false);
     }
     /* 🔄 LOAN PAYMENT */
     if (data.category === "LOAN") {
@@ -153,7 +153,9 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             code: data.referenceCode,
         });
         transaction.loanPayment = { id: loanPayment.id };
-        await (0, companyLoanPayment_service_1.updateLoanPaymentStatus)(data.referenceCode, data.amount, data.transactionDate, currentUser, manager);
+        await (0, companyLoanPayment_service_1.updateLoanPaymentStatusNew)(data.referenceCode, data.amount, 
+        //data.transactionDate,
+        currentUser, manager, false);
         /*const expectedTotal =
         (payment.principalAmount ?? 0) +
         (payment.interestAmount ?? 0) +
@@ -170,9 +172,9 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         transaction.subcontractor = {
             id: subcontractor.id,
         };
-        await (0, projectSubcontractor_service_1.updateProjectSubcontractorStatus)(data.referenceCode, data.amount, 
+        await (0, projectSubcontractor_service_1.updateProjectSubcontractorStatusNew)(data.referenceCode, data.amount, 
         //data.transactionDate,
-        currentUser, manager);
+        currentUser, manager, false);
         /*const expectedTotal =
         (payment.principalAmount ?? 0) +
         (payment.interestAmount ?? 0) +
@@ -189,9 +191,9 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         transaction.supplier = {
             id: supplier.id,
         };
-        await (0, projectSupplier_service_1.updateProjectSupplierStatus)(data.referenceCode, data.amount, 
+        await (0, projectSupplier_service_1.updateProjectSupplierStatusNew)(data.referenceCode, data.amount, 
         //data.transactionDate,
-        currentUser, manager);
+        currentUser, manager, false);
         /*const expectedTotal =
         (payment.principalAmount ?? 0) +
         (payment.interestAmount ?? 0) +
@@ -208,7 +210,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         transaction.barterItem = {
             id: barterItem.id,
         };
-        await (0, companyBarterAgreementItem_service_1.updateBarterItemPaymentStatus)(data.referenceCode, Number(data.amount), currentUser, manager);
+        await (0, companyBarterAgreementItem_service_1.updateBarterItemPaymentStatusNew)(data.referenceCode, Number(data.amount), currentUser, manager, false);
     }
     const saved = await transactionRepo.save(transaction);
     return saved;
@@ -244,7 +246,8 @@ const updateCompanyFinanceTransaction = async (id, data, currentUser, manager = 
     }
     // 🔁 Move Back Old Check
     if (existing.category === "CHECK" && existing.referenceCode) {
-        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(existing.referenceCode, existing.amount, currentUser, manager, true);
+        console.log("burada");
+        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(existing.referenceCode, existing.amount, existing.transactionDate, currentUser, manager, true);
     }
     // 🔁 Move Back Old Order
     if (existing.category === "ORDER" && existing.referenceCode) {
@@ -317,7 +320,7 @@ const updateCompanyFinanceTransaction = async (id, data, currentUser, manager = 
             code: updated.referenceCode,
         });
         updated.check = { id: check.id };
-        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(updated.referenceCode, updated.amount, currentUser, manager, false);
+        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(updated.referenceCode, updated.amount, updated.transactionDate, currentUser, manager, false);
         //await transactionRepo.save(updated);
     }
     // 🔄 ORDER

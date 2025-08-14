@@ -7,7 +7,7 @@ import {
   postCompanyStockHandler,
   patchCompanyStockHandler,
   getCompanyStocksHandler,
-  patchCompanyStocksHandler,
+  getCompanyStockByIdHandler,
 } from "../controllers/companyStock.controller";
 
 const router = Router();
@@ -15,9 +15,9 @@ const router = Router();
 // 🛡 Tüm işlemler öncesinde kullanıcı doğrulaması
 router.use(authMiddleware);
 
-router.post("/", validateArrayBody(stockSchema), postCompanyStockHandler);
+router.post("/", postCompanyStockHandler);
 
-router.patch("/:code", patchCompanyStockHandler);
-router.patch("/", patchCompanyStocksHandler);
+router.patch("/:id", patchCompanyStockHandler);
 router.get("/", getCompanyStocksHandler);
+router.get("/:id", getCompanyStockByIdHandler);
 export default router;

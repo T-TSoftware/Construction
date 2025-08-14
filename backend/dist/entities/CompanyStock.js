@@ -23,7 +23,9 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyStock.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ unique: true }),
+    (0, typeorm_1.Column)()
+    //@Index() // (opsiyonel) code ile hızlı arama için
+    ,
     __metadata("design:type", String)
 ], CompanyStock.prototype, "code", void 0);
 __decorate([
@@ -59,7 +61,7 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyStock.prototype, "stockDate", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => Company_1.Company),
+    (0, typeorm_1.ManyToOne)(() => Company_1.Company, { nullable: false }),
     (0, typeorm_1.JoinColumn)({ name: "companyid" }),
     __metadata("design:type", Company_1.Company)
 ], CompanyStock.prototype, "company", void 0);
@@ -99,7 +101,7 @@ __decorate([
     __metadata("design:type", Array)
 ], CompanyStock.prototype, "orders", void 0);
 exports.CompanyStock = CompanyStock = __decorate([
-    (0, typeorm_1.Entity)({ name: "companystocks" }) // ✅ tablo adı burada verildi
-    ,
-    (0, typeorm_1.Unique)(["category", "name"]) // ✅ Bileşik benzersizlik tanımı
+    (0, typeorm_1.Entity)({ name: "companystocks" }),
+    (0, typeorm_1.Unique)("uq_companystocks_company_category_name", ["company", "category", "name"] // ✔ aynı şirket içinde aynı kategori+isimden sadece 1 kayıt
+    )
 ], CompanyStock);

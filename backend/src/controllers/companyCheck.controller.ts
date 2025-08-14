@@ -26,7 +26,7 @@ export const postCompanyCheckHandler = async (req: Request, res: Response) => {
     const {
       checkNo,
       checkDate,
-      transactionDate,
+      //transactionDate,
       firm,
       amount,
       bankId,
@@ -41,7 +41,7 @@ export const postCompanyCheckHandler = async (req: Request, res: Response) => {
       {
         checkNo,
         checkDate,
-        transactionDate,
+        //transactionDate,
         firm,
         amount,
         bankId,

@@ -17,6 +17,9 @@ import fs from "fs";
 import path from "path";
 import { User } from "../entities/User";
 import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
+import { sanitizeEntity } from "../utils/sanitize";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { saveRefetchSanitize } from "../utils/persist";
 
 export const createCompanyLoanPayment = async (
   loanId: string,
@@ -67,22 +70,25 @@ export const createCompanyLoanPayment = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  /*try {
-    return await paymentRepo.save(payment);
-  } catch (error: any) {
-    if (error.code === "23505") {
-      throw new Error("Bu Taksit Numarası zaten mevcut. Lütfen farklı bir taksit numarası seçin.");
-    }
-    throw new Error("Taksit kaydı sırasında bir hata oluştu.");
-  }*/
-  /*return await handleSaveWithUniqueConstraint(
-    () => paymentRepo.save(payment),
-    "Taksit kaydı oluşturulamadı."
-  );*/
-  return await handleSaveWithUniqueConstraint(
-    () => paymentRepo.save(payment),
-    "CompanyLoanPayment"
-  );
+  // ⬇️ Tek satırda: unique handle + refetch with relations + sanitize
+  return await saveRefetchSanitize({
+    entityName: "CompanyLoanPayment",
+    save: () => paymentRepo.save(payment),
+    refetch: () =>
+      paymentRepo.findOneOrFail({
+        where: { id: payment.id, company: { id: currentUser.companyId } },
+        relations: [
+          "loan",
+          "loan.bank",
+          "loan.project",
+          "loan.company",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Taksit kaydı oluşturulamadı.",
+  });
 };
 
 export const getCompanyLoanPayments = async (
@@ -91,7 +97,7 @@ export const getCompanyLoanPayments = async (
 ) => {
   const repo = manager.getRepository(CompanyLoanPayment);
 
-  const transactions = await repo.find({
+  const loanPayments = await repo.find({
     where: {
       company: { id: currentUser.companyId }, // ✅ doğrudan companyId ile filtreleme
     },
@@ -99,11 +105,14 @@ export const getCompanyLoanPayments = async (
       "loan", // ✔ sadece gerekli ilişkiler kaldı
       "loan.project",
       "loan.bank",
+      "createdBy",
+      "updatedBy",
     ],
     order: { installmentNumber: "ASC" },
   });
 
-  return transactions;
+  //return loanPayments;
+  return sanitizeEntity(loanPayments, "CompanyLoanPayment", sanitizeRules);
 };
 
 export const getCompanyLoanPaymentById = async (
@@ -118,14 +127,20 @@ export const getCompanyLoanPaymentById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["loan", "loan.project", "loan.bank"],
+    relations: [
+      "loan",
+      "loan.project",
+      "loan.bank",
+      "createdBy",
+      "updatedBy",
+    ],
   });
 
   if (!payment) {
     throw new Error("İlgili kredi taksiti bulunamadı.");
   }
 
-  return payment;
+  return sanitizeEntity(payment, "CompanyLoanPayment", sanitizeRules);
 };
 export const getCompanyLoanPaymentsByLoanId = async (
   loanId: string,
@@ -139,11 +154,11 @@ export const getCompanyLoanPaymentsByLoanId = async (
       company: { id: currentUser.companyId },
       loan: { id: loanId },
     },
-    relations: ["loan", "loan.project", "loan.bank"],
+    relations: ["loan", "loan.project", "loan.bank","createdBy","updatedBy"],
     order: { installmentNumber: "ASC" },
   });
 
-  return payments;
+  return sanitizeEntity(payments, "CompanyLoanPayment", sanitizeRules);
 };
 
 export const updateCompanyLoanPayment = async (
@@ -167,12 +182,7 @@ export const updateCompanyLoanPayment = async (
   const loanRepo = manager.getRepository(CompanyLoan);
   const payment = await paymentRepo.findOneOrFail({
     where: { id },
-    relations: [
-      "loan",
-      "loan.bank",
-      "loan.project",
-      "company",
-    ],
+    relations: ["loan", "loan.bank", "loan.project", "company"],
   });
   const loan = await loanRepo.findOneOrFail({
     where: { id: payment.loan.id, company: { id: currentUser.companyId } },
@@ -197,78 +207,6 @@ export const updateCompanyLoanPayment = async (
   const code = payment.code;
   // const code = payment.code; ❌ bunu tamamen sil
 
-  /* 🔁 1. Eğer eski status PAID ama yeni değilse → geri al + transaction sil
-  if (oldStatus === "PAID" && newStatus !== "PAID") {
-    await updateCompanyLoanPaymentChange(
-      payment.loan.id,
-      newPaymentAmount ?? payment.paymentAmount,
-      currentUser.userId,
-      manager,
-      true // reverse
-    );
-  }
-*/
-  /* 🔁 2. Eğer yeni status PAID ama eski değeri PAID değilse → apply et
-  if (oldStatus !== "PAID" && newStatus === "PAID") {
-    await updateCompanyLoanPaymentChange(
-      payment.loan.id,
-      newPaymentAmount ?? payment.paymentAmount,
-      currentUser.userId,
-      manager
-    );
-  }
-  */
-
-  /* 🔁 3. Hem eski hem yeni PAID → amount veya tarih değiştiyse transaction güncelle
-  if (oldStatus === "PAID" && newStatus === "PAID") {
-    const transactionCode = payment.financeTransaction?.code;
-
-    if (!transactionCode) {
-      throw new Error("Bu ödeme kaydına ait bir finansal işlem bulunamadı.");
-    }
-    const amountChanged =
-      data.paymentAmount !== undefined &&
-      data.paymentAmount !== payment.paymentAmount;
-
-    const interestChanged =
-      data.interestAmount !== undefined &&
-      data.interestAmount !== payment.interestAmount;
-
-    const principalChanged =
-      data.principalAmount !== undefined &&
-      data.principalAmount !== payment.principalAmount;
-
-    const penaltyChanged =
-      data.penaltyAmount !== undefined &&
-      data.penaltyAmount !== payment.penaltyAmount;
-
-    if (
-      amountChanged ||
-      interestChanged ||
-      principalChanged ||
-      penaltyChanged ||
-      data.paymentDate
-    ) {
-      await updateCompanyLoanPaymentChange(
-        payment.loan.id,
-        oldAmount,
-        currentUser.userId,
-        manager,
-        true // reverse
-      );
-
-      // 2. Loan yeniden güncelle (yeni değerle)
-      await updateCompanyLoanPaymentChange(
-        payment.loan.id,
-        newPaymentAmount,
-        currentUser.userId,
-        manager
-      );
-    
-    }
-  }
-  */
-
   // 🧾 Son olarak payment kaydını güncelle
   await paymentRepo.update(
     { id },
@@ -288,117 +226,91 @@ export const updateCompanyLoanPayment = async (
   );
 };
 
-export const updateLoanPaymentStatus = async (
-  paymentCode: string,
-  amountPaid: number,
-  transactionDate: Date,
-  currentUser: { userId: string; companyId: string },
-  manager: EntityManager
-) => {
-  const paymentRepo = manager.getRepository(CompanyLoanPayment);
 
-  const payment = await paymentRepo.findOneOrFail({
-    where: {
-      code: paymentCode,
-      company: { id: currentUser.companyId },
-    },
-    relations: ["loan"],
-  });
-
-  const totalPaid = Number(payment.paymentAmount ?? 0) + amountPaid;
-  const totalExpected = Number(payment.totalAmount ?? 0);
-  const rawRemaining = totalExpected - totalPaid;
-  const remainingAmount = rawRemaining < 0 ? 0 : rawRemaining;
-
-  const penaltyAmount =
-    totalPaid > totalExpected ? totalPaid - totalExpected : 0;
-  const status = totalPaid >= totalExpected ? "PAID" : "PARTIAL";
-
-  // 🔁 Güncelle
-  payment.paymentAmount = totalPaid;
-  payment.penaltyAmount = penaltyAmount;
-  payment.remainingAmount = remainingAmount;
-  payment.status = status as any;
-  payment.paymentDate = transactionDate;
-  payment.updatedBy = { id: currentUser.userId } as User;
-
-  await paymentRepo.save(payment);
-
-  // 🔄 Loan üzerindeki tutarları güncelle
-  await updateCompanyLoanPaymentChange(
-    payment.loan.id,
-    payment.principalAmount ?? 0,
-    payment.interestAmount ?? 0,
-    totalExpected,
-    currentUser.userId,
-    manager
-  );
-
-  return { payment };
-};
 
 export const updateLoanPaymentStatusNew = async (
   paymentCode: string,
   amount: number,
-  //transactionDate: Date,
   currentUser: { userId: string; companyId: string },
   manager: EntityManager,
   isReverse = false
 ) => {
   const paymentRepo = manager.getRepository(CompanyLoanPayment);
+  const loanRepo = manager.getRepository(CompanyLoan);
 
   const payment = await paymentRepo.findOneOrFail({
-    where: {
-      code: paymentCode,
-      company: { id: currentUser.companyId },
-    },
+    where: { code: paymentCode, company: { id: currentUser.companyId } },
     relations: ["loan"],
   });
 
-  const factor = isReverse ? -1 : 1;
+  const totalExpected = Number(payment.totalAmount ?? 0);
+  const oldPaid = Number(payment.paymentAmount ?? 0);
+  const wasPaid = oldPaid >= totalExpected;
 
-  // ✅ paymentAmount güncelle (increment/decrement)
-  await paymentRepo.increment(
-    { id: payment.id },
-    "paymentAmount",
-    factor * amount
-  );
+  const signed = isReverse ? -Math.abs(amount) : Math.abs(amount);
+  const newPaidRaw = oldPaid + signed;
+  const newPaid = newPaidRaw < 0 ? 0 : newPaidRaw; // negatif olmasın
+  const deltaPaid = newPaid - oldPaid; // gerçek değişim
 
-  // Güncellenmiş payment tekrar çek
-  const updatedPayment = await paymentRepo.findOneOrFail({
-    where: { id: payment.id },
-    relations: ["loan"],
-  });
+  // Payment alanlarını güncelle
+  payment.paymentAmount = newPaid;
 
-  // ✅ Durum, kalan ve ceza hesapla
-  const totalExpected = Number(updatedPayment.totalAmount ?? 0);
-  const totalPaid = Number(updatedPayment.paymentAmount ?? 0);
-  const rawRemaining = totalExpected - totalPaid;
-  const remainingAmount = rawRemaining < 0 ? 0 : rawRemaining;
-  const penaltyAmount =
-    totalPaid > totalExpected ? totalPaid - totalExpected : 0;
-  const status = totalPaid >= totalExpected ? "PAID" : "PARTIAL";
+  const rawRemaining = totalExpected - newPaid;
+  payment.remainingAmount = rawRemaining > 0 ? rawRemaining : 0;
+  payment.penaltyAmount = newPaid > totalExpected ? newPaid - totalExpected : 0;
 
-  updatedPayment.remainingAmount = remainingAmount;
-  updatedPayment.penaltyAmount = penaltyAmount;
-  updatedPayment.status = status as any;
-  //updatedPayment.paymentDate = transactionDate;
-  updatedPayment.updatedBy = { id: currentUser.userId } as User;
-  updatedPayment.updatedatetime = new Date();
+  const isNowPaid = newPaid >= totalExpected;
+  payment.status = (isNowPaid ? "PAID" : "PARTIAL") as any;
 
-  await paymentRepo.save(updatedPayment);
+  payment.updatedBy = { id: currentUser.userId } as any;
+  payment.updatedatetime = new Date();
+  await paymentRepo.save(payment);
 
-  // 🔄 Loan üzerindeki kalan borçları güncelle
-  await updateCompanyLoanPaymentChange(
-    updatedPayment.loan.id,
-    updatedPayment.principalAmount ?? 0,
-    updatedPayment.interestAmount ?? 0,
-    totalExpected,
-    currentUser.userId,
-    manager
-  );
+  // ---- Loan agregatları DELTA ile güncelle ----
+  const loanId = payment.loan.id;
+  // 1) Kalan taksit tutarı (toplam) kısmi ödemelerde bile değişir
+  if (deltaPaid !== 0) {
+    await loanRepo.increment(
+      { id: loanId },
+      "remainingInstallmentAmount",
+      -deltaPaid
+    );
+  }
 
-  return { payment: updatedPayment };
+  // 2) Taksidin tamamen ödenme durumuna göre principal & count
+  if (!wasPaid && isNowPaid) {
+    // PARTIAL/UNPAID -> PAID
+    await loanRepo.increment(
+      { id: loanId },
+      "remainingPrincipal",
+      -Number(payment.principalAmount ?? 0)
+    );
+    await loanRepo.increment({ id: loanId }, "remainingInstallmentCount", -1);
+  } else if (wasPaid && !isNowPaid) {
+    // PAID -> PARTIAL (geri alma)
+    await loanRepo.increment(
+      { id: loanId },
+      "remainingPrincipal",
+      +Number(payment.principalAmount ?? 0)
+    );
+    await loanRepo.increment({ id: loanId }, "remainingInstallmentCount", +1);
+  }
+
+  // 3) Status yeniden değerlendir (count’a bakarak)
+  const loan = await loanRepo.findOneByOrFail({ id: loanId });
+  const newStatus = loan.remainingInstallmentCount <= 0 ? "CLOSED" : "ACTIVE";
+  if (loan.status !== newStatus) {
+    await loanRepo.update(
+      { id: loanId },
+      {
+        status: newStatus,
+        updatedBy: { id: currentUser.userId } as any,
+        updatedatetime: new Date(),
+      }
+    );
+  }
+
+  return { payment };
 };
 
 /*---------------------------------------------------------------------------------------------------*/

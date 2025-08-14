@@ -20,7 +20,7 @@ router.use(authMiddleware);
 router.post("/", /*validateBody,*/ postCompanyBarterAgreementHandler);
 
 router.post(
-  "/projects/:projectId/barters",
+  "/projects/:projectId",
   /*validateArrayBody(baterSchema),*/
   postCompanyBarterAgreementFromProjectHandler
 );

@@ -5,6 +5,9 @@ const data_source_1 = require("../config/data-source");
 const CompanyLoan_1 = require("../entities/CompanyLoan");
 const CompanyBalance_1 = require("../entities/CompanyBalance");
 const CompanyProject_1 = require("../entities/CompanyProject");
+const persist_1 = require("../utils/persist");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const loanRepo = manager.getRepository(CompanyLoan_1.CompanyLoan);
     const balanceRepo = manager.getRepository(CompanyBalance_1.CompanyBalance);
@@ -39,7 +42,7 @@ const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppD
         currency: data.currency,
         interestRate: data.interestRate,
         totalInstallmentCount: data.totalInstallmentCount,
-        remainingInstallmentCount: data.remainingInstallmentCount ?? data.totalInstallmentCount,
+        remainingInstallmentCount: data.totalInstallmentCount,
         loanDate: data.loanDate,
         purpose: data.purpose,
         loanType: data.loanType,
@@ -49,7 +52,23 @@ const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppD
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
     });
-    return await loanRepo.save(loan);
+    //return await loanRepo.save(loan);
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyLoan",
+        save: () => loanRepo.save(loan),
+        refetch: () => loanRepo.findOneOrFail({
+            where: { id: loan.id, company: { id: currentUser.companyId } },
+            relations: [
+                "bank",
+                "project",
+                "company",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Taksit kaydı oluşturulamadı.",
+    });
 };
 exports.createCompanyLoan = createCompanyLoan;
 const updateCompanyLoanPaymentChange = async (loanId, principalAmount, interestAmount, paymentAmount, userId, manager, isReverse = false) => {
@@ -92,10 +111,11 @@ const getCompanyLoans = async (currentUser, manager = data_source_1.AppDataSourc
         where: {
             company: { id: currentUser.companyId },
         },
-        relations: ["company", "bank", "project"],
+        relations: ["company", "bank", "project", "createdBy", "updatedBy"],
         order: { createdatetime: "DESC" },
     });
-    return loans;
+    //return loans;
+    return (0, sanitize_1.sanitizeEntity)(loans, "CompanyLoan", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyLoans = getCompanyLoans;
 const getCompanyLoanById = async (id, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -105,11 +125,12 @@ const getCompanyLoanById = async (id, currentUser, manager = data_source_1.AppDa
             id,
             company: { id: currentUser.companyId },
         },
-        relations: ["company", "bank", "project"],
+        relations: ["company", "bank", "project", "createdBy", "updatedBy"],
     });
     if (!loan) {
         throw new Error("İlgili çek bulunamadı.");
     }
-    return loan;
+    //return loan;
+    return (0, sanitize_1.sanitizeEntity)(loan, "CompanyLoan", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyLoanById = getCompanyLoanById;

@@ -8,19 +8,25 @@ import {
   JoinColumn,
   Unique,
   OneToMany,
+  Index,
 } from "typeorm";
 import { Company } from "./Company";
 import { CompanyProject } from "./CompanyProject";
 import { User } from "./User";
 import { CompanyOrder } from "./CompanyOrder";
 
-@Entity({ name: "companystocks" }) // ✅ tablo adı burada verildi
-@Unique(["category", "name"]) // ✅ Bileşik benzersizlik tanımı
+@Entity({ name: "companystocks" })
+@Unique(
+  "uq_companystocks_company_category_name",
+  ["company", "category", "name"] // ✔ aynı şirket içinde aynı kategori+isimden sadece 1 kayıt
+)
 export class CompanyStock {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  // ❌ Artık global-unique değil
+  @Column()
+  //@Index() // (opsiyonel) code ile hızlı arama için
   code!: string;
 
   @Column()
@@ -47,7 +53,7 @@ export class CompanyStock {
   @Column({ name: "stockdate", type: "date", nullable: true })
   stockDate?: Date;
 
-  @ManyToOne(() => Company)
+  @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: "companyid" })
   company!: Company;
 

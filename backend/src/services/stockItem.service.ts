@@ -1,6 +1,6 @@
 import { AppDataSource } from "../config/data-source";
 import { StockItem } from "../entities/StockItem";
-import { generateStockCode } from "../utils/generateCode";
+//import { generateStockCode } from "../utils/generateCode";
 
 const stockItemRepo = AppDataSource.getRepository(StockItem);
 
@@ -15,7 +15,8 @@ export const createStockItem = async (data: {
   if (existing) {
     throw new Error(`'${data.category}' stokta zaten mevcut.`);
   }
-  const code = await generateStockCode(data.category);
+  //const code = await generateStockCode(data.category);
+  const code = `STK-${(data.category, { lower: true })}-${(data.name, { lower: true })}`;
 
   const stockItem = stockItemRepo.create({
     code,
@@ -67,3 +68,7 @@ export const updateStockItem = async (
 
   return await stockItemRepo.save(item);
 };
+/*function slugify(category: string, arg1: { lower: boolean; }) {
+  throw new Error("Function not implemented.");
+}*/
+

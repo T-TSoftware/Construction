@@ -3,14 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateStockItem = exports.getStockItems = exports.createStockItem = void 0;
 const data_source_1 = require("../config/data-source");
 const StockItem_1 = require("../entities/StockItem");
-const generateCode_1 = require("../utils/generateCode");
+//import { generateStockCode } from "../utils/generateCode";
 const stockItemRepo = data_source_1.AppDataSource.getRepository(StockItem_1.StockItem);
 const createStockItem = async (data) => {
     const existing = await stockItemRepo.findOneBy({ category: data.category });
     if (existing) {
         throw new Error(`'${data.category}' stokta zaten mevcut.`);
     }
-    const code = await (0, generateCode_1.generateStockCode)(data.category);
+    //const code = await generateStockCode(data.category);
+    const code = `STK-${(data.category, { lower: true })}-${(data.name, { lower: true })}`;
     const stockItem = stockItemRepo.create({
         code,
         name: data.name.trim(),
@@ -48,3 +49,6 @@ const updateStockItem = async (id, data) => {
     return await stockItemRepo.save(item);
 };
 exports.updateStockItem = updateStockItem;
+/*function slugify(category: string, arg1: { lower: boolean; }) {
+  throw new Error("Function not implemented.");
+}*/

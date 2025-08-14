@@ -30,7 +30,7 @@ export const postCompanyBarterAgreementHandler = async (
     const companyId = req.user!.companyId;
 
     const {
-      projectCode,
+      projectId,
       counterpartyType,
       counterpartyId,
       counterpartyName,
@@ -44,7 +44,7 @@ export const postCompanyBarterAgreementHandler = async (
 
     const newAgreement = await createCompanyBarterAgreement(
       {
-        projectCode,
+        projectId,
         counterpartyType,
         counterpartyId,
         counterpartyName,

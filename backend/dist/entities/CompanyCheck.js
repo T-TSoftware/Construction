@@ -24,7 +24,7 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyCheck.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ unique: true }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], CompanyCheck.prototype, "code", void 0);
 __decorate([
@@ -32,7 +32,7 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyCheck.prototype, "checkDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "transactiondate", type: "timestamp" }),
+    (0, typeorm_1.Column)({ name: "transactiondate", type: "timestamp", nullable: true }),
     __metadata("design:type", Date)
 ], CompanyCheck.prototype, "transactionDate", void 0);
 __decorate([
@@ -48,7 +48,7 @@ __decorate([
     __metadata("design:type", Number)
 ], CompanyCheck.prototype, "amount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "checknumber", unique: true }),
+    (0, typeorm_1.Column)({ name: "checknumber" }),
     __metadata("design:type", String)
 ], CompanyCheck.prototype, "checkNo", void 0);
 __decorate([
@@ -68,6 +68,10 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: "bankid" }),
     __metadata("design:type", CompanyBalance_1.CompanyBalance)
 ], CompanyCheck.prototype, "bank", void 0);
+__decorate([
+    (0, typeorm_1.Column)("numeric", { name: "processedamount", default: 0, nullable: true }),
+    __metadata("design:type", Number)
+], CompanyCheck.prototype, "processedAmount", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         name: "remainingamount",
@@ -117,5 +121,6 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyCheck.prototype, "updatedatetime", void 0);
 exports.CompanyCheck = CompanyCheck = __decorate([
-    (0, typeorm_1.Entity)("companychecks", { schema: "artikonsept" })
+    (0, typeorm_1.Entity)("companychecks", { schema: "artikonsept" }),
+    (0, typeorm_1.Unique)("uq_company_checknumber", ["company", "checkNo"])
 ], CompanyCheck);

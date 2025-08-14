@@ -29,7 +29,7 @@ __decorate([
     __metadata("design:type", Company_1.Company)
 ], CompanyLoan.prototype, "company", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "code", type: "varchar", length: 100, unique: true }),
+    (0, typeorm_1.Column)({ name: "code", type: "varchar", length: 100 }),
     __metadata("design:type", String)
 ], CompanyLoan.prototype, "code", void 0);
 __decorate([
@@ -59,7 +59,12 @@ __decorate([
     __metadata("design:type", Number)
 ], CompanyLoan.prototype, "remainingPrincipal", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "remaininginstallmentamount", type: "numeric", precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({
+        name: "remaininginstallmentamount",
+        type: "numeric",
+        precision: 15,
+        scale: 2,
+    }),
     __metadata("design:type", Number)
 ], CompanyLoan.prototype, "remainingInstallmentAmount", void 0);
 __decorate([

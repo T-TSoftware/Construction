@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   OneToOne,
+  Index,
 } from "typeorm";
 import { Company } from "./Company";
 import { User } from "./User";
@@ -20,7 +21,7 @@ export class CompanyEmployee {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column()
   code!: string;
 
   @Column({ name: "firstname" })
@@ -70,7 +71,9 @@ export class CompanyEmployee {
   @JoinColumn({ name: "companyid" })
   company!: Company;
 
-  @OneToMany(() => CompanyEmployeeProject, (project) => project.employee, { cascade: true })
+  @OneToMany(() => CompanyEmployeeProject, (project) => project.employee, {
+    cascade: true,
+  })
   employeeProjects!: CompanyEmployeeProject[];
 
   @ManyToOne(() => User, { nullable: false })
@@ -95,5 +98,4 @@ export class CompanyEmployee {
     default: () => "CURRENT_TIMESTAMP",
   })
   updatedatetime!: Date;
-
 }

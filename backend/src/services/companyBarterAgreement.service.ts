@@ -3,12 +3,18 @@ import { EntityManager } from "typeorm";
 import { CompanyBarterAgreement } from "../entities/CompanyBarterAgreement";
 import { CompanyProject } from "../entities/CompanyProject";
 import { Company } from "../entities/Company";
-import { generateNextEntityCode } from "../utils/generateCode";
+import {
+  generateNextBarterCode,
+  generateNextEntityCode,
+} from "../utils/generateCode";
 import { processBarterItem } from "./processBarterItem.serivce";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { sanitizeEntity } from "../utils/sanitize";
 
 export const createCompanyBarterAgreement = async (
   data: {
-    projectCode: string;
+    projectId: string;
     counterpartyType: "SUPPLIER" | "SUBCONTRACTOR" | "CUSTOMER" | "EXTERNAL";
     counterpartyId?: string;
     counterpartyName: string;
@@ -30,18 +36,16 @@ export const createCompanyBarterAgreement = async (
   // ✅ Proje kontrolü
   const project = await projectRepo.findOneOrFail({
     where: {
-      code: data.projectCode,
+      id: data.projectId,
       company: { id: currentUser.companyId },
     },
   });
 
-  const code = await generateNextEntityCode(
-    manager,
-    project.code,
-    data.counterpartyType,
-    "BRT", // BARTER
-    "CompanyBarterAgreement"
-  );
+  const code = await generateNextBarterCode(manager, {
+    companyId: currentUser.companyId,
+    projectCode: project.code, // İZM001 gibi
+    counterpartyType: data.counterpartyType.toUpperCase(), // SUPPLIER | SUBCONTRACTOR | ...
+  });
 
   // ✅ Yeni takas anlaşması nesnesi oluşturuluyor
   const agreement = agreementRepo.create({
@@ -60,7 +64,18 @@ export const createCompanyBarterAgreement = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  return await agreementRepo.save(agreement);
+  //return await agreementRepo.save(agreement);
+  return await saveRefetchSanitize({
+    entityName: "CompanyBarterAgreement",
+    save: () => agreementRepo.save(agreement),
+    refetch: () =>
+      agreementRepo.findOneOrFail({
+        where: { id: agreement.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Barter kaydı oluşturulamadı.",
+  });
 };
 
 export const createCompanyBarterAgreementFromProject = async (
@@ -92,13 +107,11 @@ export const createCompanyBarterAgreementFromProject = async (
     },
   });
 
-  const code = await generateNextEntityCode(
-    manager,
-    project.code,
-    data.counterpartyType,
-    "BRT", // BARTER
-    "CompanyBarterAgreement"
-  );
+  const code = await generateNextBarterCode(manager, {
+    companyId: currentUser.companyId,
+    projectCode: project.code, // İZM001 gibi
+    counterpartyType: data.counterpartyType.toUpperCase(), // SUPPLIER | SUBCONTRACTOR | ...
+  });
 
   // ✅ Yeni takas anlaşması nesnesi oluşturuluyor
   const agreement = agreementRepo.create({
@@ -117,13 +130,24 @@ export const createCompanyBarterAgreementFromProject = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  return await agreementRepo.save(agreement);
+  //return await agreementRepo.save(agreement);
+  return await saveRefetchSanitize({
+    entityName: "CompanyBarterAgreement",
+    save: () => agreementRepo.save(agreement),
+    refetch: () =>
+      agreementRepo.findOneOrFail({
+        where: { id: agreement.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Barter kaydı oluşturulamadı.",
+  });
 };
 
 export const updateCompanyBarterAgreement = async (
   id: string,
   data: {
-    projectCode?: string; // ✅ Eklenen alan
+    projectId?: string; // ✅ Eklenen alan
     counterpartyType?: "SUPPLIER" | "SUBCONTRACTOR" | "CUSTOMER" | "EXTERNAL";
     counterpartyId?: string;
     counterpartyName?: string;
@@ -136,21 +160,22 @@ export const updateCompanyBarterAgreement = async (
   currentUser: { userId: string; companyId: string },
   manager: EntityManager = AppDataSource.manager
 ) => {
-  const repo = manager.getRepository(CompanyBarterAgreement);
+  const agreementRepo = manager.getRepository(CompanyBarterAgreement);
   const projectRepo = manager.getRepository(CompanyProject);
 
-  const agreement = await repo.findOneOrFail({
+  const agreement = await agreementRepo.findOneOrFail({
     where: { id, company: { id: currentUser.companyId } },
-    relations: ["project"],
+    relations: ["project", "company", "createdBy", "updatedBy"],
   });
 
-  // ✅ Proje güncellemesi yapılacaksa kontrol ve atama
-  if (data.projectCode) {
+  // Önce mevcut referansları sakla (kodu yeniden üretmeye gerek var mı karar vermek için)
+  const prevProjectId = agreement.project?.id ?? null;
+  const prevCounterpartyType = agreement.counterpartyType;
+
+  // ✅ Proje güncellemesi yapılacaksa ata
+  if (data.projectId && data.projectId !== prevProjectId) {
     const newProject = await projectRepo.findOneOrFail({
-      where: {
-        code: data.projectCode,
-        company: { id: currentUser.companyId },
-      },
+      where: { id: data.projectId, company: { id: currentUser.companyId } },
     });
     agreement.project = newProject;
   }
@@ -171,12 +196,43 @@ export const updateCompanyBarterAgreement = async (
 
   agreement.status = newStatus;
 
+  // 🔁 Proje ya da karşı taraf tipi değiştiyse code’u yeniden üret
+  const projectChanged = !!data.projectId && data.projectId !== prevProjectId;
+  const typeChanged = !!data.counterpartyType && data.counterpartyType !== prevCounterpartyType;
+
+  if (projectChanged || typeChanged) {
+    const projectCode = agreement.project?.code; // relation yukarıda güncellendi
+    if (!projectCode) {
+      throw new Error("Barter kodu üretmek için proje zorunludur.");
+    }
+
+    // generateNextBarterCode şirket içinde, aynı proje ve tip kapsamındaki en büyük numarayı +1 yapar
+    const newCode = await generateNextBarterCode(manager, {
+      companyId: currentUser.companyId,
+      projectCode, // ör: İZM001
+      counterpartyType: agreement.counterpartyType, // "SUPPLIER" | "SUBCONTRACTOR" | ...
+    });
+
+    agreement.code = newCode;
+  }
+
   if (prevStatus !== "COMPLETED" && newStatus === "COMPLETED") {
     console.log("enterence prevvv");
     await completeBarterAgreement(id, currentUser);
   }
 
-  return await repo.save(agreement);
+  //return await repo.save(agreement);
+  return await saveRefetchSanitize({
+    entityName: "CompanyBarterAgreement",
+    save: () => agreementRepo.save(agreement),
+    refetch: () =>
+      agreementRepo.findOneOrFail({
+        where: { id: agreement.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Barter kaydı oluşturulamadı.",
+  });
 };
 
 export const getAllCompanyBarterAgreements = async (
@@ -188,10 +244,10 @@ export const getAllCompanyBarterAgreements = async (
   const agreements = await repo.find({
     where: { company: { id: currentUser.companyId } },
     order: { createdatetime: "DESC" },
-    relations: ["project"],
+    relations: ["project","company","createdBy","updatedBy"],
   });
 
-  return agreements;
+    return sanitizeEntity(agreements, "CompanyBarterAgreement", sanitizeRules);
 };
 
 export const getAllCompanyBarterAgreementsByProjectId = async (
@@ -207,10 +263,10 @@ export const getAllCompanyBarterAgreementsByProjectId = async (
       company: { id: currentUser.companyId },
     },
     order: { createdatetime: "DESC" },
-    relations: ["project"],
+    relations: ["project","company","createdBy","updatedBy"],
   });
 
-  return agreements;
+  return sanitizeEntity(agreements, "CompanyBarterAgreement", sanitizeRules);
 };
 
 export const getCompanyBarterAgreementById = async (
@@ -225,14 +281,14 @@ export const getCompanyBarterAgreementById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["project"],
+   relations: ["project","company","createdBy","updatedBy"],
   });
 
   if (!agreement) {
     throw new Error("Takas anlaşması bulunamadı.");
   }
 
-  return agreement;
+  return sanitizeEntity(agreement, "CompanyBarterAgreement", sanitizeRules);
 };
 
 export const completeBarterAgreement = async (

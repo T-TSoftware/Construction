@@ -46,19 +46,19 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyProject.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: "date", name: "estimatedstartdate" }),
+    (0, typeorm_1.Column)({ type: "date", name: "estimatedstartdate", nullable: true }),
     __metadata("design:type", Date)
 ], CompanyProject.prototype, "estimatedStartDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: "date", name: "actualstartdate" }),
+    (0, typeorm_1.Column)({ type: "date", name: "actualstartdate", nullable: true }),
     __metadata("design:type", Date)
 ], CompanyProject.prototype, "actualStartDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: "date", name: "estimatedenddate" }),
+    (0, typeorm_1.Column)({ type: "date", name: "estimatedenddate", nullable: true }),
     __metadata("design:type", Date)
 ], CompanyProject.prototype, "estimatedEndDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: "date", name: "actualenddate" }),
+    (0, typeorm_1.Column)({ type: "date", name: "actualenddate", nullable: true }),
     __metadata("design:type", Date)
 ], CompanyProject.prototype, "actualEndDate", void 0);
 __decorate([

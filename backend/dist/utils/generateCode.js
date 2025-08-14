@@ -1,13 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateNextBarterAgreementItemCode = exports.generateNextOrderCode = exports.generateFinanceTransactionCode = exports.generateNextEntityCode = exports.generateStockCode = void 0;
+exports.generateNextBarterAgreementItemCode = exports.generateNextOrderCode = exports.generateFinanceTransactionCode = exports.generateNextEntityCode = void 0;
 exports.generateNextCompanyCode = generateNextCompanyCode;
 exports.generateNextBalanceCode = generateNextBalanceCode;
 exports.generateUserCode = generateUserCode;
 exports.generateNextEstimatedCostCode = generateNextEstimatedCostCode;
 exports.generateNextProjectCode = generateNextProjectCode;
-const data_source_1 = require("../config/data-source");
-const CompanyStock_1 = require("../entities/CompanyStock");
+exports.generateNextBarterCode = generateNextBarterCode;
 const ProjectSupplier_1 = require("../entities/ProjectSupplier"); // ya da ProjectSubcontractor
 const ProjectSubcontractor_1 = require("../entities/ProjectSubcontractor");
 const CompanyBarterAgreement_1 = require("../entities/CompanyBarterAgreement");
@@ -60,20 +59,25 @@ function generateNextProjectCode(latestCode, companyCode, projectSite) {
     const nextNum = (parseInt(numPart) + 1).toString().padStart(3, "0");
     return `${fullPrefix}${nextNum}`;
 }
-const generateStockCode = async (category, manager = data_source_1.AppDataSource.manager) => {
-    //const compaynStockRepo = AppDataSource.getRepository(CompanyStock);
-    const stockRepo = manager.getRepository(CompanyStock_1.CompanyStock);
-    const prefix = `STK-${category.toUpperCase()}`;
-    const latest = await stockRepo
-        .createQueryBuilder("item")
-        .where("item.code LIKE :prefix", { prefix: `${prefix}-%` })
-        .orderBy("item.code", "DESC")
-        .getOne();
-    const lastNumber = latest ? parseInt(latest.code.split("-")[2]) : 0;
-    const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
-    return `${prefix}-${nextNumber}`;
-};
-exports.generateStockCode = generateStockCode;
+/*export const generateStockCode = async (
+  category: string,
+  manager: EntityManager = AppDataSource.manager
+): Promise<string> => {
+  //const compaynStockRepo = AppDataSource.getRepository(CompanyStock);
+  const stockRepo = manager.getRepository(CompanyStock);
+  const prefix = `STK-${category.toUpperCase()}`;
+  const latest = await stockRepo
+    .createQueryBuilder("item")
+    .where("item.code LIKE :prefix", { prefix: `${prefix}-%` })
+    .orderBy("item.code", "DESC")
+    .getOne();
+
+  const lastNumber = latest ? parseInt(latest.code.split("-")[2]) : 0;
+
+  const nextNumber = (lastNumber + 1).toString().padStart(3, "0");
+
+  return `${prefix}-${nextNumber}`;
+};*/
 const generateNextEntityCode = async (manager, projectCode, category, typePrefix, // TED = Tedarikçi, TAS = Taşeron, BRT = Barter
 entity) => {
     const repo = (() => {
@@ -194,8 +198,19 @@ manager, }) => {
 exports.generateNextOrderCode = generateNextOrderCode;
 const generateNextBarterAgreementItemCode = async (manager, barterAgreementCode, itemType) => {
     const repo = manager.getRepository(CompanyBarterAgreementItem_1.CompanyBarterAgreementItem);
-    const itemTypePrefix = itemType.slice(0, 3).toUpperCase(); // e.g. "SER", "CAS"
-    const prefix = `${barterAgreementCode}-${itemTypePrefix}`;
+    // İngilizce → Türkçe tam karşılık
+    const itemTypeMap = {
+        STOCK: "STOK",
+        SERVICE: "HİZMET",
+        ASSET: "VARLIK",
+        CASH: "NAKİT",
+        CHECK: "ÇEK"
+    };
+    const labelTR = itemTypeMap[itemType];
+    if (!labelTR) {
+        throw new Error(`Geçersiz itemType: ${itemType}`);
+    }
+    const prefix = `${barterAgreementCode}-${labelTR}`;
     const latest = await repo
         .createQueryBuilder("item")
         .where("item.code LIKE :prefix", { prefix: `${prefix}%` })
@@ -207,3 +222,38 @@ const generateNextBarterAgreementItemCode = async (manager, barterAgreementCode,
     return `${prefix}${nextNumber}`;
 };
 exports.generateNextBarterAgreementItemCode = generateNextBarterAgreementItemCode;
+/**
+ * Format:  {projectCode}-BRT-{TYPE}{###}
+ * Ex:         İZM001-BRT-SUP001
+ * TYPE map:    SUPPLIER→SUP, SUBCONTRACTOR→TAS, CUSTOMER→CUS, EXTERNAL→EXT
+ */
+const CounterpartyLabel = {
+    SUPPLIER: "TEDARIK",
+    SUBCONTRACTOR: "TASERON",
+    CUSTOMER: "MUSTERI",
+    EXTERNAL: "HARICI",
+};
+async function generateNextBarterCode(manager, params) {
+    const { companyId, projectCode, counterpartyType } = params;
+    // İngilizce → Türkçe çeviri
+    const labelTR = CounterpartyLabel[counterpartyType.toUpperCase()];
+    if (!labelTR) {
+        throw new Error(`Geçersiz counterpartyLabel: ${counterpartyType}`);
+    }
+    const prefix = `${projectCode.toUpperCase()}-BRT-${labelTR}`;
+    const repo = manager.getRepository(CompanyBarterAgreement_1.CompanyBarterAgreement);
+    // 🔎 En son numarayı, aynı şirket içinde tara:
+    const latest = await repo
+        .createQueryBuilder("a")
+        .where("a.companyid = :cid", { cid: companyId })
+        .andWhere("a.code LIKE :prefix", { prefix: `${prefix}%` })
+        .orderBy("a.code", "DESC")
+        .getOne();
+    const nextNum = (() => {
+        if (!latest?.code)
+            return 1;
+        const m = latest.code.match(/(\d+)$/);
+        return m ? parseInt(m[1], 10) + 1 : 1;
+    })();
+    return `${prefix}${String(nextNum).padStart(3, "0")}`;
+}

@@ -6,6 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
@@ -14,18 +15,19 @@ import { User } from "./User";
 import { CompanyBalance } from "./CompanyBalance";
 
 @Entity("companychecks", { schema: "artikonsept" })
+@Unique("uq_company_checknumber", ["company", "checkNo"])
 export class CompanyCheck {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column()
   code!: string;
 
   @Column({ name: "checkdate", type: "date" })
   checkDate!: Date;
 
-  @Column({ name: "transactiondate", type: "timestamp" })
-  transactionDate!: Date;
+  @Column({ name: "transactiondate", type: "timestamp", nullable: true })
+  transactionDate?: Date;
 
   @Column({ name: "duedate", type: "date" })
   dueDate!: Date; // Vade tarihi
@@ -36,7 +38,7 @@ export class CompanyCheck {
   @Column({ type: "numeric" })
   amount!: number;
 
-  @Column({ name: "checknumber", unique: true })
+  @Column({ name: "checknumber"})
   checkNo!: string;
 
   @Column({ nullable: true })
@@ -51,6 +53,9 @@ export class CompanyCheck {
   @ManyToOne(() => CompanyBalance)
   @JoinColumn({ name: "bankid" })
   bank!: CompanyBalance;
+
+  @Column("numeric", { name: "processedamount", default: 0, nullable: true })
+  processedAmount?: number;
 
   @Column({
     name: "remainingamount",

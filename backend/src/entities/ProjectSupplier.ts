@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   JoinColumn,
   OneToMany,
+  Index,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
 import { QuantityItem } from "./QuantityItem";
@@ -16,11 +17,16 @@ import { Company } from "./Company";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
 
 @Entity({ name: "projectsuppliers" })
+@Index(
+  "uq_supplier_category_unit_once",                    // index adı
+  ["project", "category", "unit"],                          // sütunlar (entity alan adları)
+  { unique: true, where: "addedfromquantityyn = 'Y'" }      // partial unique koşulu (DB sütun adıyla)
+)
 export class ProjectSupplier {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ unique: true })
+  @Column()
   code!: string;
 
   @ManyToOne(() => Company, { nullable: false })

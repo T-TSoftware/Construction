@@ -16,11 +16,13 @@ const postCompanyCheckHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const { checkNo, checkDate, transactionDate, firm, amount, bankId, type, projectId, description, status, dueDate, } = req.body;
+        const { checkNo, checkDate, 
+        //transactionDate,
+        firm, amount, bankId, type, projectId, description, status, dueDate, } = req.body;
         const newCheck = await (0, companyCheck_service_1.createCompanyCheck)({
             checkNo,
             checkDate,
-            transactionDate,
+            //transactionDate,
             firm,
             amount,
             bankId,

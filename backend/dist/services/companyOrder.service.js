@@ -7,6 +7,9 @@ const CompanyStock_1 = require("../entities/CompanyStock");
 const CompanyProject_1 = require("../entities/CompanyProject");
 const generateCode_1 = require("../utils/generateCode");
 const companyStock_service_1 = require("./companyStock.service");
+const persist_1 = require("../utils/persist");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const createCompanyOrder = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const stockRepo = manager.getRepository(CompanyStock_1.CompanyStock);
     const projectRepo = manager.getRepository(CompanyProject_1.CompanyProject);
@@ -54,12 +57,29 @@ const createCompanyOrder = async (data, currentUser, manager = data_source_1.App
         stockId: stock.id,
         quantity: 1, // şu an için sabit 1 olarak kabul ettik
     }, manager);
-    const savedOrder = await orderRepo.save(order);
+    /*const savedOrder = await orderRepo.save(order);
     const fullOrder = await orderRepo.findOneOrFail({
-        where: { id: savedOrder.id, company: { id: currentUser.companyId } },
-        relations: ["project", "stock", "createdBy", "updatedBy"],
+      where: { id: savedOrder.id, company: { id: currentUser.companyId } },
+      relations: ["project", "stock", "createdBy", "updatedBy"],
     });
-    return fullOrder;
+  
+    return fullOrder;*/
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyOrder",
+        save: () => orderRepo.save(order),
+        refetch: () => orderRepo.findOneOrFail({
+            where: { id: order.id, company: { id: currentUser.companyId } },
+            relations: [
+                "project",
+                "company",
+                "stock",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Satıs kaydı oluşturulamadı.",
+    });
 };
 exports.createCompanyOrder = createCompanyOrder;
 const updateOrderPaymentStatus = async (orderCode, amountReceived, currentUser, manager) => {
@@ -85,10 +105,10 @@ const getCompanyOrders = async (currentUser, manager = data_source_1.AppDataSour
         where: {
             company: { id: currentUser.companyId },
         },
-        relations: ["stock", "project"],
+        relations: ["stock", "project", "createdBy", "updatedBy", "company"],
         //order: { transactionDate: "DESC" },
     });
-    return orders;
+    return (0, sanitize_1.sanitizeEntity)(orders, "CompanyOrder", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyOrders = getCompanyOrders;
 const getCompanyOrderById = async (id, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -98,12 +118,12 @@ const getCompanyOrderById = async (id, currentUser, manager = data_source_1.AppD
             id,
             company: { id: currentUser.companyId },
         },
-        relations: ["stock", "project"],
+        relations: ["stock", "project", "createdBy", "updatedBy", "company"],
     });
     if (!order) {
         throw new Error("İlgili satış bulunamadı.");
     }
-    return order;
+    return (0, sanitize_1.sanitizeEntity)(order, "CompanyOrder", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyOrderById = getCompanyOrderById;
 const getCompanyOrdersByProjectId = async (projectId, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -113,12 +133,12 @@ const getCompanyOrdersByProjectId = async (projectId, currentUser, manager = dat
             project: { id: projectId, company: { id: currentUser.companyId } },
             company: { id: currentUser.companyId },
         },
-        relations: ["stock", "project", "createdBy", "updatedBy"],
+        relations: ["stock", "project", "createdBy", "updatedBy", "company"],
     });
     if (!order) {
         throw new Error("İlgili satış bulunamadı.");
     }
-    return order;
+    return (0, sanitize_1.sanitizeEntity)(order, "CompanyOrder", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyOrdersByProjectId = getCompanyOrdersByProjectId;
 const updateOrderPaymentStatusNew = async (orderCode, amount, currentUser, manager, isReverse = false) => {

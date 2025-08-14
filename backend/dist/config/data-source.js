@@ -84,5 +84,5 @@ exports.AppDataSource = new typeorm_1.DataSource({
 });
 //export default AppDataSource;
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/UniqeC --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/CheckChangesNew --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts
