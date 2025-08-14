@@ -10,6 +10,7 @@ import { generateNextBarterAgreementItemCode } from "../utils/generateCode";
 import { User } from "../entities/User";
 import { sanitizeEntity } from "../utils/sanitize";
 import { sanitizeRules } from "../utils/sanitizeRules";
+import { saveRefetchSanitize } from "../utils/persist";
 
 export const postCompanyBarterAgreementItem = async (
   agreementId: string,
@@ -86,6 +87,25 @@ export const postCompanyBarterAgreementItem = async (
   });
 
   //return await itemRepo.save(item);
+  return await saveRefetchSanitize({
+    entityName: "CompanyBarterAgreementItem",
+    save: () => itemRepo.save(item),
+    refetch: () =>
+      itemRepo.findOneOrFail({
+        where: { id: item.id, company: { id: currentUser.companyId } },
+        relations: [
+          "barterAgreement",
+          "relatedStock",
+          "relatedSubcontractor",
+          "relatedSupplier",
+          "company",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Barter alt kaydı oluşturulamadı.",
+  });
 };
 
 export const getAllCompanyBarterAgreementItems = async (
