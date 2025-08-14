@@ -10,6 +10,7 @@ const ProjectSupplier_1 = require("../entities/ProjectSupplier");
 const generateCode_1 = require("../utils/generateCode");
 const sanitize_1 = require("../utils/sanitize");
 const sanitizeRules_1 = require("../utils/sanitizeRules");
+const persist_1 = require("../utils/persist");
 const postCompanyBarterAgreementItem = async (agreementId, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const agreementRepo = manager.getRepository(CompanyBarterAgreement_1.CompanyBarterAgreement);
     const itemRepo = manager.getRepository(CompanyBarterAgreementItem_1.CompanyBarterAgreementItem);
@@ -60,6 +61,24 @@ const postCompanyBarterAgreementItem = async (agreementId, data, currentUser, ma
         updatedBy: { id: currentUser.userId },
     });
     //return await itemRepo.save(item);
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyBarterAgreementItem",
+        save: () => itemRepo.save(item),
+        refetch: () => itemRepo.findOneOrFail({
+            where: { id: item.id, company: { id: currentUser.companyId } },
+            relations: [
+                "barterAgreement",
+                "relatedStock",
+                "relatedSubcontractor",
+                "relatedSupplier",
+                "company",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Barter alt kaydı oluşturulamadı.",
+    });
 };
 exports.postCompanyBarterAgreementItem = postCompanyBarterAgreementItem;
 const getAllCompanyBarterAgreementItems = async (currentUser, manager = data_source_1.AppDataSource.manager) => {
