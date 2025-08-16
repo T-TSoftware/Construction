@@ -1,9 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerHandler = exports.loginHandler = void 0;
+exports.logoutHandler = exports.registerHandler = exports.loginHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const User_1 = require("../entities/User");
+const jwt_1 = require("../utils/jwt");
 const auth_service_1 = require("../services/auth.service");
+const tokenBlackList_1 = require("../utils/tokenBlackList");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userRepo = data_source_1.AppDataSource.getRepository(User_1.User);
 const loginHandler = async (req, res) => {
     try {
@@ -58,3 +64,25 @@ const registerHandler = async (req, res) => {
     }
 };
 exports.registerHandler = registerHandler;
+const logoutHandler = async (req, res) => {
+    const header = req.headers.authorization;
+    if (!header?.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+    }
+    const token = header.split(" ")[1];
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        const exp = (0, jwt_1.decodeExp)(token);
+        if (!exp) {
+            res.status(400).json({ error: "Invalid token" });
+            return;
+        }
+        await (0, tokenBlackList_1.blacklistJti)(decoded.jti, exp);
+        res.status(200).json({ message: "Logged out" });
+    }
+    catch {
+        res.status(401).json({ error: "Invalid token" });
+    }
+};
+exports.logoutHandler = logoutHandler;
