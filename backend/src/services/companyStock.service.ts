@@ -110,7 +110,7 @@ export const updateCompanyStock = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "project","createdBy", "updatedBy"],
+    relations: ["company", "project", "createdBy", "updatedBy"],
   });
 
   if (!stock) {
@@ -155,7 +155,7 @@ export const updateCompanyStock = async (
 export const getCompanyStocks = async (companyId: string) => {
   const stocks = await stockRepo.find({
     where: { company: { id: companyId } },
-    relations: ["createdBy", "updatedBy", "project","company"],
+    relations: ["createdBy", "updatedBy", "project", "company"],
     order: { createdatetime: "DESC" },
   });
 
@@ -175,6 +175,21 @@ export const getCompanyStockById = async (
   });
 
   return sanitizeEntity(stock, "CompanyStock", sanitizeRules);
+};
+
+export const getProjectStockByProjectId = async (
+  projectId: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const projectStocks = await stockRepo.find({
+    where: {
+      project: { id: projectId },
+      company: { id: currentUser.companyId },
+    },
+    relations: ["createdBy", "updatedBy", "project", "company"],
+  });
+  return sanitizeEntity(projectStocks, "CompanyStock", sanitizeRules);
 };
 
 export const decreaseStockQuantity = async (

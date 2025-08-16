@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import {
   createCompanyEmployee,
+  createCompanyEmployeeNew,
   getCompanyEmployeeById,
   getCompanyEmployees,
   updateCompanyEmployee,
@@ -37,7 +38,7 @@ export const postCompanyEmployeeHandler = async (
       projectCodes,
     } = req.body;
 
-    const employee = await createCompanyEmployee(
+    const employee = await createCompanyEmployeeNew(
       {
         code,
         firstName,

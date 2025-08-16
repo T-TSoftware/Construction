@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.normalize = void 0;
 exports.saveRefetchSanitize = saveRefetchSanitize;
 // utils/persist.ts
 const errorHandler_1 = require("./errorHandler");
@@ -12,3 +13,24 @@ async function saveRefetchSanitize({ entityName, save, refetch, rules, defaultEr
     // 3) Sanitize et ve dön
     return (0, sanitize_1.sanitizeEntity)(full, entityName, rules);
 }
+const normalize = (s) => {
+    return (s ?? "")
+        .normalize("NFD") // harfleri ve aksanları ayırır
+        .replace(/[\u0300-\u036f]/g, "") // aksanları kaldırır
+        .replace(/ğ/g, "g")
+        .replace(/Ğ/g, "G")
+        .replace(/ü/g, "u")
+        .replace(/Ü/g, "U")
+        .replace(/ş/g, "s")
+        .replace(/Ş/g, "S")
+        .replace(/ı/g, "i")
+        .replace(/İ/g, "I")
+        .replace(/ö/g, "o")
+        .replace(/Ö/g, "O")
+        .replace(/ç/g, "c")
+        .replace(/Ç/g, "C")
+        .replace(/\s+/g, "") // tüm boşlukları kaldır
+        .replace(/[^a-zA-Z0-9]/g, "") // harf ve rakam dışındaki her şeyi kaldır
+        .toUpperCase();
+};
+exports.normalize = normalize;

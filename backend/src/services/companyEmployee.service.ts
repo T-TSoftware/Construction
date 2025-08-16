@@ -6,6 +6,10 @@ import { LeaveType } from "../entities/CompanyEmployeeLeave";
 import { CompanyEmployeeProject } from "../entities/CompanyEmployeeProject";
 import { Company } from "../entities/Company";
 import { User } from "../entities/User";
+import { normalize, saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { sanitizeEntity } from "../utils/sanitize";
+import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
 
 interface CreateCompanyEmployeeInput {
   code: string;
@@ -30,7 +34,7 @@ export const createCompanyEmployee = async (
   const employeeProjectRepo = manager.getRepository(CompanyEmployeeProject);
 
   const employee = employeeRepo.create({
-    code: `${data.position}-${data.firstName}${data.lastName}`,
+    code: `${data.position}-${data.firstName}${data.lastName}`.toUpperCase(),
     firstName: data.firstName,
     lastName: data.lastName,
     age: data.age,
@@ -76,15 +80,25 @@ export const createCompanyEmployee = async (
     await employeeProjectRepo.save(projectAssignments);
   }
 
-  const fullEmployee = await employeeRepo.findOneOrFail({
-    where: { id: employee.id, company: { id: currentUser.companyId } },
-    relations: [
-      // join-tablosu üzerinden projeleri getir
-      "employeeProjects",
-      "employeeProjects.project",
-    ],
+  return await saveRefetchSanitize({
+    entityName: "CompanyEmployee",
+    save: () => employeeRepo.save(employee),
+    refetch: () =>
+      employeeRepo.findOneOrFail({
+        where: { id: employee.id, company: { id: currentUser.companyId } },
+        relations: [
+          "project",
+          "company",
+          "employeeProjects",
+          "employeeProjects.project",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Çalışan kaydı oluşturulamadı.",
   });
-  return fullEmployee;
+
 };
 
 export const getCompanyEmployees = async (
@@ -97,11 +111,12 @@ export const getCompanyEmployees = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["employeeProjects", "employeeProjects.project"],
+    relations: ["employeeProjects", "employeeProjects.project","createdBy","updatedBy","company"],
     order: { createdatetime: "DESC" },
   });
 
-  return employees;
+  //return employees;
+  return sanitizeEntity(employees, "CompanyEmployee", sanitizeRules);
 };
 
 export const getCompanyEmployeeById = async (
@@ -116,14 +131,15 @@ export const getCompanyEmployeeById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["employeeProjects", "employeeProjects.project"],
+    relations: ["employeeProjects", "employeeProjects.project","createdBy","updatedBy","company"],
   });
 
   if (!employee) {
     throw new Error("İlgili Çalışan bulunamadı.");
   }
 
-  return employee;
+  //return employee;
+  return sanitizeEntity(employee, "CompanyEmployee", sanitizeRules);
 };
 
 export const updateCompanyEmployee = async (
@@ -171,11 +187,15 @@ export const updateCompanyEmployee = async (
   employee.roadLeaveAmount = data.roadLeaveAmount ?? employee.roadLeaveAmount;
   employee.excuseLeaveAmount =
     data.excuseLeaveAmount ?? employee.excuseLeaveAmount;
-  employee.code = `${employee.position}-${employee.firstName}${employee.lastName}`;
+  const code = `${normalize(data.position)}-${normalize(data.firstName)}${normalize(data.lastName)}`;
+  employee.code = code;
   employee.updatedBy = { id: currentUser.userId } as User;
   employee.company = { id: currentUser.companyId } as Company;
 
-  await employeeRepo.save(employee);
+  const saved = await handleSaveWithUniqueConstraint(
+    () => employeeRepo.save(employee),
+    "CompanyEmployee"
+  );
 
   // 🔄 Proje atamalarını güncelle
   if (data.projectCodes) {
@@ -190,10 +210,10 @@ export const updateCompanyEmployee = async (
 
     const projectAssignments = projectEntities.map((project) =>
       employeeProjectRepo.create({
-        employee: { id: employee.id },
+        employee: { id: saved.id },
         project: { id: project.id },
         company: { id: currentUser.companyId },
-        position: employee.position,
+        position: saved.position,
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
       })
@@ -202,15 +222,18 @@ export const updateCompanyEmployee = async (
     await employeeProjectRepo.save(projectAssignments);
   }
 
-  const fullEmployee = await employeeRepo.findOneOrFail({
-    where: { id: employee.id, company: { id: currentUser.companyId } },
+  const full = await employeeRepo.findOneOrFail({
+    where: { id: saved.id, company: { id: currentUser.companyId } },
     relations: [
-      // join-tablosu üzerinden projeleri getir
+      "company",
       "employeeProjects",
       "employeeProjects.project",
+      "createdBy",
+      "updatedBy",
     ],
   });
-  return fullEmployee;
+
+  return sanitizeEntity(full, "CompanyEmployee", sanitizeRules);
 };
 
 export const updateCompanyEmployeeLeaveChange = async (
@@ -275,4 +298,84 @@ export const updateCompanyEmployeeLeaveChange = async (
       factor * leaveDayCount
     } gün → ${employeeId}`
   );
+};
+
+export const createCompanyEmployeeNew = async (
+  data: CreateCompanyEmployeeInput,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const employeeRepo = manager.getRepository(CompanyEmployee);
+  const projectRepo = manager.getRepository(CompanyProject);
+  const employeeProjectRepo = manager.getRepository(CompanyEmployeeProject);
+
+  // Güvenli CODE üretimi (trim + upper, null/undefined koruması)
+  //const normalize = (s?: string) => (s ?? "").replace(/\s+/g, "").toUpperCase();
+
+const code = `${normalize(data.position)}-${normalize(data.firstName)}${normalize(data.lastName)}`;
+
+  const employee = employeeRepo.create({
+    code,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    age: data.age,
+    startDate: data.startDate,
+    netSalary: data.netSalary,
+    grossSalary: data.grossSalary,
+    position: data.position,
+    department: data.department,
+    company: { id: currentUser.companyId },
+    createdBy: { id: currentUser.userId },
+    updatedBy: { id: currentUser.userId },
+  });
+
+  // önce kaydet -> id lazım
+  const saved = await handleSaveWithUniqueConstraint(
+    () => employeeRepo.save(employee),
+    "CompanyEmployee"
+  );
+
+  // Proje atamaları
+  if (data.projectCodes?.length) {
+    const projects = await projectRepo.find({
+      where: {
+        code: In(data.projectCodes),
+        company: { id: currentUser.companyId },
+      },
+    });
+
+    if (projects.length !== data.projectCodes.length) {
+      throw new Error("Bazı projectCode'lar geçersiz.");
+    }
+
+    const projectAssignments = data.projectCodes.map((pCode) => {
+      const project = projects.find((p) => p.code === pCode);
+      if (!project) throw new Error(`Project code bulunamadı: ${pCode}`);
+
+      return employeeProjectRepo.create({
+        employee: { id: saved.id },
+        project: { id: project.id },
+        company: { id: currentUser.companyId },
+        position: saved.position,
+        createdBy: { id: currentUser.userId },
+        updatedBy: { id: currentUser.userId },
+      });
+    });
+
+    await employeeProjectRepo.save(projectAssignments);
+  }
+
+  // Refetch + sanitize (DOĞRU relations)
+  const full = await employeeRepo.findOneOrFail({
+    where: { id: saved.id, company: { id: currentUser.companyId } },
+    relations: [
+      "company",
+      "employeeProjects",
+      "employeeProjects.project",
+      "createdBy",
+      "updatedBy",
+    ],
+  });
+
+  return sanitizeEntity(full, "CompanyEmployee", sanitizeRules);
 };

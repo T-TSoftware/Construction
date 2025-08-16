@@ -37,6 +37,9 @@ import {
   updateBarterItemPaymentStatusNew,
 } from "./companyBarterAgreementItem.service";
 import { CompanyBarterAgreementItem } from "../entities/CompanyBarterAgreementItem";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { sanitizeEntity } from "../utils/sanitize";
 
 const transactionRepo = AppDataSource.getRepository(CompanyFinanceTransaction);
 const balanceRepo = AppDataSource.getRepository(CompanyBalance);
@@ -361,8 +364,32 @@ export const createCompanyFinanceTransaction = async (
     );
   }
 
-  const saved = await transactionRepo.save(transaction);
-  return saved;
+  /*const saved = await transactionRepo.save(transaction);
+  return saved;*/
+  return await saveRefetchSanitize({
+      entityName: "CompanyFinance",
+      save: () => transactionRepo.save(transaction),
+      refetch: () =>
+        transactionRepo.findOneOrFail({
+          where: { id: transaction.id, company: { id: currentUser.companyId } },
+          relations: [
+            "company",
+            "project",
+            "fromAccount",
+            "toAccount",
+            "check",
+            "order",
+            "loanPayment",
+            "subcontractor",
+            "supplier",
+            "barterItem",
+            "createdBy",
+            "updatedBy",
+          ],
+        }),
+      rules: sanitizeRules,
+      defaultError: "İşlemkaydı oluşturulamadı.",
+    });
 };
 
 export const updateCompanyFinanceTransaction = async (
@@ -660,5 +687,6 @@ export const updateCompanyFinanceTransaction = async (
     manager
   );
 
-  return updated;
+  //return updated;
+  return sanitizeEntity(updated, "CompanyFinance", sanitizeRules);
 };

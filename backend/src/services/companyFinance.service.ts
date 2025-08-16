@@ -9,6 +9,8 @@ import { AppDataSource } from "../config/data-source";
 import { generateFinanceTransactionCode } from "../utils/generateCode";
 import { CompanyOrder } from "../entities/CompanyOrder";
 import { updateOrderPaymentStatus } from "./companyOrder.service";
+import { sanitizeEntity } from "../utils/sanitize";
+import { sanitizeRules } from "../utils/sanitizeRules";
 
 const transactionRepo = AppDataSource.getRepository(CompanyFinanceTransaction);
 const balanceRepo = AppDataSource.getRepository(CompanyBalance);
@@ -399,11 +401,24 @@ export const getCompanyFinanceTransactions = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["fromAccount", "toAccount", "project", "updatedBy", "order"],
+    relations: [
+      "company",
+      "project",
+      "fromAccount",
+      "toAccount",
+      "check",
+      "order",
+      "loanPayment",
+      "subcontractor",
+      "supplier",
+      "barterItem",
+      "createdBy",
+      "updatedBy",
+    ],
     order: { transactionDate: "DESC" },
   });
 
-  return transactions;
+  return sanitizeEntity(transactions, "CompanyFinance", sanitizeRules);
 };
 
 export const getCompanyFinanceTransactionById = async (
@@ -418,14 +433,27 @@ export const getCompanyFinanceTransactionById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["fromAccount", "toAccount", "project", "updatedBy", "order"],
+    relations: [
+      "company",
+      "project",
+      "fromAccount",
+      "toAccount",
+      "check",
+      "order",
+      "loanPayment",
+      "subcontractor",
+      "supplier",
+      "barterItem",
+      "createdBy",
+      "updatedBy",
+    ],
   });
 
   if (!transaction) {
     throw new Error("İlgili finansal işlem bulunamadı.");
   }
 
-  return transaction;
+  return sanitizeEntity(transaction, "CompanyFinance", sanitizeRules);
 };
 
 export const createLoanTransactionFromPaymentData = async (

@@ -25,8 +25,8 @@ export const createProject = async (
     id: currentUser.companyId,
   });
 
-  //const projectName = data.name.trim().replace(/\s+/g, "").toUpperCase();
-  const code = `${company.code}-${data.name}`;
+  const projectName = data.name.trim().replace(/\s+/g, "").toUpperCase();
+  const code = `${company.code}-${projectName}`;
 
   const project = projectRepo.create({
     ...data,

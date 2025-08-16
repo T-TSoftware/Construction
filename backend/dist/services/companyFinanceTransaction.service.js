@@ -20,6 +20,9 @@ const projectSubcontractor_service_1 = require("./projectSubcontractor.service")
 const projectSupplier_service_1 = require("./projectSupplier.service");
 const companyBarterAgreementItem_service_1 = require("./companyBarterAgreementItem.service");
 const CompanyBarterAgreementItem_1 = require("../entities/CompanyBarterAgreementItem");
+const persist_1 = require("../utils/persist");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const transactionRepo = data_source_1.AppDataSource.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
 const balanceRepo = data_source_1.AppDataSource.getRepository(CompanyBalance_1.CompanyBalance);
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
@@ -212,8 +215,31 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         };
         await (0, companyBarterAgreementItem_service_1.updateBarterItemPaymentStatusNew)(data.referenceCode, Number(data.amount), currentUser, manager, false);
     }
-    const saved = await transactionRepo.save(transaction);
-    return saved;
+    /*const saved = await transactionRepo.save(transaction);
+    return saved;*/
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyFinance",
+        save: () => transactionRepo.save(transaction),
+        refetch: () => transactionRepo.findOneOrFail({
+            where: { id: transaction.id, company: { id: currentUser.companyId } },
+            relations: [
+                "company",
+                "project",
+                "fromAccount",
+                "toAccount",
+                "check",
+                "order",
+                "loanPayment",
+                "subcontractor",
+                "supplier",
+                "barterItem",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "İşlemkaydı oluşturulamadı.",
+    });
 };
 exports.createCompanyFinanceTransaction = createCompanyFinanceTransaction;
 const updateCompanyFinanceTransaction = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -355,6 +381,7 @@ const updateCompanyFinanceTransaction = async (id, data, currentUser, manager = 
     }
     // 🔁 Yeni bakiyeyi uygula
     await (0, companyFinance_service_1.updateCompanyBalanceAfterTransaction)(updated.type, updated.fromAccount?.id ?? null, updated.toAccount?.id ?? null, updated.amount, manager);
-    return updated;
+    //return updated;
+    return (0, sanitize_1.sanitizeEntity)(updated, "CompanyFinance", sanitizeRules_1.sanitizeRules);
 };
 exports.updateCompanyFinanceTransaction = updateCompanyFinanceTransaction;

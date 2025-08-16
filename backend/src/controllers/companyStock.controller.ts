@@ -4,7 +4,8 @@ import {
   createCompanyStock,
   getCompanyStocks,
   updateCompanyStock,
-  getCompanyStockById
+  getCompanyStockById,
+  getProjectStockByProjectId,
 } from "../services/companyStock.service";
 
 export const postCompanyStockHandler = async (req: Request, res: Response) => {
@@ -65,10 +66,7 @@ export const postCompanyStockHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const patchCompanyStockHandler = async (
-  req: Request,
-  res: Response
-) => {
+export const patchCompanyStockHandler = async (req: Request, res: Response) => {
   if (req.user?.role !== "superadmin") {
     res
       .status(403)
@@ -83,7 +81,7 @@ export const patchCompanyStockHandler = async (
   try {
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
-    const id = req.params.id
+    const id = req.params.id;
 
     const updatedStock = await updateCompanyStock(
       id,
@@ -135,5 +133,34 @@ export const getCompanyStockByIdHandler = async (
     console.error("❌ GET project suppliers error:", error);
     res.status(500).json({ error: "Tedarikçiler alınamadı." });
     return;
+  }
+};
+
+export const getProjectStocksByProjectIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const projectId = req.params.projectId;
+    if (!projectId) {
+      res.status(400).json({ errorMessage: "Loan ID zorunludur." });
+      return;
+    }
+
+    const projectStocks = await getProjectStockByProjectId(
+      projectId,
+      { userId, companyId },
+      AppDataSource.manager
+    );
+
+    res.status(200).json({ projectStocks });
+  } catch (error: any) {
+    console.error("❌ GET Project Stocks by projectId error:", error);
+    res.status(500).json({
+      errorMessage: error.message || "Proje Stokları getirilemedi.",
+    });
   }
 };

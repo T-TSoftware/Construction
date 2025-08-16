@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decreaseStockQuantity = exports.getCompanyStockById = exports.getCompanyStocks = exports.updateCompanyStock = exports.createCompanyStock = void 0;
+exports.decreaseStockQuantity = exports.getProjectStockByProjectId = exports.getCompanyStockById = exports.getCompanyStocks = exports.updateCompanyStock = exports.createCompanyStock = void 0;
 const data_source_1 = require("../config/data-source");
 const Company_1 = require("../entities/Company");
 const CompanyProject_1 = require("../entities/CompanyProject");
@@ -124,6 +124,17 @@ const getCompanyStockById = async (id, currentUser) => {
     return (0, sanitize_1.sanitizeEntity)(stock, "CompanyStock", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyStockById = getCompanyStockById;
+const getProjectStockByProjectId = async (projectId, currentUser, manager = data_source_1.AppDataSource.manager) => {
+    const projectStocks = await stockRepo.find({
+        where: {
+            project: { id: projectId },
+            company: { id: currentUser.companyId },
+        },
+        relations: ["createdBy", "updatedBy", "project", "company"],
+    });
+    return (0, sanitize_1.sanitizeEntity)(projectStocks, "CompanyStock", sanitizeRules_1.sanitizeRules);
+};
+exports.getProjectStockByProjectId = getProjectStockByProjectId;
 const decreaseStockQuantity = async (options, manager) => {
     const stockRepo = manager.getRepository(CompanyStock_1.CompanyStock);
     const stock = await stockRepo.findOneByOrFail({ id: options.stockId });

@@ -10,5 +10,6 @@ router.use(authMiddleware_1.authMiddleware);
 router.post("/", companyStock_controller_1.postCompanyStockHandler);
 router.patch("/:id", companyStock_controller_1.patchCompanyStockHandler);
 router.get("/", companyStock_controller_1.getCompanyStocksHandler);
+router.get("/project/:projectId", companyStock_controller_1.getProjectStocksByProjectIdHandler);
 router.get("/:id", companyStock_controller_1.getCompanyStockByIdHandler);
 exports.default = router;

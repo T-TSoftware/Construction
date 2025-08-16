@@ -5,6 +5,9 @@ const data_source_1 = require("../config/data-source");
 const CompanyEmployee_1 = require("../entities/CompanyEmployee");
 const CompanyEmployeeLeave_1 = require("../entities/CompanyEmployeeLeave");
 const companyEmployee_service_1 = require("./companyEmployee.service");
+const persist_1 = require("../utils/persist");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const postCompanyEmployeeLeave = async (employeeId, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const employeeRepo = manager.getRepository(CompanyEmployee_1.CompanyEmployee);
     const leaveRepo = manager.getRepository(CompanyEmployeeLeave_1.CompanyEmployeeLeave);
@@ -26,12 +29,21 @@ const postCompanyEmployeeLeave = async (employeeId, data, currentUser, manager =
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
     });
-    await leaveRepo.save(leave);
-    const leaveWithUpdatedLeaveCounts = await leaveRepo.findOneOrFail({
-        where: { id: leave.id, company: { id: currentUser.companyId } },
-        relations: ["employee"],
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyEmployeeLeave",
+        save: () => leaveRepo.save(leave),
+        refetch: () => leaveRepo.findOneOrFail({
+            where: { id: leave.id, company: { id: currentUser.companyId } },
+            relations: [
+                "company",
+                "employee",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "İzin kaydı oluşturulamadı.",
     });
-    return leaveWithUpdatedLeaveCounts;
 };
 exports.postCompanyEmployeeLeave = postCompanyEmployeeLeave;
 const updateCompanyEmployeeLeave = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -60,12 +72,21 @@ const updateCompanyEmployeeLeave = async (id, data, currentUser, manager = data_
     leave.description = data.description ?? leave.description;
     leave.leaveDayCount = newDayCount;
     leave.updatedBy = { id: currentUser.userId };
-    await leaveRepo.save(leave);
-    const leaveWithUpdatedLeaveCounts = await leaveRepo.findOneOrFail({
-        where: { id: leave.id, company: { id: currentUser.companyId } },
-        relations: ["employee"],
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyEmployeeLeave",
+        save: () => leaveRepo.save(leave),
+        refetch: () => leaveRepo.findOneOrFail({
+            where: { id: leave.id, company: { id: currentUser.companyId } },
+            relations: [
+                "company",
+                "employee",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "İzin kaydı oluşturulamadı.",
     });
-    return leaveWithUpdatedLeaveCounts;
 };
 exports.updateCompanyEmployeeLeave = updateCompanyEmployeeLeave;
 const getCompanyEmployeeLeaves = async (currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -75,8 +96,14 @@ const getCompanyEmployeeLeaves = async (currentUser, manager = data_source_1.App
             company: { id: currentUser.companyId },
         },
         order: { createdatetime: "DESC" },
+        relations: [
+            "company",
+            "employee",
+            "createdBy",
+            "updatedBy",
+        ],
     });
-    return leaves;
+    return (0, sanitize_1.sanitizeEntity)(leaves, "CompanyEmployeeLeave", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyEmployeeLeaves = getCompanyEmployeeLeaves;
 const getCompanyEmployeeLeavesByEmployeeId = async (employeeId, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -87,8 +114,14 @@ const getCompanyEmployeeLeavesByEmployeeId = async (employeeId, currentUser, man
             company: { id: currentUser.companyId }, // ✅ Doğrudan leave.company üzerinden filtre
         },
         order: { createdatetime: "DESC" },
+        relations: [
+            "company",
+            "employee",
+            "createdBy",
+            "updatedBy",
+        ],
     });
-    return leaves;
+    return (0, sanitize_1.sanitizeEntity)(leaves, "CompanyEmployeeLeave", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyEmployeeLeavesByEmployeeId = getCompanyEmployeeLeavesByEmployeeId;
 const getCompanyEmployeeLeaveById = async (employeeId, leaveId, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -99,12 +132,17 @@ const getCompanyEmployeeLeaveById = async (employeeId, leaveId, currentUser, man
             employee: { id: employeeId },
             company: { id: currentUser.companyId }, // ✅ doğrudan companyId kontrolü
         },
-        // relations: ["employee"], // ❌ sadece employee bilgisine UI’da ihtiyaç varsa aç
+        relations: [
+            "company",
+            "employee",
+            "createdBy",
+            "updatedBy",
+        ],
     });
     if (!leave) {
         throw new Error("İzin kaydı bulunamadı.");
     }
-    return leave;
+    return (0, sanitize_1.sanitizeEntity)(leave, "CompanyEmployeeLeave", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyEmployeeLeaveById = getCompanyEmployeeLeaveById;
 const deleteCompanyEmployeeLeave = async (

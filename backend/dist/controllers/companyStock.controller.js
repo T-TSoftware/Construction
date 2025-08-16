@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCompanyStockByIdHandler = exports.getCompanyStocksHandler = exports.patchCompanyStockHandler = exports.postCompanyStockHandler = void 0;
+exports.getProjectStocksByProjectIdHandler = exports.getCompanyStockByIdHandler = exports.getCompanyStocksHandler = exports.patchCompanyStockHandler = exports.postCompanyStockHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const companyStock_service_1 = require("../services/companyStock.service");
 const postCompanyStockHandler = async (req, res) => {
@@ -104,3 +104,23 @@ const getCompanyStockByIdHandler = async (req, res) => {
     }
 };
 exports.getCompanyStockByIdHandler = getCompanyStockByIdHandler;
+const getProjectStocksByProjectIdHandler = async (req, res) => {
+    try {
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const projectId = req.params.projectId;
+        if (!projectId) {
+            res.status(400).json({ errorMessage: "Loan ID zorunludur." });
+            return;
+        }
+        const projectStocks = await (0, companyStock_service_1.getProjectStockByProjectId)(projectId, { userId, companyId }, data_source_1.AppDataSource.manager);
+        res.status(200).json({ projectStocks });
+    }
+    catch (error) {
+        console.error("❌ GET Project Stocks by projectId error:", error);
+        res.status(500).json({
+            errorMessage: error.message || "Proje Stokları getirilemedi.",
+        });
+    }
+};
+exports.getProjectStocksByProjectIdHandler = getProjectStocksByProjectIdHandler;
