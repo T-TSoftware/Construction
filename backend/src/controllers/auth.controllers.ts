@@ -3,8 +3,10 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
-import { generateToken } from "../utils/jwt";
+import { decodeExp, generateToken } from "../utils/jwt";
 import { loginUser, registerUser } from "../services/auth.service";
+import { blacklistJti } from "../utils/tokenBlackList";
+import jwt from "jsonwebtoken";
 
 const userRepo = AppDataSource.getRepository(User);
 
@@ -64,5 +66,29 @@ export const registerHandler = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("❌ Register error:", error);
     res.status(400).json({ error: error.message || "Register failed." });
+  }
+};
+
+export const logoutHandler = async (req: Request, res: Response) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const token = header.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { jti: string };
+    const exp = decodeExp(token);
+    if (!exp) {
+      res.status(400).json({ error: "Invalid token" });
+      return;
+    }
+
+    await blacklistJti(decoded.jti, exp);
+    res.status(200).json({ message: "Logged out" });
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
   }
 };
