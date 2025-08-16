@@ -9,6 +9,8 @@ const data_source_1 = require("../config/data-source");
 const generateCode_1 = require("../utils/generateCode");
 const CompanyOrder_1 = require("../entities/CompanyOrder");
 const companyOrder_service_1 = require("./companyOrder.service");
+const sanitize_1 = require("../utils/sanitize");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
 const transactionRepo = data_source_1.AppDataSource.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
 const balanceRepo = data_source_1.AppDataSource.getRepository(CompanyBalance_1.CompanyBalance);
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
@@ -230,10 +232,23 @@ const getCompanyFinanceTransactions = async (currentUser, manager = data_source_
         where: {
             company: { id: currentUser.companyId },
         },
-        relations: ["fromAccount", "toAccount", "project", "updatedBy", "order"],
+        relations: [
+            "company",
+            "project",
+            "fromAccount",
+            "toAccount",
+            "check",
+            "order",
+            "loanPayment",
+            "subcontractor",
+            "supplier",
+            "barterItem",
+            "createdBy",
+            "updatedBy",
+        ],
         order: { transactionDate: "DESC" },
     });
-    return transactions;
+    return (0, sanitize_1.sanitizeEntity)(transactions, "CompanyFinance", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyFinanceTransactions = getCompanyFinanceTransactions;
 const getCompanyFinanceTransactionById = async (id, currentUser, manager = data_source_1.AppDataSource.manager) => {
@@ -243,12 +258,25 @@ const getCompanyFinanceTransactionById = async (id, currentUser, manager = data_
             id,
             company: { id: currentUser.companyId },
         },
-        relations: ["fromAccount", "toAccount", "project", "updatedBy", "order"],
+        relations: [
+            "company",
+            "project",
+            "fromAccount",
+            "toAccount",
+            "check",
+            "order",
+            "loanPayment",
+            "subcontractor",
+            "supplier",
+            "barterItem",
+            "createdBy",
+            "updatedBy",
+        ],
     });
     if (!transaction) {
         throw new Error("İlgili finansal işlem bulunamadı.");
     }
-    return transaction;
+    return (0, sanitize_1.sanitizeEntity)(transaction, "CompanyFinance", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyFinanceTransactionById = getCompanyFinanceTransactionById;
 const createLoanTransactionFromPaymentData = async (payment, currentUser, manager = data_source_1.AppDataSource.manager) => {

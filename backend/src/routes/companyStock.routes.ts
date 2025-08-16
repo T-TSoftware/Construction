@@ -8,6 +8,7 @@ import {
   patchCompanyStockHandler,
   getCompanyStocksHandler,
   getCompanyStockByIdHandler,
+  getProjectStocksByProjectIdHandler
 } from "../controllers/companyStock.controller";
 
 const router = Router();
@@ -19,5 +20,6 @@ router.post("/", postCompanyStockHandler);
 
 router.patch("/:id", patchCompanyStockHandler);
 router.get("/", getCompanyStocksHandler);
+router.get("/project/:projectId", getProjectStocksByProjectIdHandler);
 router.get("/:id", getCompanyStockByIdHandler);
 export default router;

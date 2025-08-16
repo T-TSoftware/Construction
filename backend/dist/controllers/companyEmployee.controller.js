@@ -17,7 +17,7 @@ const postCompanyEmployeeHandler = async (req, res) => {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
         const { code, firstName, lastName, age, startDate, netSalary, grossSalary, position, department, projectCodes, } = req.body;
-        const employee = await (0, companyEmployee_service_1.createCompanyEmployee)({
+        const employee = await (0, companyEmployee_service_1.createCompanyEmployeeNew)({
             code,
             firstName,
             lastName,

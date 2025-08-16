@@ -120,5 +120,6 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyEmployee.prototype, "updatedatetime", void 0);
 exports.CompanyEmployee = CompanyEmployee = __decorate([
-    (0, typeorm_1.Entity)({ name: "companyemployee" })
+    (0, typeorm_1.Entity)({ name: "companyemployee" }),
+    (0, typeorm_1.Unique)("uq_company_code", ["company", "code"])
 ], CompanyEmployee);

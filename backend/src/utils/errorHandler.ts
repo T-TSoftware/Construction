@@ -10,6 +10,7 @@ const generatedFieldMessages: Record<UniqueViolationKey, string> = {
     "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen tedarik kaydı zaten mevcut.",
   "CompanyCheck.companyid_checknumber":
     "Bu Çek Numarasıyla bir Çek zaten mevcut.",
+  "CompanyEmployee.companyid_code": "Bu çalışan zaten mevcut",
   // ...
 };
 export const handleSaveWithUniqueConstraint = async <T>(

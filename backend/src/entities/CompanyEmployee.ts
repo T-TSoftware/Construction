@@ -9,6 +9,7 @@ import {
   OneToMany,
   OneToOne,
   Index,
+  Unique,
 } from "typeorm";
 import { Company } from "./Company";
 import { User } from "./User";
@@ -17,6 +18,7 @@ import { CompanyEmployeeLeave } from "./CompanyEmployeeLeave";
 import { CompanyEmployeeProject } from "./CompanyEmployeeProject";
 
 @Entity({ name: "companyemployee" })
+@Unique("uq_company_code", ["company", "code"])
 export class CompanyEmployee {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

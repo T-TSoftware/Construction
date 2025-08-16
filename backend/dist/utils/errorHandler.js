@@ -8,6 +8,7 @@ const generatedFieldMessages = {
     "ProjectSubcontractor.projectid_category_unit": "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen taşeron kaydı zaten mevcut.",
     "ProjectSupplier.projectid_category_unit": "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen tedarik kaydı zaten mevcut.",
     "CompanyCheck.companyid_checknumber": "Bu Çek Numarasıyla bir Çek zaten mevcut.",
+    "CompanyEmployee.companyid_code": "Bu çalışan zaten mevcut",
     // ...
 };
 const handleSaveWithUniqueConstraint = async (saveFn, entityName, defaultMessage = "Kayıt oluşturulurken bir hata oluştu.") => {
