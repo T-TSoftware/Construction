@@ -13,6 +13,11 @@ import {
   patchCompanyEmployeeLeaveHandler,
   postCompanyEmployeeLeaveHandler,
 } from "../controllers/companyEmployeeLeave.controller";
+import { validate } from "../middlewares/requestValidation";
+import {
+  employeeLeaveCreateSchema,
+  employeeLeaveUpdateSchema,
+} from "../validations/companyEmployeeLeave.validation";
 
 const router = Router();
 
@@ -20,10 +25,15 @@ router.use(authMiddleware);
 
 router.post(
   "/:employeeId",
-  /* validateBody, */ postCompanyEmployeeLeaveHandler
+  validate(employeeLeaveCreateSchema),
+  postCompanyEmployeeLeaveHandler
 );
 
-router.patch("/:leaveId", patchCompanyEmployeeLeaveHandler);
+router.patch(
+  "/:leaveId",
+  validate(employeeLeaveUpdateSchema),
+  patchCompanyEmployeeLeaveHandler
+);
 
 router.get("/", getCompanyEmployeeLeavesHandler);
 

@@ -6,11 +6,11 @@ import {
   getCompanyFinanceTransactionByIdHandler,
 } from "../controllers/companyFinance.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { validate } from "../middlewares/requestValidation";
 import {
-  validateBody,
-  validateArrayBody,
-} from "../middlewares/requestMiddleware";
-import { financeTransactionSchema } from "../validations/validations";
+  financeTransactionCreateSchema,
+  financeTransactionUpdateSchema,
+} from "../validations/companyFinanceTransaction.validation";
 
 //import { validateFinanceArrayBody } from "../middlewares/validation.middleware";
 
@@ -22,13 +22,14 @@ router.use(authMiddleware);
 // 🔐 Only superadmin can post – validation + business logic
 router.post(
   "/",
-  validateArrayBody(financeTransactionSchema),
-  /*validateFinanceArrayBody,*/ postCompanyFinanceTransactionHandler
+  validate(financeTransactionCreateSchema),
+  postCompanyFinanceTransactionHandler
 );
 
 router.patch(
   "/:id",
-  /*validateFinanceArrayBody,*/ patchCompanyFinanceTransactionHandler
+  validate(financeTransactionUpdateSchema),
+  patchCompanyFinanceTransactionHandler
 );
 
 router.get("/", getCompanyFinanceTransactionsHandler);

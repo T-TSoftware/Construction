@@ -1,4 +1,17 @@
+//validation.ts
 import { z } from "zod";
+import {
+  BarterStatus,
+  CATEGORIES_NEED_REF,
+  CheckTypeEnum,
+  CounterpartyType,
+  DirectionEnum,
+  invoiceYNEnum,
+  ItemTypeEnum,
+  LeaveTypeEnum,
+  TypeEnum,
+  uniqueArray,
+} from "./enums";
 
 export const supplierSchema = z.object({
   quantityItemCode: z.string().min(1, "quantityItemCode boş olamaz"),
@@ -69,56 +82,17 @@ export const financeTransactionSchema = z.object({
   source: z.string().optional(),
 });
 
-export const checkSchema = (mode: "create" | "update") =>
-  z.object({
-    checkNo: mode === "create"
-      ? z.string().min(1, "Çek Numarası zorunludur")
-      : z.string().optional(),
+/***********************BARTER ITEM************************/
 
-    checkDate: z
-      .coerce
-      .date()
-      .optional()
-      .refine((val) => val instanceof Date, {
-        message: "Geçerli bir çek kesim tarihi giriniz.",
-      }),
 
-    /*transactionDate: z
-      .coerce
-      .date()
-      .optional()
-      .refine((val) => val instanceof Date, {
-        message: "Geçerli bir Ödeme/Tahsilat tarihi giriniz.",
-      }),*/
+/***********************CHECK************************/
 
-    firm: mode === "create" ? z.string().min(1, "Firma zorunludur") : z.string().optional(),
 
-    amount:
-      mode === "create"
-        ? z
-            .number({ required_error: "Miktar zorunludur." })
-            .positive("Miktar pozitif olmalıdır.")
-        : z
-            .number({ invalid_type_error: "Miktar sayısal olmalıdır." })
-            .positive("Miktar pozitif olmalıdır.")
-            .optional(),
+/***********************EMPLOYEE************************/
 
-    bankCode: mode === "create"
-      ? z.string().min(1, "Banka kodu zorunludur.")
-      : z.string().optional(),
 
-    type: mode === "create"
-      ? z.enum(["PAYMENT", "COLLECTION"], {
-          required_error: "İşlem tipi zorunludur.",
-        })
-      : z.enum(["PAYMENT", "COLLECTION"]).optional(),
+/***********************EMPLOYEE LEAVE************************/
 
-    /*status: mode === "create"
-      ? z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED","NOTDUE"], {
-          required_error: "Durum zorunludur.",
-        })
-      : z.enum(["PAID", "COLLECTED", "CANCELLED", "PENDING", "RETURNED"]).optional(),*/
 
-    projectId: z.string().optional(),
-    description: z.string().optional(),
-  });
+
+/***********************COMPANY FINANCE TRANSACTION************************/

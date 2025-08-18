@@ -10,6 +10,8 @@ import {
   validateBody,
   validateArrayBody,
 } from "../middlewares/requestMiddleware";
+import { validate } from "../middlewares/requestValidation";
+import { barterAgreementItemCreateSchema } from "../validations/companyBarterAgreementItem.validation";
 
 const router = Router();
 
@@ -27,7 +29,7 @@ router.get("/", getAllCompanyBarterAgreementItemsHandler);
 // 4. Yeni item ekleme
 router.post(
   "/:barterId",
-  /*validateBody,*/ postCompanyBarterAgreementItemHandler
+  /*validateBody,*/ validate(barterAgreementItemCreateSchema),postCompanyBarterAgreementItemHandler
 );
 
 export default router;

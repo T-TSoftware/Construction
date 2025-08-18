@@ -31,10 +31,28 @@ export const postCompanyFinanceTransactionHandler = async (
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
-    const results = [];
+    const {
+      type,
+      amount,
+      currency,
+      fromAccountCode,
+      toAccountCode,
+      targetType,
+      targetId,
+      targetName,
+      transactionDate,
+      method,
+      category,
+      invoiceYN,
+      invoiceCode,
+      referenceCode,
+      description,
+      projectId,
+      source,
+    } = req.body;
 
-    for (const body of req.body) {
-      const {
+    const transaction = await createCompanyFinanceTransaction(
+      {
         type,
         amount,
         currency,
@@ -52,37 +70,13 @@ export const postCompanyFinanceTransactionHandler = async (
         description,
         projectId,
         source,
-      } = body;
-
-      const transaction = await createCompanyFinanceTransaction(
-        {
-          type,
-          amount,
-          currency,
-          fromAccountCode,
-          toAccountCode,
-          targetType,
-          targetId,
-          targetName,
-          transactionDate,
-          method,
-          category,
-          invoiceYN,
-          invoiceCode,
-          referenceCode,
-          description,
-          projectId,
-          source,
-        },
-        { userId, companyId },
-        queryRunner.manager
-      );
-
-      results.push(transaction);
-    }
+      },
+      { userId, companyId },
+      queryRunner.manager
+    );
 
     await queryRunner.commitTransaction();
-    res.status(201).json({ transactions: results });
+    res.status(201).json({ transaction });
   } catch (error: any) {
     await queryRunner.rollbackTransaction();
     console.error("❌ POST company finance transaction error:", error);

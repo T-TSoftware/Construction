@@ -7,6 +7,11 @@ import {
   putCompanyBalanceHandler,
   deleteCompanyBalanceHandler,
 } from "../controllers/companyBalance.controller";
+import { validate } from "../middlewares/requestValidation";
+import {
+  balanceCreateSchema,
+  balanceUpdateSchema,
+} from "../validations/companyBalance.validation";
 
 const router = Router();
 
@@ -17,10 +22,10 @@ router.use(authMiddleware);
 router.get("/", getCompanyBalancesHandler);
 
 // 📌 POST → Sadece super_admin
-router.post("/", postCompanyBalanceHandler);
+router.post("/", validate(balanceCreateSchema), postCompanyBalanceHandler);
 
 // 📌 PUT → Sadece super_admin
-router.put("/:id", putCompanyBalanceHandler);
+router.put("/:id", validate(balanceUpdateSchema), putCompanyBalanceHandler);
 
 // 📌 DELETE → Sadece super_admin
 router.delete("/:id", deleteCompanyBalanceHandler);

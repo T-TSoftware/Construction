@@ -62,6 +62,7 @@ export const sanitizeRules: SanitizeMap = {
       "id",
       "code",
       "name",
+      "bank",
       "accountNo",
       "totalAmount",
       "remainingPrincipal",
