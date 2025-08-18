@@ -2,9 +2,6 @@ import { AppDataSource } from "../config/data-source";
 import { CompanyCheck } from "../entities/CompanyCheck";
 import { CompanyBalance } from "../entities/CompanyBalance";
 import { EntityManager, Timestamp } from "typeorm";
-import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
-import { generateFinanceTransactionCode } from "../utils/generateCode";
-
 import { updateCompanyBalanceAfterTransaction } from "../services/companyFinance.service";
 import { User } from "../entities/User";
 import { CompanyProject } from "../entities/CompanyProject";
@@ -74,22 +71,16 @@ export const createCompanyCheck = async (
     },
   });*/
   return await saveRefetchSanitize({
-      entityName: "CompanyCheck",
-      save: () => repo.save(check),
-      refetch: () =>
-        repo.findOneOrFail({
-          where: { id: check.id, company: { id: currentUser.companyId } },
-          relations: [
-            "project",
-            "company",
-            "bank",
-            "createdBy",
-            "updatedBy",
-          ],
-        }),
-      rules: sanitizeRules,
-      defaultError: "Çek kaydı oluşturulamadı.",
-    });
+    entityName: "CompanyCheck",
+    save: () => repo.save(check),
+    refetch: () =>
+      repo.findOneOrFail({
+        where: { id: check.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "bank", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Çek kaydı oluşturulamadı.",
+  });
 };
 
 export const updateCompanyCheck = async (
@@ -156,22 +147,16 @@ export const updateCompanyCheck = async (
   // 💾 Kaydet ve dön
   //return await repo.save(existing);
   return await saveRefetchSanitize({
-      entityName: "CompanyCheck",
-      save: () => repo.save(existing),
-      refetch: () =>
-        repo.findOneOrFail({
-          where: { id: existing.id, company: { id: currentUser.companyId } },
-          relations: [
-            "project",
-            "company",
-            "bank",
-            "createdBy",
-            "updatedBy",
-          ],
-        }),
-      rules: sanitizeRules,
-      defaultError: "Çek kaydı oluşturulamadı.",
-    });
+    entityName: "CompanyCheck",
+    save: () => repo.save(existing),
+    refetch: () =>
+      repo.findOneOrFail({
+        where: { id: existing.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "bank", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Çek kaydı oluşturulamadı.",
+  });
 };
 
 export const getCompanyChecks = async (

@@ -6,19 +6,16 @@ import {
   getCompanyEmployeeByIdHandler,
   updateCompanyEmployeeUpdateHandler,
 } from "../controllers/companyEmployee.controller";
-import {
-  validateBody,
-  validateArrayBody,
-} from "../middlewares/requestMiddleware";
-import { getCompanyEmployees } from "../services/companyEmployee.service";
+import { validate } from "../middlewares/requestValidation";
+import { employeeCreateSchema,employeeUpdateSchema } from "../validations/companyEmployee.validation";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.post("/", /*validateBody,*/ postCompanyEmployeeHandler);
+router.post("/", validate(employeeCreateSchema), postCompanyEmployeeHandler);
 
-router.patch("/:id", /*validateBody,*/ updateCompanyEmployeeUpdateHandler);
+router.patch("/:id", validate(employeeUpdateSchema), updateCompanyEmployeeUpdateHandler);
 
 router.get("/", /*validateBody,*/ getCompanyEmployeesHandler);
 

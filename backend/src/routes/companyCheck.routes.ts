@@ -6,11 +6,8 @@ import {
   getCompanyCheckByIdHandler,
 } from "../controllers/companyCheck.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
-import {
-  validateBody,
-  validateArrayBody,
-} from "../middlewares/requestMiddleware";
-import { checkSchema } from "../validations/validations";
+import { validate } from "../middlewares/requestValidation";
+import { checkCreateSchema,checkUpdateSchema } from "../validations/companyCheck.validation";
 
 //import { validateFinanceArrayBody } from "../middlewares/validation.middleware";
 
@@ -22,12 +19,12 @@ router.use(authMiddleware);
 // 🔐 Only superadmin can post – validation + business logic
 router.post(
   "/",
-  //validateArrayBody(checkSchema("create")),
+  validate(checkCreateSchema),
   postCompanyCheckHandler
 );
 router.patch(
   "/:id",
-  //validateBody(checkSchema("update")),
+  validate(checkUpdateSchema),
   patchCompanyCheckHandler
 );
 

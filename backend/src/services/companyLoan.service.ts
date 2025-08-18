@@ -62,7 +62,7 @@ export const createCompanyLoan = async (
     bank: { id: bank.id },
     project: project ? { id: project.id } : null,
     totalAmount: data.totalAmount,
-    remainingPrincipal: data.remainingPrincipal ?? data.totalAmount,
+    remainingPrincipal: data.totalAmount,//data.remainingPrincipal ?? data.totalAmount,
     remainingInstallmentAmount: data.remainingInstallmentAmount,
     currency: data.currency,
     interestRate: data.interestRate,
@@ -94,7 +94,7 @@ export const createCompanyLoan = async (
         ],
       }),
     rules: sanitizeRules,
-    defaultError: "Taksit kaydı oluşturulamadı.",
+    defaultError: "Kredi kaydı oluşturulamadı.",
   });
 };
 
