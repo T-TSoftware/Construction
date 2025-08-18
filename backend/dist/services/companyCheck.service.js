@@ -51,13 +51,7 @@ const createCompanyCheck = async (data, currentUser, manager = data_source_1.App
         save: () => repo.save(check),
         refetch: () => repo.findOneOrFail({
             where: { id: check.id, company: { id: currentUser.companyId } },
-            relations: [
-                "project",
-                "company",
-                "bank",
-                "createdBy",
-                "updatedBy",
-            ],
+            relations: ["project", "company", "bank", "createdBy", "updatedBy"],
         }),
         rules: sanitizeRules_1.sanitizeRules,
         defaultError: "Çek kaydı oluşturulamadı.",
@@ -105,13 +99,7 @@ const updateCompanyCheck = async (id, data, currentUser, manager = data_source_1
         save: () => repo.save(existing),
         refetch: () => repo.findOneOrFail({
             where: { id: existing.id, company: { id: currentUser.companyId } },
-            relations: [
-                "project",
-                "company",
-                "bank",
-                "createdBy",
-                "updatedBy",
-            ],
+            relations: ["project", "company", "bank", "createdBy", "updatedBy"],
         }),
         rules: sanitizeRules_1.sanitizeRules,
         defaultError: "Çek kaydı oluşturulamadı.",
