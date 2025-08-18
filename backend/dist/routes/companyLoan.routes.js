@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const authMiddleware_1 = require("../middlewares/authMiddleware");
+const requestValidation_1 = require("../middlewares/requestValidation");
+const companyLoan_validation_1 = require("../validations/companyLoan.validation");
 const companyLoan_controller_1 = require("../controllers/companyLoan.controller");
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authMiddleware);
-router.post("/", /*validateBody,*/ companyLoan_controller_1.postCompanyLoanHandler);
+router.post("/", (0, requestValidation_1.validate)(companyLoan_validation_1.loanCreateSchema), companyLoan_controller_1.postCompanyLoanHandler);
 router.get("/", companyLoan_controller_1.getCompanyLoansHandler);
 router.get("/:id", companyLoan_controller_1.getCompanyLoanByIdHandler);
 exports.default = router;

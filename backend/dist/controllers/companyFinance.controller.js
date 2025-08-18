@@ -17,32 +17,28 @@ const postCompanyFinanceTransactionHandler = async (req, res) => {
     try {
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const results = [];
-        for (const body of req.body) {
-            const { type, amount, currency, fromAccountCode, toAccountCode, targetType, targetId, targetName, transactionDate, method, category, invoiceYN, invoiceCode, referenceCode, description, projectId, source, } = body;
-            const transaction = await (0, companyFinanceTransaction_service_1.createCompanyFinanceTransaction)({
-                type,
-                amount,
-                currency,
-                fromAccountCode,
-                toAccountCode,
-                targetType,
-                targetId,
-                targetName,
-                transactionDate,
-                method,
-                category,
-                invoiceYN,
-                invoiceCode,
-                referenceCode,
-                description,
-                projectId,
-                source,
-            }, { userId, companyId }, queryRunner.manager);
-            results.push(transaction);
-        }
+        const { type, amount, currency, fromAccountCode, toAccountCode, targetType, targetId, targetName, transactionDate, method, category, invoiceYN, invoiceCode, referenceCode, description, projectId, source, } = req.body;
+        const transaction = await (0, companyFinanceTransaction_service_1.createCompanyFinanceTransaction)({
+            type,
+            amount,
+            currency,
+            fromAccountCode,
+            toAccountCode,
+            targetType,
+            targetId,
+            targetName,
+            transactionDate,
+            method,
+            category,
+            invoiceYN,
+            invoiceCode,
+            referenceCode,
+            description,
+            projectId,
+            source,
+        }, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
-        res.status(201).json({ transactions: results });
+        res.status(201).json({ transaction });
     }
     catch (error) {
         await queryRunner.rollbackTransaction();

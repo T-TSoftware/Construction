@@ -57,6 +57,7 @@ exports.sanitizeRules = {
             "id",
             "code",
             "name",
+            "bank",
             "accountNo",
             "totalAmount",
             "remainingPrincipal",
