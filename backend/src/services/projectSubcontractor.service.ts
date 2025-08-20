@@ -125,7 +125,7 @@ export const updateProjectSubcontractor = async (
     quantity?: number;
     category?: string;
     contractAmount?: number;
-    paidAmount?: number;
+    //paidAmount?: number;
     status?: string;
     description?: string;
   },

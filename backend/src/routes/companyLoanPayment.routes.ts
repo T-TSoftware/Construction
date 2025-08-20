@@ -14,6 +14,12 @@ import {
   exportLoanPaymentsPdfHandler,
 } from "../controllers/companyLoanPayment.controller";
 
+import { validate, validateArray } from "../middlewares/requestValidation";
+import {
+  loanPaymentCreateSchema,
+  loanPaymentUpdateSchema,
+} from "../validations/companyLoanPayment.validation";
+
 const router = Router();
 
 router.use(authMiddleware);
@@ -25,9 +31,17 @@ router.get("/", getCompanyLoanPaymentsHandler);
 router.get("/:id", getCompanyLoanPaymentByIdHandler);
 
 // POST → Yeni taksit kaydı (loanId route paramı olarak kullanılabilir)
-router.post("/:loanId", /* validateBody, */ postCompanyLoanPaymentHandler);
+router.post(
+  "/:loanId",
+  validateArray(loanPaymentCreateSchema),
+  postCompanyLoanPaymentHandler
+);
 
-router.patch("/:id", patchCompanyLoanPaymentHandler);
+router.patch(
+  "/:id",
+  validate(loanPaymentUpdateSchema),
+  patchCompanyLoanPaymentHandler
+);
 
 router.get("/loan/:loanId", getCompanyLoanPaymentsByLoanIdHandler);
 

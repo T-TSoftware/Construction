@@ -7,12 +7,19 @@ import {
   getProjectSubcontractorByIdHandler,
 } from "../controllers/projectSubcontractor.controller";
 
+import { validate } from "../middlewares/requestValidation";
+import {
+  subcontractorCreateSchema,
+  subcontractorUpdateSchema,
+} from "../validations/projectSubcontractor.validation";
+
 const router = Router();
 
 router.use(authMiddleware);
 
 router.post(
   "/projects/:projectId/subcontractors",
+  validate(subcontractorCreateSchema),
   postProjectSubcontractorHandler
 );
 
@@ -22,6 +29,10 @@ router.get(
 );
 router.get("/subcontractor/:id", getProjectSubcontractorByIdHandler);
 
-router.patch("/projects/subcontractors/:id", patchProjectSubcontractorHandler);
+router.patch(
+  "/projects/subcontractors/:id",
+  validate(subcontractorUpdateSchema),
+  patchProjectSubcontractorHandler
+);
 
 export default router;

@@ -4,6 +4,9 @@ exports.getProjectById = exports.getCompanyProjects = exports.createProject = vo
 const data_source_1 = require("../config/data-source");
 const CompanyProject_1 = require("../entities/CompanyProject");
 const Company_1 = require("../entities/Company");
+const persist_1 = require("../utils/persist");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
 const companyRepo = data_source_1.AppDataSource.getRepository(Company_1.Company);
 const createProject = async (data, currentUser) => {
@@ -11,7 +14,7 @@ const createProject = async (data, currentUser) => {
         id: currentUser.companyId,
     });
     const projectName = data.name.trim().replace(/\s+/g, "").toUpperCase();
-    const code = `${company.code}-${projectName}`;
+    const code = `${projectName}`;
     const project = projectRepo.create({
         ...data,
         code,
@@ -19,30 +22,30 @@ const createProject = async (data, currentUser) => {
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
     });
-    return await projectRepo.save(project);
+    //return await projectRepo.save(project);
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyProject",
+        save: () => projectRepo.save(project),
+        refetch: () => projectRepo.findOneOrFail({
+            where: { id: project.id, company: { id: currentUser.companyId } },
+            relations: [
+                "company",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Proje kaydı oluşturulamadı.",
+    });
 };
 exports.createProject = createProject;
 const getCompanyProjects = async (companyId) => {
     const projects = await projectRepo.find({
         where: { company: { id: companyId } },
-        relations: ["createdBy", "updatedBy"],
+        relations: ["createdBy", "updatedBy", "company"],
         order: { createdatetime: "DESC" },
     });
-    return projects.map((project) => ({
-        id: project.id,
-        code: project.code,
-        name: project.name,
-        site: project.site,
-        status: project.status,
-        estimatedStartDate: project.estimatedStartDate,
-        actualStartDate: project.actualStartDate,
-        estimatedEndDate: project.estimatedEndDate,
-        actualEndDate: project.actualEndDate,
-        createdBy: project.createdBy?.name ?? null,
-        updatedBy: project.updatedBy?.name ?? null,
-        createdatetime: project.createdatetime,
-        updatedatetime: project.updatedatetime,
-    }));
+    return (0, sanitize_1.sanitizeEntity)(projects, "CompanyProject", sanitizeRules_1.sanitizeRules);
 };
 exports.getCompanyProjects = getCompanyProjects;
 const getProjectById = async (id, companyId) => {
@@ -51,24 +54,11 @@ const getProjectById = async (id, companyId) => {
             id,
             company: { id: companyId },
         },
-        relations: ["createdBy", "updatedBy"],
+        relations: ["createdBy", "updatedBy", "company"],
     });
     if (!project) {
         throw new Error("Proje bulunamadı.");
     }
-    return {
-        code: project.code,
-        name: project.name,
-        site: project.site,
-        status: project.status,
-        estimatedStartDate: project.estimatedStartDate,
-        actualStartDate: project.actualStartDate,
-        estimatedEndDate: project.estimatedEndDate,
-        actualEndDate: project.actualEndDate,
-        createdBy: project.createdBy?.name ?? null,
-        updatedBy: project.updatedBy?.name ?? null,
-        createdatetime: project.createdatetime,
-        updatedatetime: project.updatedatetime,
-    };
+    return (0, sanitize_1.sanitizeEntity)(project, "CompanyProject", sanitizeRules_1.sanitizeRules);
 };
 exports.getProjectById = getProjectById;

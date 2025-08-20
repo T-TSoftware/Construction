@@ -4,6 +4,7 @@ import {
   patchCompanyFinanceTransactionHandler,
   getCompanyFinanceTransactionsHandler,
   getCompanyFinanceTransactionByIdHandler,
+  deleteCompanyFinanceTransactionByIdHandler
 } from "../controllers/companyFinance.controller";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { validate } from "../middlewares/requestValidation";
@@ -34,4 +35,5 @@ router.patch(
 
 router.get("/", getCompanyFinanceTransactionsHandler);
 router.get("/:id", getCompanyFinanceTransactionByIdHandler);
+router.delete("/:id",deleteCompanyFinanceTransactionByIdHandler)
 export default router;

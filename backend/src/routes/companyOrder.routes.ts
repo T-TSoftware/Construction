@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { validateBody } from "../middlewares/requestMiddleware";
 import { authMiddleware } from "../middlewares/authMiddleware";
+import { validate } from "../middlewares/requestValidation";
+import { orderCreateSchema } from "../validations/companyOrder.validation";
 import {
   getCompanyOrderByIdHandler,
   getCompanyOrdersHandler,
@@ -12,7 +13,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.post("/", /*validateBody,*/ postCompanyOrderHandler);
+router.post("/", validate(orderCreateSchema), postCompanyOrderHandler);
 
 router.get("/", getCompanyOrdersHandler);
 

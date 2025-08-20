@@ -16,8 +16,7 @@ const postProjectQuantityHandler = async (req, res) => {
         }
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const newRecord = await (0, projectQuantity_service_1.createProjectQuantity)({
-            projectId,
+        const newRecord = await (0, projectQuantity_service_1.createProjectQuantity)(projectId, {
             quantityItemCode,
             quantity,
             unit,

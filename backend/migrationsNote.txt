@@ -36,3 +36,161 @@ views
 
 npm run build
 npm run start:prod
+
+export const deleteCompanyFinanceTransactionById = async (
+  id: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager
+) => {
+  const txRepo = manager.getRepository(CompanyFinanceTransaction);
+
+  // 1) Her zaman tenant filtresiyle getir
+  const tx = await txRepo.findOneOrFail({
+    where: { id, company: { id: currentUser.companyId } },
+    relations: ["company", "fromAccount", "toAccount"],
+  });
+
+  console.log(tx)
+
+  // 2) TRANSFER’ler için özel davranış
+  if (tx.type === "TRANSFER") {
+    // 🔧 İDEAL ÇÖZÜM: iki satırı eşleyecek ortak bir alan ekle (örn. transferGroupId: uuid).
+    // Şimdilik ara çözüm: “out” bacağı (toAccount dolu) görüldüyse pair’i bulup ikisini birden sil.
+    if (tx.toAccount) {
+      // OUT bacağı: pair'i bulmaya çalış
+      const maybePair = await txRepo.findOne({
+        where: {
+          company: { id: currentUser.companyId },
+          type: "TRANSFER",
+          id: Not(tx.id),
+          // "IN" bacağı tipik olarak toAccount null ve fromAccount = bizim toAccount
+          // Ayrıca aynı tutar/para birimi/günle eşle.
+          amount: tx.amount,
+          currency: tx.currency,
+          fromAccount: { id: tx.toAccount.id },
+        },
+        relations: ["fromAccount", "toAccount"],
+      });
+
+      // 2a) Önce bakiyeyi geri al (tek kez)
+      await updateCompanyBalanceAfterTransaction(
+        "TRANSFER",
+        tx.fromAccount?.id ?? null,
+        tx.toAccount?.id ?? null,
+        tx.amount,
+        manager,
+        true
+      );
+
+      // 2b) Her iki bacağı da sil (varsa)
+      if (maybePair) {
+        await txRepo.delete({ id: maybePair.id });
+      }
+      await txRepo.delete({ id: tx.id });
+      return;
+    } else {
+      // IN bacağı: bakiyeyi O AN geri almak hatalı olur (zaten OUT kaydı sırasında hareket ettirilmişti)
+      // En iyisi: kullanıcıya OUT ile birlikte silmesini sağlamak. (veya otomatik OUT’u bulup ikisini birlikte sil)
+      // OUT bacağını bul ve ikisini birlikte sil + bakiyeyi geri al
+      const outLeg = await txRepo.findOne({
+        where: {
+          company: { id: currentUser.companyId },
+          type: "TRANSFER",
+          // OUT'ta toAccount dolu ve fromAccount = bu IN'in hedef bankası (bizde hedef bankayı net tutan alan yok ama genelde:
+          // OUT.fromAccount ?= tx.targetId   — eğer targetId/out leg ile ortak referans kullanıyorsan oradan eşleşebilirsin.
+          // Aşağıdaki eşleşme zayıf bir heuristik. En doğrusu transferGroupId eklemek.
+          amount: tx.amount,
+          currency: tx.currency,
+          toAccount: Not(IsNull()),
+        },
+        relations: ["fromAccount", "toAccount"],
+      });
+
+      if (outLeg?.fromAccount && outLeg?.toAccount) {
+        await updateCompanyBalanceAfterTransaction(
+          "TRANSFER",
+          outLeg.fromAccount.id,
+          outLeg.toAccount.id,
+          tx.amount,
+          manager,
+          true
+        );
+        await txRepo.delete({ id: outLeg.id });
+      }
+      await txRepo.delete({ id: tx.id });
+      return;
+    }
+  }
+
+  // 3) TRANSFER dışı işlemlerde önce yan etkileri geri al
+  // 3a) Bakiye
+  await updateCompanyBalanceAfterTransaction(
+    tx.type,
+    tx.fromAccount?.id ?? null,
+    tx.toAccount?.id ?? null,
+    tx.amount,
+    manager,
+    true
+  );
+
+  // 3b) Kategoriye bağlı geri alma
+  if (tx.category === "SUBCONTRACTOR" && tx.referenceCode) {
+    await updateProjectSubcontractorStatusNew(
+      tx.referenceCode,
+      tx.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+  if (tx.category === "SUPPLIER" && tx.referenceCode) {
+    await updateProjectSupplierStatusNew(
+      tx.referenceCode,
+      tx.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+  if (tx.category === "CHECK" && tx.referenceCode) {
+    await updateCheckPaymentStatusNew(
+      tx.referenceCode,
+      tx.amount,
+      tx.transactionDate, // CHECK için tarih gerekebiliyor
+      currentUser,
+      manager,
+      true
+    );
+  }
+  if (tx.category === "ORDER" && tx.referenceCode) {
+    await updateOrderPaymentStatusNew(
+      tx.referenceCode,
+      tx.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+  if (tx.category === "LOAN" && tx.referenceCode) {
+    await updateLoanPaymentStatusNew(
+      tx.referenceCode,
+      tx.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+  if (tx.category === "BARTER" && tx.referenceCode) {
+    await updateBarterItemPaymentStatusNew(
+      tx.referenceCode,
+      tx.amount,
+      currentUser,
+      manager,
+      true
+    );
+  }
+
+  // 4) Son olarak sil
+  await txRepo.delete({ id: tx.id });
+  return { message: "Finans kaydı başarıyla silindi." }; 
+};

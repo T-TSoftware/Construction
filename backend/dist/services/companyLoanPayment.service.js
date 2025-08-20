@@ -37,6 +37,7 @@ const createCompanyLoanPayment = async (loanId, data, currentUser, manager = dat
         remainingAmount: data.totalAmount,
         status: data.status ?? "PENDING",
         paymentDate: data.paymentDate,
+        description: data.description,
         company: { id: currentUser.companyId }, // ✅ Şirkete ait olarak kaydediliyor
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
@@ -87,13 +88,7 @@ const getCompanyLoanPaymentById = async (id, currentUser, manager = data_source_
             id,
             company: { id: currentUser.companyId },
         },
-        relations: [
-            "loan",
-            "loan.project",
-            "loan.bank",
-            "createdBy",
-            "updatedBy",
-        ],
+        relations: ["loan", "loan.project", "loan.bank", "createdBy", "updatedBy"],
     });
     if (!payment) {
         throw new Error("İlgili kredi taksiti bulunamadı.");

@@ -27,8 +27,8 @@ export const postProjectQuantityHandler = async (
     const companyId = req.user!.companyId;
 
     const newRecord = await createProjectQuantity(
+      projectId,
       {
-        projectId,
         quantityItemCode,
         quantity,
         unit,
