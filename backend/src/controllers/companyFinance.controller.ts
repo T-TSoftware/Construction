@@ -10,6 +10,7 @@ import {
 import {
   createCompanyFinanceTransaction,
   updateCompanyFinanceTransaction,
+  updateCompanyFinanceTransactionNew,
 } from "../services/companyFinanceTransaction.service";
 
 export const postCompanyFinanceTransactionHandler = async (
@@ -114,7 +115,7 @@ export const patchCompanyFinanceTransactionHandler = async (
       throw new Error("Geçerli bir 'code' parametresi gereklidir.");
     }
 
-    const updatedTransaction = await updateCompanyFinanceTransaction(
+    const updatedTransaction = await updateCompanyFinanceTransactionNew(
       id,
       body,
       { userId, companyId },
@@ -205,36 +206,38 @@ export const deleteCompanyFinanceTransactionByIdHandler = async (
   res: Response
 ) => {
   if (req.user?.role !== "superadmin") {
-    res.status(403).json({ error: "Yalnızca superadmin işlemi yapabilir." });
+    res.status(403).json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
     return;
   }
 
-  const queryRunner = AppDataSource.createQueryRunner();
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
+  const qr = AppDataSource.createQueryRunner();
+  await qr.connect();
+  await qr.startTransaction();
 
   try {
     const { id } = req.params;
-
-    if (!id) {
-      res.status(400).json({ error: "Transaction ID zorunludur." });
-      return;
+    if (!id || typeof id !== "string") {
+      throw new Error("Geçerli bir 'id' parametresi gereklidir.");
     }
 
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
-    const transaction = await deleteCompanyFinanceTransactionById(
+    await deleteCompanyFinanceTransactionById(
       id,
       { userId, companyId },
-      queryRunner.manager
+      qr.manager
     );
 
-    res.status(200).json(transaction);
+    await qr.commitTransaction();     // ✅ kalıcılaştır
+    res.status(204).send();           // ✅ DELETE için ideal yanıt
   } catch (error: any) {
-    console.error("❌ Delete finance transaction by ID error:", error);
-    res.status(500).json({
-      error: error.message || "Finansal işlem bilgisi alınamadı.",
+    await qr.rollbackTransaction();   // 🔙 geri al
+    console.error("❌ DELETE finance transaction error:", error);
+    res.status(400).json({
+      errorMessage: error.message || "Finansal işlem silinemedi.",
     });
+  } finally {
+    await qr.release();               // 🧹 bağlantıyı bırak
   }
 };

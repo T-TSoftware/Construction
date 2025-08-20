@@ -131,5 +131,6 @@ __decorate([
     __metadata("design:type", Array)
 ], CompanyProject.prototype, "projectEmployees", void 0);
 exports.CompanyProject = CompanyProject = __decorate([
-    (0, typeorm_1.Entity)({ name: "companyprojects" })
+    (0, typeorm_1.Entity)({ name: "companyprojects" }),
+    (0, typeorm_1.Unique)("companyprojects_uq_company_code", ["company", "code"])
 ], CompanyProject);

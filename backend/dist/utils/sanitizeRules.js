@@ -10,9 +10,11 @@ exports.sanitizeRules = {
         include: ["id", "name", "code"],
     },
     CompanyProject: {
-        include: ["id", "code", "name"],
+        include: ["id", "code", "name", "company", "createdBy", "updatedBy"],
         relations: {
             company: "Company",
+            createdBy: "User",
+            updatedBy: "User",
         },
     },
     CompanyStock: {

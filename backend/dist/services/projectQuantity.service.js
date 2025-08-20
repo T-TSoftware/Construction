@@ -13,7 +13,7 @@ const projectQuantityRepo = data_source_1.AppDataSource.getRepository(ProjectQua
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
 const quantityItemRepo = data_source_1.AppDataSource.getRepository(QuantityItem_1.QuantityItem);
 const projectSupplierRepo = data_source_1.AppDataSource.getRepository(ProjectSupplier_1.ProjectSupplier);
-const createProjectQuantity = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
+const createProjectQuantity = async (projectId, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const projectRepo = manager.getRepository(CompanyProject_1.CompanyProject);
     const quantityItemRepo = manager.getRepository(QuantityItem_1.QuantityItem);
     const projectQuantityRepo = manager.getRepository(ProjectQuantity_1.ProjectQuantity);
@@ -21,7 +21,7 @@ const createProjectQuantity = async (data, currentUser, manager = data_source_1.
     const projectSubcontractorRepo = manager.getRepository(ProjectSubcontractor_1.ProjectSubcontractor);
     // ✅ Şirket doğrulaması
     const project = await projectRepo.findOneByOrFail({
-        id: data.projectId,
+        id: projectId,
         company: { id: currentUser.companyId },
     });
     const quantityItem = data.quantityItemCode
@@ -72,7 +72,7 @@ const createProjectQuantity = async (data, currentUser, manager = data_source_1.
     const subcontractorCode = await (0, generateCode_1.generateNextEntityCode)(manager, project.code, data.category, "TAS", "ProjectSubcontractor");
     const autoSubcontractor = projectSubcontractorRepo.create({
         code: subcontractorCode,
-        project: { id: data.projectId },
+        project: { id: projectId },
         quantityItem: quantityItem ? { id: quantityItem.id } : null,
         projectQuantity: { id: savedQuantity.id },
         locked: true,

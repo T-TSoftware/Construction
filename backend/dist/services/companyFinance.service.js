@@ -333,17 +333,144 @@ const createBarterTransactionFromCashDetailData = async (cashDetail, currentUser
     return saved;
 };
 exports.createBarterTransactionFromCashDetailData = createBarterTransactionFromCashDetailData;
+const companyBarterAgreementItem_service_1 = require("./companyBarterAgreementItem.service");
+const companyCheck_service_1 = require("./companyCheck.service");
+const companyLoanPayment_service_1 = require("./companyLoanPayment.service");
+const projectSubcontractor_service_1 = require("./projectSubcontractor.service");
+const projectSupplier_service_1 = require("./projectSupplier.service");
 const deleteCompanyFinanceTransactionById = async (id, currentUser, manager) => {
-    const transactionRepo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
-    const transaction = await transactionRepo.findOneOrFail({
-        where: { id },
+    const txRepo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
+    // 1) Tenant filtresi + gerekli ilişkiler
+    const tx = await txRepo.findOneOrFail({
+        where: { id, company: { id: currentUser.companyId } },
         relations: ["company", "fromAccount", "toAccount"],
     });
-    if (transaction.company.id !== currentUser.companyId) {
-        throw new Error("Bu finansal işlem kaydına erişim yetkiniz yok.");
+    // --- TRANSFER özel mantık ---
+    /*if (tx.type === "TRANSFER") {
+      // İsteğe bağlı sıkılaştırma (tarih eşleştirmesi):
+      const sameDay = tx.transactionDate;
+  
+      if (tx.toAccount) {
+        // ============ OUT BACAĞI ============
+        // IN bacağını deterministik ara:
+        // - type TRANSFER
+        // - id != OUT.id
+        // - fromAccount.id = OUT.toAccount.id
+        // - toAccount IS NULL
+        // - amount & currency aynı
+        // - (opsiyonel) transactionDate aynı
+        // - targetId = OUT.fromAccount.id  (kritik eşleştirme)
+        const inLeg = await txRepo.findOne({
+          where: {
+            company: { id: currentUser.companyId },
+            type: "TRANSFER",
+            id: Not(tx.id),
+            fromAccount: { id: tx.toAccount.id },
+            toAccount: IsNull(),
+            amount: tx.amount,
+            currency: tx.currency,
+            // transactionDate: sameDay, // istersen aç
+            targetId: tx.fromAccount?.id,
+          },
+          relations: ["fromAccount", "toAccount"],
+        });
+  
+        // Bakiyeyi sadece bir kez geri al: OUT bacağının from/to bilgileri yeterli
+        await updateCompanyBalanceAfterTransaction(
+          "TRANSFER",
+          tx.fromAccount?.id ?? null,
+          tx.toAccount?.id ?? null,
+          tx.amount,
+          manager,
+          true
+        );
+  
+        // IN varsa onu da sil, sonra OUT'u sil
+        if (inLeg) {
+          await txRepo.delete({ id: inLeg.id });
+        }
+        await txRepo.delete({ id: tx.id });
+  
+        return { message: "Transfer işlemi (OUT+IN) başarıyla silindi." };
+      } else {
+        // ============ IN BACAĞI ============
+        // OUT bacağını deterministik ara:
+        // - type TRANSFER
+        // - toAccount NOT NULL
+        // - amount & currency aynı
+        // - (opsiyonel) transactionDate aynı
+        // - fromAccount.id = IN.targetId        (OUT kaynağı = IN.targetId)
+        // - toAccount.id   = IN.fromAccount.id  (OUT hedefi  = IN.fromAccount)
+        const outLeg = await txRepo.findOne({
+          where: {
+            company: { id: currentUser.companyId },
+            type: "TRANSFER",
+            id: Not(tx.id),
+            toAccount: Not(IsNull()),
+            amount: tx.amount,
+            currency: tx.currency,
+            // transactionDate: sameDay, // istersen aç
+            fromAccount: { id: String(tx.targetId) },
+            toAccount: { id: tx.fromAccount?.id },
+          },
+          relations: ["fromAccount", "toAccount"],
+        });
+  
+        if (outLeg?.fromAccount && outLeg?.toAccount) {
+          // OUT bacağı bulunduysa onun from/to bilgileriyle reverse et
+          await updateCompanyBalanceAfterTransaction(
+            "TRANSFER",
+            outLeg.fromAccount.id,
+            outLeg.toAccount.id,
+            tx.amount,
+            manager,
+            true
+          );
+          await txRepo.delete({ id: outLeg.id });
+        } else {
+          // OUT bacağı bulunamadıysa yine de reverse edebilmek için,
+          // IN tarafındaki işaretlerden türet:
+          //  - OUT.fromAccount.id = IN.targetId
+          //  - OUT.toAccount.id   = IN.fromAccount.id
+          const reverseFrom = String(tx.targetId) || null;
+          const reverseTo = tx.fromAccount?.id || null;
+  
+          await updateCompanyBalanceAfterTransaction(
+            "TRANSFER",
+            reverseFrom,
+            reverseTo,
+            tx.amount,
+            manager,
+            true
+          );
+        }
+  
+        await txRepo.delete({ id: tx.id });
+        return { message: "Transfer işlemi (IN+OUT) başarıyla silindi." };
+      }
+    }*/
+    // --- TRANSFER dışı (PAYMENT/COLLECTION) ---
+    await (0, exports.updateCompanyBalanceAfterTransaction)(tx.type, tx.fromAccount?.id ?? null, tx.toAccount?.id ?? null, tx.amount, manager, true);
+    // Kategoriye bağlı geri alma (varsa)
+    if (tx.category === "SUBCONTRACTOR" && tx.referenceCode) {
+        await (0, projectSubcontractor_service_1.updateProjectSubcontractorStatusNew)(tx.referenceCode, tx.amount, currentUser, manager, true);
     }
-    console.log("from account from: ", transaction.fromAccount);
-    await (0, exports.updateCompanyBalanceAfterTransaction)(transaction.type, transaction.fromAccount.id, transaction.toAccount?.id ?? null, transaction.amount, manager, true);
-    await transactionRepo.delete({ id: transaction.id });
+    if (tx.category === "SUPPLIER" && tx.referenceCode) {
+        await (0, projectSupplier_service_1.updateProjectSupplierStatusNew)(tx.referenceCode, tx.amount, currentUser, manager, true);
+    }
+    if (tx.category === "CHECK" && tx.referenceCode) {
+        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(tx.referenceCode, tx.amount, tx.transactionDate, currentUser, manager, true);
+    }
+    if (tx.category === "ORDER" && tx.referenceCode) {
+        await (0, companyOrder_service_1.updateOrderPaymentStatusNew)(tx.referenceCode, tx.amount, currentUser, manager, true);
+    }
+    if (tx.category === "LOAN" && tx.referenceCode) {
+        await (0, companyLoanPayment_service_1.updateLoanPaymentStatusNew)(tx.referenceCode, tx.amount, currentUser, manager, true);
+    }
+    if (tx.category === "BARTER" && tx.referenceCode) {
+        await (0, companyBarterAgreementItem_service_1.updateBarterItemPaymentStatusNew)(tx.referenceCode, tx.amount, currentUser, manager, true);
+    }
+    await txRepo.delete({ id: tx.id });
+    return { message: "Finans kaydı başarıyla silindi." };
 };
 exports.deleteCompanyFinanceTransactionById = deleteCompanyFinanceTransactionById;

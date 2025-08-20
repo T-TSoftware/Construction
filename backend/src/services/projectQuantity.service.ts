@@ -14,8 +14,9 @@ const quantityItemRepo = AppDataSource.getRepository(QuantityItem);
 const projectSupplierRepo = AppDataSource.getRepository(ProjectSupplier);
 
 export const createProjectQuantity = async (
+  projectId: string,
   data: {
-    projectId: string;
+    //projectId: string;
     quantityItemCode: string;
     quantity: number;
     unit: string;
@@ -36,7 +37,7 @@ export const createProjectQuantity = async (
 
   // ✅ Şirket doğrulaması
   const project = await projectRepo.findOneByOrFail({
-    id: data.projectId,
+    id: projectId,
     company: { id: currentUser.companyId },
   });
 
@@ -99,7 +100,7 @@ export const createProjectQuantity = async (
 
   const autoSubcontractor = projectSubcontractorRepo.create({
     code: subcontractorCode,
-    project: { id: data.projectId },
+    project: { id: projectId },
     quantityItem: quantityItem ? { id: quantityItem.id } : null,
     projectQuantity: { id: savedQuantity.id },
     locked: true,

@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/authMiddleware";
-import { validateArrayBody } from "../middlewares/requestMiddleware";
-import { supplierSchema } from "../validations/validations";
+import { validate } from "../middlewares/requestValidation";
+import { projectSupplierCreateSchema,projectSupplierUpdateSchema } from "../validations/projectSupplier.validation";
 import {
   postProjectSupplierHandler,
   getProjectSuppliersHandler,
   patchProjectSupplierHandler,
-  getProjectSupplierByIdHandler
+  getProjectSupplierByIdHandler,
 } from "../controllers/projectSupplier.controller";
 
 const router = Router();
@@ -15,13 +15,13 @@ router.use(authMiddleware);
 
 router.post(
   "/projects/:projectId/suppliers",
-  //validateArrayBody(supplierSchema),
+  validate(projectSupplierCreateSchema),
   postProjectSupplierHandler
 );
 
 router.get("/projects/:projectId/suppliers", getProjectSuppliersHandler);
 
 router.get("/supplier/:id", getProjectSupplierByIdHandler);
-router.patch("/projects/suppliers/:id", patchProjectSupplierHandler);
+router.patch("/projects/suppliers/:id",validate(projectSupplierUpdateSchema), patchProjectSupplierHandler);
 
 export default router;

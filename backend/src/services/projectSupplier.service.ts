@@ -180,7 +180,7 @@ export const updateProjectSupplier = async (
     unitPrice?: number;
     quantity?: number;
     contractAmount?: number;
-    paidAmount?: number;
+    //paidAmount?: number;
     status?: string;
     description?: string;
   },

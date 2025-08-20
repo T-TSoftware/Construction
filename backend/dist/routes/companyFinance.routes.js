@@ -14,4 +14,5 @@ router.post("/", (0, requestValidation_1.validate)(companyFinanceTransaction_val
 router.patch("/:id", (0, requestValidation_1.validate)(companyFinanceTransaction_validation_1.financeTransactionUpdateSchema), companyFinance_controller_1.patchCompanyFinanceTransactionHandler);
 router.get("/", companyFinance_controller_1.getCompanyFinanceTransactionsHandler);
 router.get("/:id", companyFinance_controller_1.getCompanyFinanceTransactionByIdHandler);
+router.delete("/:id", companyFinance_controller_1.deleteCompanyFinanceTransactionByIdHandler);
 exports.default = router;

@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
+  Unique,
 } from "typeorm";
 import { User } from "./User";
 import { Company } from "./Company";
@@ -21,6 +22,7 @@ import { CompanyLoan } from "./CompanyLoan";
 import { CompanyEmployeeProject } from "./CompanyEmployeeProject";
 
 @Entity({ name: "companyprojects" })
+@Unique("companyprojects_uq_company_code", ["company", "code"])
 export class CompanyProject {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

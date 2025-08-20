@@ -65,6 +65,7 @@ export const createCompanyLoanPayment = async (
     remainingAmount: data.totalAmount,
     status: data.status ?? "PENDING",
     paymentDate: data.paymentDate,
+    description: data.description,
     company: { id: currentUser.companyId }, // ✅ Şirkete ait olarak kaydediliyor
     createdBy: { id: currentUser.userId },
     updatedBy: { id: currentUser.userId },
@@ -127,13 +128,7 @@ export const getCompanyLoanPaymentById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: [
-      "loan",
-      "loan.project",
-      "loan.bank",
-      "createdBy",
-      "updatedBy",
-    ],
+    relations: ["loan", "loan.project", "loan.bank", "createdBy", "updatedBy"],
   });
 
   if (!payment) {
@@ -154,7 +149,7 @@ export const getCompanyLoanPaymentsByLoanId = async (
       company: { id: currentUser.companyId },
       loan: { id: loanId },
     },
-    relations: ["loan", "loan.project", "loan.bank","createdBy","updatedBy"],
+    relations: ["loan", "loan.project", "loan.bank", "createdBy", "updatedBy"],
     order: { installmentNumber: "ASC" },
   });
 
@@ -225,8 +220,6 @@ export const updateCompanyLoanPayment = async (
     }
   );
 };
-
-
 
 export const updateLoanPaymentStatusNew = async (
   paymentCode: string,

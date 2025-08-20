@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateCompanyFinanceTransaction = exports.createCompanyFinanceTransaction = void 0;
+exports.updateCompanyFinanceTransactionNew = exports.updateCompanyFinanceTransaction = exports.createCompanyFinanceTransaction = void 0;
 const CompanyFinance_1 = require("../entities/CompanyFinance");
 const CompanyBalance_1 = require("../entities/CompanyBalance");
 const CompanyProject_1 = require("../entities/CompanyProject");
@@ -96,9 +96,55 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             createdBy: { id: currentUser.userId },
             updatedBy: { id: currentUser.userId },
         });
-        results.push(await transactionRepo.save(outTransaction), await transactionRepo.save(inTransaction));
+        /*results.push(
+          await transactionRepo.save(outTransaction),
+          await transactionRepo.save(inTransaction)
+        );*/
+        // OUT ve IN kayıtlarını kaydet + refetch + sanitize
+        const [outSanitized, inSanitized] = await Promise.all([
+            (0, persist_1.saveRefetchSanitize)({
+                entityName: "CompanyFinance",
+                save: () => transactionRepo.save(outTransaction),
+                refetch: () => transactionRepo.findOneOrFail({
+                    where: {
+                        id: outTransaction.id,
+                        company: { id: currentUser.companyId },
+                    },
+                    relations: [
+                        "company",
+                        "project",
+                        "fromAccount",
+                        "toAccount",
+                        "createdBy",
+                        "updatedBy",
+                    ],
+                }),
+                rules: sanitizeRules_1.sanitizeRules,
+                defaultError: "İşlem kaydı oluşturulamadı.",
+            }),
+            (0, persist_1.saveRefetchSanitize)({
+                entityName: "CompanyFinance",
+                save: () => transactionRepo.save(inTransaction),
+                refetch: () => transactionRepo.findOneOrFail({
+                    where: {
+                        id: inTransaction.id,
+                        company: { id: currentUser.companyId },
+                    },
+                    relations: [
+                        "company",
+                        "project",
+                        "fromAccount",
+                        "toAccount",
+                        "createdBy",
+                        "updatedBy",
+                    ],
+                }),
+                rules: sanitizeRules_1.sanitizeRules,
+                defaultError: "İşlem kaydı oluşturulamadı.",
+            }),
+        ]);
         await (0, companyFinance_service_1.updateCompanyBalanceAfterTransaction)("TRANSFER", fromAccount.id, toAccount.id, data.amount, manager);
-        return results;
+        return [outSanitized, inSanitized];
     }
     // 💳 PAYMENT / COLLECTION işlemi
     const code = await (0, generateCode_1.generateFinanceTransactionCode)(data.type, data.transactionDate, manager);
@@ -385,3 +431,468 @@ const updateCompanyFinanceTransaction = async (id, data, currentUser, manager = 
     return (0, sanitize_1.sanitizeEntity)(updated, "CompanyFinance", sanitizeRules_1.sanitizeRules);
 };
 exports.updateCompanyFinanceTransaction = updateCompanyFinanceTransaction;
+const updateCompanyFinanceTransactionNew = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
+    const transactionRepo = manager.getRepository(CompanyFinance_1.CompanyFinanceTransaction);
+    const balanceRepo = manager.getRepository(CompanyBalance_1.CompanyBalance);
+    const projectRepo = manager.getRepository(CompanyProject_1.CompanyProject);
+    const subcontractorRepo = manager.getRepository(ProjectSubcontractor_1.ProjectSubcontractor);
+    const supplierRepo = manager.getRepository(ProjectSupplier_1.ProjectSupplier);
+    const checkRepo = manager.getRepository(CompanyCheck_1.CompanyCheck);
+    const loanPaymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
+    const barterItemRepo = manager.getRepository(CompanyBarterAgreementItem_1.CompanyBarterAgreementItem);
+    const orderRepo = manager.getRepository(CompanyOrder_1.CompanyOrder);
+    const existing = await transactionRepo.findOne({
+        where: { id, company: { id: currentUser.companyId } },
+        relations: ["fromAccount", "toAccount", "company", "project"],
+    });
+    if (!existing) {
+        throw new Error("Finansal işlem bulunamadı.");
+    }
+    // 1) Mevcut işlemin etkilerini geri al
+    await (0, companyFinance_service_1.updateCompanyBalanceAfterTransaction)(existing.type, existing.fromAccount?.id ?? null, existing.toAccount?.id ?? null, existing.amount, manager, true);
+    if (existing.category === "SUBCONTRACTOR" && existing.referenceCode) {
+        await (0, projectSubcontractor_service_1.updateProjectSubcontractorStatusNew)(existing.referenceCode, existing.amount, currentUser, manager, true);
+    }
+    if (existing.category === "SUPPLIER" && existing.referenceCode) {
+        await (0, projectSupplier_service_1.updateProjectSupplierStatusNew)(existing.referenceCode, existing.amount, currentUser, manager, true);
+    }
+    if (existing.category === "CHECK" && existing.referenceCode) {
+        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(existing.referenceCode, existing.amount, existing.transactionDate, currentUser, manager, true);
+    }
+    if (existing.category === "ORDER" && existing.referenceCode) {
+        await (0, companyOrder_service_1.updateOrderPaymentStatusNew)(existing.referenceCode, existing.amount, currentUser, manager, true);
+    }
+    if (existing.category === "LOAN" && existing.referenceCode) {
+        await (0, companyLoanPayment_service_1.updateLoanPaymentStatusNew)(existing.referenceCode, existing.amount, currentUser, manager, true);
+    }
+    if (existing.category === "BARTER" && existing.referenceCode) {
+        await (0, companyBarterAgreementItem_service_1.updateBarterItemPaymentStatusNew)(existing.referenceCode, existing.amount, currentUser, manager, true);
+    }
+    // 2) Yeni referansları/alanları hazırla
+    const newFromAccount = data.fromAccountCode && data.fromAccountCode !== existing.fromAccount?.code
+        ? await balanceRepo.findOneByOrFail({ code: data.fromAccountCode })
+        : existing.fromAccount;
+    const newToAccount = data.toAccountCode && data.toAccountCode !== existing.toAccount?.code
+        ? await balanceRepo.findOneByOrFail({ code: data.toAccountCode })
+        : existing.toAccount;
+    const newProject = data.projectId && data.projectId !== existing.project?.id
+        ? await projectRepo.findOneByOrFail({ id: data.projectId })
+        : existing.project;
+    // (Opsiyonel) Tip değişimi TRANSFER ise toAccount zorunlu kuralı
+    const nextType = data.type ?? existing.type;
+    if (nextType === "TRANSFER" && !(data.toAccountCode || newToAccount?.id)) {
+        throw new Error("Transfer tipi için hedef hesap (toAccountCode) zorunludur.");
+    }
+    // 3) Tüm alanları ve İLİŞKİLERİ (ref entity) kayıttan ÖNCE ayarla
+    existing.type = nextType;
+    existing.amount = data.amount ?? existing.amount;
+    existing.currency = data.currency ?? existing.currency;
+    existing.fromAccount = newFromAccount;
+    existing.toAccount = newToAccount;
+    existing.targetType = data.targetType ?? existing.targetType;
+    existing.targetId = data.targetId ?? existing.targetId;
+    existing.targetName = data.targetName ?? existing.targetName;
+    existing.transactionDate = data.transactionDate ?? existing.transactionDate;
+    existing.method = data.method ?? existing.method;
+    const nextCategory = data.category ?? existing.category;
+    const nextRefCode = data.referenceCode ?? existing.referenceCode;
+    existing.category = nextCategory;
+    existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
+    existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
+    existing.referenceCode = nextRefCode;
+    existing.description = data.description ?? existing.description;
+    existing.project = newProject;
+    existing.updatedBy = { id: currentUser.userId };
+    existing.updatedatetime = new Date();
+    // İlişkisel alanları temizle (stale kalmasın)
+    existing.subcontractor = null;
+    existing.supplier = null;
+    existing.check = null;
+    existing.order = null;
+    existing.loanPayment = null;
+    existing.barterItem = null;
+    // Yeni kategoriye göre ilişkiyi ata (SAVE'den önce!)
+    if (nextCategory === "SUBCONTRACTOR" && nextRefCode) {
+        const sc = await subcontractorRepo.findOneByOrFail({ code: nextRefCode });
+        existing.subcontractor = { id: sc.id };
+    }
+    else if (nextCategory === "SUPPLIER" && nextRefCode) {
+        const sp = await supplierRepo.findOneByOrFail({ code: nextRefCode });
+        existing.supplier = { id: sp.id };
+    }
+    else if (nextCategory === "CHECK" && nextRefCode) {
+        const ck = await checkRepo.findOneByOrFail({ code: nextRefCode });
+        existing.check = { id: ck.id };
+    }
+    else if (nextCategory === "ORDER" && nextRefCode) {
+        const or = await orderRepo.findOneByOrFail({ code: nextRefCode });
+        existing.order = { id: or.id };
+    }
+    else if (nextCategory === "LOAN" && nextRefCode) {
+        const lp = await loanPaymentRepo.findOneByOrFail({ code: nextRefCode });
+        existing.loanPayment = { id: lp.id };
+    }
+    else if (nextCategory === "BARTER" && nextRefCode) {
+        const bi = await barterItemRepo.findOneByOrFail({ code: nextRefCode });
+        existing.barterItem = { id: bi.id };
+    }
+    // 4) Kaydet + refetch + sanitize (tek yerden)
+    const sanitized = await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyFinance",
+        save: () => transactionRepo.save(existing),
+        refetch: () => transactionRepo.findOneOrFail({
+            where: { id: existing.id, company: { id: currentUser.companyId } },
+            relations: [
+                "company",
+                "project",
+                "fromAccount",
+                "toAccount",
+                "check",
+                "order",
+                "loanPayment",
+                "subcontractor",
+                "supplier",
+                "barterItem",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "İşlem güncellenemedi.",
+    });
+    // 5) Yeni etkileri uygula (balans/statü). — Kaydın dönmesini bekletmeden yapıyoruz.
+    //    Eğer bu adımların da tamamlanmasını bekleyip ÖYLE dönmek istersen, 'await' bozulmasın (şu an öyle).
+    if (nextCategory === "SUBCONTRACTOR" && nextRefCode) {
+        await (0, projectSubcontractor_service_1.updateProjectSubcontractorStatusNew)(nextRefCode, existing.amount, currentUser, manager, false);
+    }
+    if (nextCategory === "SUPPLIER" && nextRefCode) {
+        await (0, projectSupplier_service_1.updateProjectSupplierStatusNew)(nextRefCode, existing.amount, currentUser, manager, false);
+    }
+    if (nextCategory === "CHECK" && nextRefCode) {
+        await (0, companyCheck_service_1.updateCheckPaymentStatusNew)(nextRefCode, existing.amount, existing.transactionDate, currentUser, manager, false);
+    }
+    if (nextCategory === "ORDER" && nextRefCode) {
+        await (0, companyOrder_service_1.updateOrderPaymentStatusNew)(nextRefCode, existing.amount, currentUser, manager, false);
+    }
+    if (nextCategory === "LOAN" && nextRefCode) {
+        await (0, companyLoanPayment_service_1.updateLoanPaymentStatusNew)(nextRefCode, existing.amount, currentUser, manager, false);
+    }
+    if (nextCategory === "BARTER" && nextRefCode) {
+        await (0, companyBarterAgreementItem_service_1.updateBarterItemPaymentStatusNew)(nextRefCode, existing.amount, currentUser, manager, false);
+    }
+    await (0, companyFinance_service_1.updateCompanyBalanceAfterTransaction)(existing.type, existing.fromAccount?.id ?? null, existing.toAccount?.id ?? null, existing.amount, manager);
+    // 6) İlişkiler dolu, sanitize edilmiş kayıt
+    return sanitized;
+};
+exports.updateCompanyFinanceTransactionNew = updateCompanyFinanceTransactionNew;
+/* WILL BE USED */
+/*
+export const updateCompanyFinanceTransactionNew = async (
+  id: string,
+  data: {
+    type?: "PAYMENT" | "COLLECTION" | "TRANSFER";
+    amount?: number;
+    currency?: string;
+    fromAccountCode?: string;
+    toAccountCode?: string;
+    targetType?: string;
+    targetId?: string;
+    targetName?: string;
+    transactionDate?: Date;
+    method?: string;
+    category?: string;
+    invoiceYN?: "Y" | "N";
+    invoiceCode?: string;
+    referenceCode?: string;
+    description?: string;
+    projectId?: string;
+  },
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const transactionRepo = manager.getRepository(CompanyFinanceTransaction);
+  const balanceRepo = manager.getRepository(CompanyBalance);
+  const projectRepo = manager.getRepository(CompanyProject);
+  const subcontractorRepo = manager.getRepository(ProjectSubcontractor);
+  const supplierRepo = manager.getRepository(ProjectSupplier);
+  const checkRepo = manager.getRepository(CompanyCheck);
+  const loanPaymentRepo = manager.getRepository(CompanyLoanPayment);
+  const barterItemRepo = manager.getRepository(CompanyBarterAgreementItem);
+  const orderRepo = manager.getRepository(CompanyOrder);
+
+  const existing = await transactionRepo.findOne({
+    where: { id, company: { id: currentUser.companyId } },
+    relations: ["fromAccount", "toAccount", "company", "project"],
+  });
+  if (!existing) throw new Error("Finansal işlem bulunamadı.");
+
+  // ---- 1) Yeni referansları hazırla (hepsi tenant filtreli!) ----
+  const nextType = data.type ?? existing.type;
+
+  const newFromAccount =
+    data.fromAccountCode && data.fromAccountCode !== existing.fromAccount?.code
+      ? await balanceRepo.findOneOrFail({
+          where: { code: data.fromAccountCode, company: { id: currentUser.companyId } },
+        })
+      : existing.fromAccount;
+
+  const newToAccount =
+    data.toAccountCode && data.toAccountCode !== existing.toAccount?.code
+      ? await balanceRepo.findOneOrFail({
+          where: { code: data.toAccountCode, company: { id: currentUser.companyId } },
+        })
+      : existing.toAccount;
+
+  const newProject =
+    data.projectId && data.projectId !== existing.project?.id
+      ? await projectRepo.findOneOrFail({
+          where: { id: data.projectId, company: { id: currentUser.companyId } },
+        })
+      : existing.project;
+
+  if (nextType === "TRANSFER" && !(data.toAccountCode || newToAccount?.id)) {
+    throw new Error("Transfer tipi için hedef hesap (toAccountCode) zorunludur.");
+  }
+
+  const nextCategory = data.category ?? existing.category;
+  const nextRefCode = data.referenceCode ?? existing.referenceCode;
+
+  // ---- 2) Değişim tespiti (sadece gerekirse revert/apply) ----
+  const balanceChanged =
+    (data.amount !== undefined && data.amount !== existing.amount) ||
+    (data.fromAccountCode && data.fromAccountCode !== existing.fromAccount?.code) ||
+    (data.toAccountCode && data.toAccountCode !== existing.toAccount?.code) ||
+    (data.type && data.type !== existing.type);
+
+  const refChanged =
+    (data.category && data.category !== existing.category) ||
+    (data.referenceCode && data.referenceCode !== existing.referenceCode) ||
+    // CHECK statü hesapları genelde tarihe duyarlı
+    (nextCategory === "CHECK" && data.transactionDate && data.transactionDate !== existing.transactionDate);
+
+  // ---- 3) Eski etkileri GERİ AL (yalnızca gerektiğinde) ----
+  if (balanceChanged || refChanged) {
+    await updateCompanyBalanceAfterTransaction(
+      existing.type,
+      existing.fromAccount?.id ?? null,
+      existing.toAccount?.id ?? null,
+      existing.amount,
+      manager,
+      true
+    );
+
+    if (existing.category === "SUBCONTRACTOR" && existing.referenceCode) {
+      await updateProjectSubcontractorStatusNew(
+        existing.referenceCode,
+        existing.amount,
+        currentUser,
+        manager,
+        true
+      );
+    }
+    if (existing.category === "SUPPLIER" && existing.referenceCode) {
+      await updateProjectSupplierStatusNew(
+        existing.referenceCode,
+        existing.amount,
+        currentUser,
+        manager,
+        true
+      );
+    }
+    if (existing.category === "CHECK" && existing.referenceCode) {
+      await updateCheckPaymentStatusNew(
+        existing.referenceCode,
+        existing.amount,
+        existing.transactionDate,
+        currentUser,
+        manager,
+        true
+      );
+    }
+    if (existing.category === "ORDER" && existing.referenceCode) {
+      await updateOrderPaymentStatusNew(
+        existing.referenceCode,
+        existing.amount,
+        currentUser,
+        manager,
+        true
+      );
+    }
+    if (existing.category === "LOAN" && existing.referenceCode) {
+      await updateLoanPaymentStatusNew(
+        existing.referenceCode,
+        existing.amount,
+        currentUser,
+        manager,
+        true
+      );
+    }
+    if (existing.category === "BARTER" && existing.referenceCode) {
+      await updateBarterItemPaymentStatusNew(
+        existing.referenceCode,
+        existing.amount,
+        currentUser,
+        manager,
+        true
+      );
+    }
+  }
+
+  // ---- 4) Tüm alanları ve ilişkileri SAVE’DEN ÖNCE ayarla ----
+  existing.type = nextType;
+  existing.amount = data.amount ?? existing.amount;
+  existing.currency = data.currency ?? existing.currency;
+  existing.fromAccount = newFromAccount;
+  existing.toAccount = nextType === "TRANSFER" ? newToAccount : null; // TRANSFER değilse temizle
+  existing.targetType = data.targetType ?? existing.targetType;
+  existing.targetId = data.targetId ?? existing.targetId;
+  existing.targetName = data.targetName ?? existing.targetName;
+  existing.transactionDate = data.transactionDate ?? existing.transactionDate;
+  existing.method = data.method ?? existing.method;
+
+  existing.category = nextCategory;
+  existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
+  existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
+  existing.referenceCode = nextRefCode;
+  existing.description = data.description ?? existing.description;
+  existing.project = newProject;
+  existing.updatedBy = { id: currentUser.userId } as any;
+  existing.updatedatetime = new Date();
+
+  // Kategori alternatiftir: eski FK’ları NULL’a çek
+  existing.subcontractor = null as any;
+  existing.supplier = null as any;
+  existing.check = null as any;
+  existing.order = null as any;
+  existing.loanPayment = null as any;
+  existing.barterItem = null as any;
+
+  // Yeni kategoriye göre ilişkiyi (tenant filtreli) ata
+  if (nextCategory === "SUBCONTRACTOR" && nextRefCode) {
+    const sc = await subcontractorRepo.findOneOrFail({
+      where: { code: nextRefCode, company: { id: currentUser.companyId } },
+    });
+    existing.subcontractor = { id: sc.id } as ProjectSubcontractor;
+  } else if (nextCategory === "SUPPLIER" && nextRefCode) {
+    const sp = await supplierRepo.findOneOrFail({
+      where: { code: nextRefCode, company: { id: currentUser.companyId } },
+    });
+    existing.supplier = { id: sp.id } as ProjectSupplier;
+  } else if (nextCategory === "CHECK" && nextRefCode) {
+    const ck = await checkRepo.findOneOrFail({
+      where: { code: nextRefCode, company: { id: currentUser.companyId } },
+    });
+    existing.check = { id: ck.id } as CompanyCheck;
+  } else if (nextCategory === "ORDER" && nextRefCode) {
+    const or = await orderRepo.findOneOrFail({
+      where: { code: nextRefCode, company: { id: currentUser.companyId } },
+    });
+    existing.order = { id: or.id } as CompanyOrder;
+  } else if (nextCategory === "LOAN" && nextRefCode) {
+    const lp = await loanPaymentRepo.findOneOrFail({
+      where: { code: nextRefCode, company: { id: currentUser.companyId } },
+    });
+    existing.loanPayment = { id: lp.id } as CompanyLoanPayment;
+  } else if (nextCategory === "BARTER" && nextRefCode) {
+    const bi = await barterItemRepo.findOneOrFail({
+      where: { code: nextRefCode, company: { id: currentUser.companyId } },
+    });
+    existing.barterItem = { id: bi.id } as CompanyBarterAgreementItem;
+  }
+
+  // ---- 5) Kaydet + refetch + sanitize (tek noktadan) ----
+  const sanitized = await saveRefetchSanitize({
+    entityName: "CompanyFinance",
+    save: () => transactionRepo.save(existing),
+    refetch: () =>
+      transactionRepo.findOneOrFail({
+        where: { id: existing.id, company: { id: currentUser.companyId } },
+        relations: [
+          "company",
+          "project",
+          "fromAccount",
+          "toAccount",
+          "check",
+          "order",
+          "loanPayment",
+          "subcontractor",
+          "supplier",
+          "barterItem",
+          "createdBy",
+          "updatedBy",
+        ],
+      }),
+    rules: sanitizeRules,
+    defaultError: "İşlem güncellenemedi.",
+  });
+
+  // ---- 6) Yeni etkileri uygula (yalnızca gerektiğinde) ----
+  if (balanceChanged || refChanged) {
+    if (nextCategory === "SUBCONTRACTOR" && nextRefCode) {
+      await updateProjectSubcontractorStatusNew(
+        nextRefCode,
+        existing.amount,
+        currentUser,
+        manager,
+        false
+      );
+    }
+    if (nextCategory === "SUPPLIER" && nextRefCode) {
+      await updateProjectSupplierStatusNew(
+        nextRefCode,
+        existing.amount,
+        currentUser,
+        manager,
+        false
+      );
+    }
+    if (nextCategory === "CHECK" && nextRefCode) {
+      await updateCheckPaymentStatusNew(
+        nextRefCode,
+        existing.amount,
+        existing.transactionDate,
+        currentUser,
+        manager,
+        false
+      );
+    }
+    if (nextCategory === "ORDER" && nextRefCode) {
+      await updateOrderPaymentStatusNew(
+        nextRefCode,
+        existing.amount,
+        currentUser,
+        manager,
+        false
+      );
+    }
+    if (nextCategory === "LOAN" && nextRefCode) {
+      await updateLoanPaymentStatusNew(
+        nextRefCode,
+        existing.amount,
+        currentUser,
+        manager,
+        false
+      );
+    }
+    if (nextCategory === "BARTER" && nextRefCode) {
+      await updateBarterItemPaymentStatusNew(
+        nextRefCode,
+        existing.amount,
+        currentUser,
+        manager,
+        false
+      );
+    }
+
+    await updateCompanyBalanceAfterTransaction(
+      existing.type,
+      existing.fromAccount?.id ?? null,
+      existing.toAccount?.id ?? null,
+      existing.amount,
+      manager
+    );
+  }
+
+  return sanitized;
+};
+*/

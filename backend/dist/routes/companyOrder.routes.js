@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const authMiddleware_1 = require("../middlewares/authMiddleware");
+const requestValidation_1 = require("../middlewares/requestValidation");
+const companyOrder_validation_1 = require("../validations/companyOrder.validation");
 const companyOrder_controller_1 = require("../controllers/companyOrder.controller");
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authMiddleware);
-router.post("/", /*validateBody,*/ companyOrder_controller_1.postCompanyOrderHandler);
+router.post("/", (0, requestValidation_1.validate)(companyOrder_validation_1.orderCreateSchema), companyOrder_controller_1.postCompanyOrderHandler);
 router.get("/", companyOrder_controller_1.getCompanyOrdersHandler);
 router.get("/:id", companyOrder_controller_1.getCompanyOrderByIdHandler);
 router.get("/project/:projectId", companyOrder_controller_1.getCompanyOrdersByProjectIdHandler);

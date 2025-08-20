@@ -45,9 +45,11 @@ export const postCompanyProjectHandler = async (
     );
 
     res.status(201).json(newProject);
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ POST project error:", error);
-    res.status(500).json({ error: "Proje oluşturulamadı." });
+    res.status(500).json({
+      errorMessage: error.message || "Proje kaydedilemedi.",
+    });
   }
 };
 

@@ -12,9 +12,11 @@ export const sanitizeRules: SanitizeMap = {
   },
 
   CompanyProject: {
-    include: ["id", "code", "name"],
+    include: ["id", "code", "name", "company","createdBy","updatedBy"],
     relations: {
       company: "Company",
+      createdBy: "User",
+      updatedBy: "User",
     },
   },
 
@@ -408,8 +410,8 @@ export const sanitizeRules: SanitizeMap = {
       subcontractor: "subcontractor",
       supplier: "supplier",
       barterItem: "barterItem",
-      fromAccount:"fromAccount",
-      toAccount:"toAccount",
+      fromAccount: "fromAccount",
+      toAccount: "toAccount",
     },
   },
 };

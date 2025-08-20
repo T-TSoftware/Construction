@@ -71,7 +71,7 @@ const patchCompanyFinanceTransactionHandler = async (req, res) => {
         if (!id || typeof id !== "string") {
             throw new Error("Geçerli bir 'code' parametresi gereklidir.");
         }
-        const updatedTransaction = await (0, companyFinanceTransaction_service_1.updateCompanyFinanceTransaction)(id, body, { userId, companyId }, queryRunner.manager);
+        const updatedTransaction = await (0, companyFinanceTransaction_service_1.updateCompanyFinanceTransactionNew)(id, body, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
         res.status(200).json(updatedTransaction);
         return;
@@ -140,28 +140,32 @@ exports.getCompanyFinanceTransactionByIdHandler = getCompanyFinanceTransactionBy
 // 📌 Silme – Sadece superadmin
 const deleteCompanyFinanceTransactionByIdHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
-        res.status(403).json({ error: "Yalnızca superadmin işlemi yapabilir." });
+        res.status(403).json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
         return;
     }
-    const queryRunner = data_source_1.AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const qr = data_source_1.AppDataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
     try {
         const { id } = req.params;
-        if (!id) {
-            res.status(400).json({ error: "Transaction ID zorunludur." });
-            return;
+        if (!id || typeof id !== "string") {
+            throw new Error("Geçerli bir 'id' parametresi gereklidir.");
         }
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        const transaction = await (0, companyFinance_service_1.deleteCompanyFinanceTransactionById)(id, { userId, companyId }, queryRunner.manager);
-        res.status(200).json(transaction);
+        await (0, companyFinance_service_1.deleteCompanyFinanceTransactionById)(id, { userId, companyId }, qr.manager);
+        await qr.commitTransaction(); // ✅ kalıcılaştır
+        res.status(204).send(); // ✅ DELETE için ideal yanıt
     }
     catch (error) {
-        console.error("❌ Delete finance transaction by ID error:", error);
-        res.status(500).json({
-            error: error.message || "Finansal işlem bilgisi alınamadı.",
+        await qr.rollbackTransaction(); // 🔙 geri al
+        console.error("❌ DELETE finance transaction error:", error);
+        res.status(400).json({
+            errorMessage: error.message || "Finansal işlem silinemedi.",
         });
+    }
+    finally {
+        await qr.release(); // 🧹 bağlantıyı bırak
     }
 };
 exports.deleteCompanyFinanceTransactionByIdHandler = deleteCompanyFinanceTransactionByIdHandler;
