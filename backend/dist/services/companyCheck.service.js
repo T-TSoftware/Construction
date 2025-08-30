@@ -8,6 +8,7 @@ const CompanyProject_1 = require("../entities/CompanyProject");
 const sanitizeRules_1 = require("../utils/sanitizeRules");
 const persist_1 = require("../utils/persist");
 const sanitize_1 = require("../utils/sanitize");
+const generateCode_1 = require("../utils/generateCode");
 const createCompanyCheck = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const repo = manager.getRepository(CompanyCheck_1.CompanyCheck);
     const balanceRepo = manager.getRepository(CompanyBalance_1.CompanyBalance);
@@ -16,9 +17,11 @@ const createCompanyCheck = async (data, currentUser, manager = data_source_1.App
     });
     // 🔄 Duruma göre otomatik transaction oluştur
     let transaction = null;
+    //const code = `CEK-${data.checkNo}`,
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyCheck");
     // 🧾 Check oluşturuluyor
     const check = repo.create({
-        code: `CEK-${data.checkNo}`,
+        code,
         checkNo: data.checkNo,
         checkDate: data.checkDate,
         //transactionDate: data.dueDate, //data.transactionDate,

@@ -13,6 +13,7 @@ const path_1 = __importDefault(require("path"));
 const sanitize_1 = require("../utils/sanitize");
 const sanitizeRules_1 = require("../utils/sanitizeRules");
 const persist_1 = require("../utils/persist");
+const generateCode_1 = require("../utils/generateCode");
 const createCompanyLoanPayment = async (loanId, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const loanRepo = manager.getRepository(CompanyLoan_1.CompanyLoan);
     const paymentRepo = manager.getRepository(CompanyLoanPayment_1.CompanyLoanPayment);
@@ -23,10 +24,12 @@ const createCompanyLoanPayment = async (loanId, data, currentUser, manager = dat
         },
         relations: ["bank", "project"],
     });
+    //const code = `${loan.code}-TAKSIT:${data.installmentNumber}`,
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyLoanPayment");
     // 🧾 LoanPayment oluşturuluyor
     const payment = paymentRepo.create({
         loan: { id: loan.id },
-        code: `${loan.code}-TAKSIT:${data.installmentNumber}`,
+        code,
         installmentNumber: data.installmentNumber,
         dueDate: data.dueDate,
         totalAmount: data.principalAmount + data.interestAmount, //data.totalAmount,

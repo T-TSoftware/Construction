@@ -32,11 +32,12 @@ const createCompanyOrder = async (data, currentUser, manager = data_source_1.App
         });
     }
     // 3. Kod üretimi
-    const code = await (0, generateCode_1.generateNextOrderCode)({
-        companyId: currentUser.companyId,
-        reference: project?.name ?? stock.category,
-        manager,
-    });
+    /*const code = await generateNextOrderCode({
+      companyId: currentUser.companyId,
+      reference: project?.name ?? stock.category,
+      manager,
+    });*/
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyOrder");
     // 4. Order oluştur
     const order = orderRepo.create({
         code,
@@ -69,13 +70,7 @@ const createCompanyOrder = async (data, currentUser, manager = data_source_1.App
         save: () => orderRepo.save(order),
         refetch: () => orderRepo.findOneOrFail({
             where: { id: order.id, company: { id: currentUser.companyId } },
-            relations: [
-                "project",
-                "company",
-                "stock",
-                "createdBy",
-                "updatedBy",
-            ],
+            relations: ["project", "company", "stock", "createdBy", "updatedBy"],
         }),
         rules: sanitizeRules_1.sanitizeRules,
         defaultError: "Satıs kaydı oluşturulamadı.",

@@ -2,11 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getProjectQuantitiesHandler = exports.postProjectQuantityHandler = void 0;
 const projectQuantity_service_1 = require("../services/projectQuantity.service");
+const data_source_1 = require("../config/data-source");
 const postProjectQuantityHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
         res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
         return;
     }
+    const queryRunner = data_source_1.AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
         const { projectId } = req.params;
         const { quantityItemCode, quantity, unit, description, category } = req.body;
@@ -22,18 +26,19 @@ const postProjectQuantityHandler = async (req, res) => {
             unit,
             description,
             category,
-        }, { userId, companyId });
-        res.status(201).json({
-            message: "Metraj başarıyla eklendi.",
-            id: newRecord.id,
-        });
+        }, { userId, companyId }, queryRunner.manager);
+        await queryRunner.commitTransaction();
+        res.status(201).json({ newRecord });
     }
     catch (error) {
+        await queryRunner.rollbackTransaction();
         console.error("❌ POST project quantity error:", error);
-        res
-            .status(500)
-            .json({ error: error.message || "Metraj kaydı oluşturulamadı." });
-        return;
+        res.status(500).json({
+            errorMessage: error.message || "Metraj kaydı oluşturulamadı.",
+        });
+    }
+    finally {
+        await queryRunner.release();
     }
 };
 exports.postProjectQuantityHandler = postProjectQuantityHandler;

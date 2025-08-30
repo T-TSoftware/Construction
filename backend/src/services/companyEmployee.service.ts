@@ -10,6 +10,7 @@ import { normalize, saveRefetchSanitize } from "../utils/persist";
 import { sanitizeRules } from "../utils/sanitizeRules";
 import { sanitizeEntity } from "../utils/sanitize";
 import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
+import { generateEntityCode } from "../utils/generateCode";
 
 interface CreateCompanyEmployeeInput {
   code: string;
@@ -33,8 +34,11 @@ export const createCompanyEmployee = async (
   const projectRepo = manager.getRepository(CompanyProject);
   const employeeProjectRepo = manager.getRepository(CompanyEmployeeProject);
 
+  const code = await generateEntityCode(manager, currentUser.companyId, "CompanyEmployee");
+  //const code = `${data.position}-${data.firstName}${data.lastName}`.toUpperCase(),
+
   const employee = employeeRepo.create({
-    code: `${data.position}-${data.firstName}${data.lastName}`.toUpperCase(),
+    code,
     firstName: data.firstName,
     lastName: data.lastName,
     age: data.age,

@@ -6,6 +6,7 @@ import { CompanyProject } from "../entities/CompanyProject";
 import { saveRefetchSanitize } from "../utils/persist";
 import { sanitizeRules } from "../utils/sanitizeRules";
 import { sanitizeEntity } from "../utils/sanitize";
+import { generateEntityCode } from "../utils/generateCode";
 
 export const createCompanyLoan = async (
   data: {
@@ -50,10 +51,17 @@ export const createCompanyLoan = async (
     });
   }
 
-  const code = `KRD-${data.name
+  /*const code = `KRD-${data.name
     .toUpperCase()
     .replace(/\s+/g, "-") // boşlukları tireye çevir
     .replace(/[^A-Z0-9\-]/g, "")}`; // Türkçe karakterleri, özel sembolleri vs. temizle
+    */
+
+  const code = await generateEntityCode(
+    manager,
+    currentUser.companyId,
+    "CompanyLoan"
+  );
 
   const loan = loanRepo.create({
     code, //data.code,
@@ -62,7 +70,7 @@ export const createCompanyLoan = async (
     bank: { id: bank.id },
     project: project ? { id: project.id } : null,
     totalAmount: data.totalAmount,
-    remainingPrincipal: data.totalAmount,//data.remainingPrincipal ?? data.totalAmount,
+    remainingPrincipal: data.totalAmount, //data.remainingPrincipal ?? data.totalAmount,
     remainingInstallmentAmount: data.remainingInstallmentAmount,
     currency: data.currency,
     interestRate: data.interestRate,
@@ -85,13 +93,7 @@ export const createCompanyLoan = async (
     refetch: () =>
       loanRepo.findOneOrFail({
         where: { id: loan.id, company: { id: currentUser.companyId } },
-        relations: [
-          "bank",
-          "project",
-          "company",
-          "createdBy",
-          "updatedBy",
-        ],
+        relations: ["bank", "project", "company", "createdBy", "updatedBy"],
       }),
     rules: sanitizeRules,
     defaultError: "Kredi kaydı oluşturulamadı.",
@@ -179,7 +181,7 @@ export const getCompanyLoans = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "bank", "project","createdBy","updatedBy"],
+    relations: ["company", "bank", "project", "createdBy", "updatedBy"],
     order: { createdatetime: "DESC" },
   });
 
@@ -199,7 +201,7 @@ export const getCompanyLoanById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["company", "bank", "project","createdBy","updatedBy"],
+    relations: ["company", "bank", "project", "createdBy", "updatedBy"],
   });
 
   if (!loan) {

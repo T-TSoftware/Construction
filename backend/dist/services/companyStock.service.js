@@ -7,8 +7,8 @@ const CompanyProject_1 = require("../entities/CompanyProject");
 const CompanyStock_1 = require("../entities/CompanyStock");
 const persist_1 = require("../utils/persist");
 const sanitizeRules_1 = require("../utils/sanitizeRules");
-const slugHelper_1 = require("../utils/slugHelper");
 const sanitize_1 = require("../utils/sanitize");
+const generateCode_1 = require("../utils/generateCode");
 //import { generateStockCode } from "../utils/generateCode";
 const stockRepo = data_source_1.AppDataSource.getRepository(CompanyStock_1.CompanyStock);
 const companyRepo = data_source_1.AppDataSource.getRepository(Company_1.Company);
@@ -34,9 +34,11 @@ const createCompanyStock = async (data, currentUser, manager = data_source_1.App
       throw new Error(`${data.category} - ${data.name} stoğu zaten mevcut.`);
     }*/
     //const code = await generateStockCode(data.category, manager);
-    const categorySlug = (0, slugHelper_1.slug)(data.category).toUpperCase(); // CATEGORY kısmı büyük
-    const nameSlug = (0, slugHelper_1.slug)(data.name).toLowerCase(); // name kısmı küçük (istersen upper yap)
-    const code = `STK-${categorySlug}-${nameSlug}`;
+    /*
+    const categorySlug = slug(data.category).toUpperCase(); // CATEGORY kısmı büyük
+    const nameSlug = slug(data.name).toLowerCase(); // name kısmı küçük (istersen upper yap)
+    const code = `STK-${categorySlug}-${nameSlug}`;*/
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyStock");
     const stock = stockRepo.create({
         ...data,
         code,

@@ -10,12 +10,15 @@ const persist_1 = require("../utils/persist");
 const sanitizeRules_1 = require("../utils/sanitizeRules");
 const sanitize_1 = require("../utils/sanitize");
 const errorHandler_1 = require("../utils/errorHandler");
+const generateCode_1 = require("../utils/generateCode");
 const createCompanyEmployee = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const employeeRepo = manager.getRepository(CompanyEmployee_1.CompanyEmployee);
     const projectRepo = manager.getRepository(CompanyProject_1.CompanyProject);
     const employeeProjectRepo = manager.getRepository(CompanyEmployeeProject_1.CompanyEmployeeProject);
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyEmployee");
+    //const code = `${data.position}-${data.firstName}${data.lastName}`.toUpperCase(),
     const employee = employeeRepo.create({
-        code: `${data.position}-${data.firstName}${data.lastName}`.toUpperCase(),
+        code,
         firstName: data.firstName,
         lastName: data.lastName,
         age: data.age,

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCompanyBalanceHandler = exports.putCompanyBalanceHandler = exports.postCompanyBalanceHandler = exports.getCompanyBalancesHandler = void 0;
+exports.putCompanyBalanceBulkHandler = exports.deleteCompanyBalanceHandler = exports.putCompanyBalanceHandler = exports.postCompanyBalanceHandler = exports.getCompanyBalancesHandler = void 0;
 const companyBalance_service_1 = require("../services/companyBalance.service");
 const data_source_1 = require("../config/data-source");
 // 📌 Listeleme – Her kullanıcı erişebilir
@@ -111,3 +111,37 @@ const deleteCompanyBalanceHandler = async (req, res) => {
     }
 };
 exports.deleteCompanyBalanceHandler = deleteCompanyBalanceHandler;
+const putCompanyBalanceBulkHandler = async (req, res) => {
+    if (req.user?.role !== "superadmin") {
+        res.status(403).json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+        return;
+    }
+    const qr = data_source_1.AppDataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+        const body = req.body;
+        if (!Array.isArray(body)) {
+            throw new Error("Gövde (body) bir dizi olmalıdır.");
+        }
+        // her elemanda id olmalı
+        for (const item of body) {
+            if (!item?.id || typeof item.id !== "string") {
+                throw new Error("Her güncelleme nesnesi için geçerli bir 'id' zorunludur.");
+            }
+        }
+        const currentUser = { userId: req.user.userId.toString(), companyId: req.user.companyId };
+        const updated = await (0, companyBalance_service_1.updateManyCompanyBalances)(qr.manager, body, currentUser);
+        await qr.commitTransaction();
+        res.status(200).json(updated);
+    }
+    catch (err) {
+        await qr.rollbackTransaction();
+        console.error("❌ BULK PUT balances error:", err);
+        res.status(400).json({ errorMessage: err.message || "Bakiyeler güncellenemedi." });
+    }
+    finally {
+        await qr.release();
+    }
+};
+exports.putCompanyBalanceBulkHandler = putCompanyBalanceBulkHandler;

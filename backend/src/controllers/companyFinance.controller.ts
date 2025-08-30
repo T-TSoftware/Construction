@@ -6,6 +6,7 @@ import {
   getCompanyFinanceTransactions,
   getCompanyFinanceTransactionById,
   deleteCompanyFinanceTransactionById,
+  getCompanyFinanceTransactionByBankId,
 } from "../services/companyFinance.service";
 import {
   createCompanyFinanceTransaction,
@@ -200,13 +201,44 @@ export const getCompanyFinanceTransactionByIdHandler = async (
   }
 };
 
+export const getCompanyFinanceTransactionByBankIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  try {
+    const { bankId } = req.params;
+
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const transaction = await getCompanyFinanceTransactionByBankId(bankId, {
+      userId,
+      companyId,
+    });
+
+    res.status(200).json(transaction);
+  } catch (error: any) {
+    console.error("❌ GET finance transaction by ID error:", error);
+    res.status(500).json({
+      error: error.message || "Finansal işlem bilgisi alınamadı.",
+    });
+  }
+};
+
 // 📌 Silme – Sadece superadmin
 export const deleteCompanyFinanceTransactionByIdHandler = async (
   req: Request,
   res: Response
 ) => {
   if (req.user?.role !== "superadmin") {
-    res.status(403).json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
     return;
   }
 
@@ -223,21 +255,21 @@ export const deleteCompanyFinanceTransactionByIdHandler = async (
     const userId = req.user!.userId.toString();
     const companyId = req.user!.companyId;
 
-    await deleteCompanyFinanceTransactionById(
+    const result = await deleteCompanyFinanceTransactionById(
       id,
       { userId, companyId },
       qr.manager
     );
 
-    await qr.commitTransaction();     // ✅ kalıcılaştır
-    res.status(204).send();           // ✅ DELETE için ideal yanıt
+    await qr.commitTransaction(); // ✅ kalıcılaştır
+    res.status(200).send(result); // ✅ DELETE için ideal yanıt
   } catch (error: any) {
-    await qr.rollbackTransaction();   // 🔙 geri al
+    await qr.rollbackTransaction(); // 🔙 geri al
     console.error("❌ DELETE finance transaction error:", error);
     res.status(400).json({
       errorMessage: error.message || "Finansal işlem silinemedi.",
     });
   } finally {
-    await qr.release();               // 🧹 bağlantıyı bırak
+    await qr.release(); // 🧹 bağlantıyı bırak
   }
 };

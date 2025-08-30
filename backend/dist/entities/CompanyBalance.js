@@ -86,5 +86,6 @@ __decorate([
     __metadata("design:type", CompanyLoan_1.CompanyLoan)
 ], CompanyBalance.prototype, "loans", void 0);
 exports.CompanyBalance = CompanyBalance = __decorate([
-    (0, typeorm_1.Entity)({ name: "companybalances" })
+    (0, typeorm_1.Entity)({ name: "companybalances" }),
+    (0, typeorm_1.Index)("uqx_companybalances_companyid_upper_name", { synchronize: false }) // DB side
 ], CompanyBalance);

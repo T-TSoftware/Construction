@@ -3,6 +3,7 @@ import {
   createProjectQuantity,
   getProjectQuantities,
 } from "../services/projectQuantity.service";
+import { AppDataSource } from "../config/data-source";
 
 export const postProjectQuantityHandler = async (
   req: Request,
@@ -12,6 +13,10 @@ export const postProjectQuantityHandler = async (
     res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
     return;
   }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
 
   try {
     const { projectId } = req.params;
@@ -35,19 +40,20 @@ export const postProjectQuantityHandler = async (
         description,
         category,
       },
-      { userId, companyId }
+      { userId, companyId },
+      queryRunner.manager
     );
 
-    res.status(201).json({
-      message: "Metraj başarıyla eklendi.",
-      id: newRecord.id,
-    });
+    await queryRunner.commitTransaction();
+    res.status(201).json({ newRecord });
   } catch (error: any) {
+    await queryRunner.rollbackTransaction();
     console.error("❌ POST project quantity error:", error);
-    res
-      .status(500)
-      .json({ error: error.message || "Metraj kaydı oluşturulamadı." });
-    return;
+    res.status(500).json({
+      errorMessage: error.message || "Metraj kaydı oluşturulamadı.",
+    });
+  } finally {
+    await queryRunner.release();
   }
 };
 

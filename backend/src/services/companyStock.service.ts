@@ -7,6 +7,7 @@ import { saveRefetchSanitize } from "../utils/persist";
 import { sanitizeRules } from "../utils/sanitizeRules";
 import { slug } from "../utils/slugHelper";
 import { sanitizeEntity } from "../utils/sanitize";
+import { generateEntityCode } from "../utils/generateCode";
 //import { generateStockCode } from "../utils/generateCode";
 
 const stockRepo = AppDataSource.getRepository(CompanyStock);
@@ -57,9 +58,16 @@ export const createCompanyStock = async (
     throw new Error(`${data.category} - ${data.name} stoğu zaten mevcut.`);
   }*/
   //const code = await generateStockCode(data.category, manager);
+  /*
   const categorySlug = slug(data.category).toUpperCase(); // CATEGORY kısmı büyük
   const nameSlug = slug(data.name).toLowerCase(); // name kısmı küçük (istersen upper yap)
-  const code = `STK-${categorySlug}-${nameSlug}`;
+  const code = `STK-${categorySlug}-${nameSlug}`;*/
+
+  const code = await generateEntityCode(
+    manager,
+    currentUser.companyId,
+    "CompanyStock"
+  );
 
   const stock = stockRepo.create({
     ...data,

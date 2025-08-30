@@ -6,7 +6,7 @@ import { CompanyStock } from "../entities/CompanyStock";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { processBarterItem } from "./processBarterItem.serivce";
-import { generateNextBarterAgreementItemCode } from "../utils/generateCode";
+import { generateEntityCode, generateNextBarterAgreementItemCode } from "../utils/generateCode";
 import { User } from "../entities/User";
 import { sanitizeEntity } from "../utils/sanitize";
 import { sanitizeRules } from "../utils/sanitizeRules";
@@ -61,11 +61,13 @@ export const postCompanyBarterAgreementItem = async (
       })
     : null;
 
-  const code = await generateNextBarterAgreementItemCode(
+  /*const code = await generateNextBarterAgreementItemCode(
     manager,
     agreement.code,
     data.itemType
-  );
+  );*/
+
+  const code = await generateEntityCode(manager, currentUser.companyId, "CompanyBarterAgreementItem");
 
   const item = itemRepo.create({
     code,

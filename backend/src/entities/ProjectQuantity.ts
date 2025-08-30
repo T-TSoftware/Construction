@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  Unique,
 } from "typeorm";
 import { CompanyProject } from "./CompanyProject";
 import { QuantityItem } from "./QuantityItem";
@@ -13,6 +14,12 @@ import { User } from "./User";
 import { Company } from "./Company";
 
 @Entity({ name: "projectquantities" })
+@Unique("uq_company_projectquantity", [
+  "company",
+  "project",
+  "category",
+  "unit",
+])
 export class ProjectQuantity {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

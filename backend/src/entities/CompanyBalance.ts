@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   JoinColumn,
   OneToMany,
+  Index,
 } from "typeorm";
 import { Company } from "./Company";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
@@ -14,6 +15,7 @@ import { CompanyCheck } from "./CompanyCheck";
 import { CompanyLoan } from "./CompanyLoan";
 
 @Entity({ name: "companybalances" })
+@Index("uqx_companybalances_companyid_upper_name", { synchronize: false }) // DB side
 export class CompanyBalance {
   @PrimaryGeneratedColumn("uuid")
   id!: string;

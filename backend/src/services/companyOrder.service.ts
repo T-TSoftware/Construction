@@ -3,7 +3,10 @@ import { CompanyOrder } from "../entities/CompanyOrder";
 import { CompanyStock } from "../entities/CompanyStock";
 import { CompanyProject } from "../entities/CompanyProject";
 import { EntityManager } from "typeorm";
-import { generateNextOrderCode } from "../utils/generateCode";
+import {
+  generateEntityCode,
+  generateNextOrderCode,
+} from "../utils/generateCode";
 import { decreaseStockQuantity } from "./companyStock.service";
 import { User } from "../entities/User";
 import { saveRefetchSanitize } from "../utils/persist";
@@ -46,11 +49,16 @@ export const createCompanyOrder = async (
   }
 
   // 3. Kod üretimi
-  const code = await generateNextOrderCode({
+  /*const code = await generateNextOrderCode({
     companyId: currentUser.companyId,
     reference: project?.name ?? stock.category,
     manager,
-  });
+  });*/
+  const code = await generateEntityCode(
+    manager,
+    currentUser.companyId,
+    "CompanyOrder"
+  );
 
   // 4. Order oluştur
   const order = orderRepo.create({
@@ -83,23 +91,17 @@ export const createCompanyOrder = async (
   });
 
   return fullOrder;*/
-    return await saveRefetchSanitize({
-      entityName: "CompanyOrder",
-      save: () => orderRepo.save(order),
-      refetch: () =>
-        orderRepo.findOneOrFail({
-          where: { id: order.id, company: { id: currentUser.companyId } },
-          relations: [
-            "project",
-            "company",
-            "stock",
-            "createdBy",
-            "updatedBy",
-          ],
-        }),
-      rules: sanitizeRules,
-      defaultError: "Satıs kaydı oluşturulamadı.",
-    });
+  return await saveRefetchSanitize({
+    entityName: "CompanyOrder",
+    save: () => orderRepo.save(order),
+    refetch: () =>
+      orderRepo.findOneOrFail({
+        where: { id: order.id, company: { id: currentUser.companyId } },
+        relations: ["project", "company", "stock", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Satıs kaydı oluşturulamadı.",
+  });
 };
 
 export const updateOrderPaymentStatus = async (
@@ -137,7 +139,7 @@ export const getCompanyOrders = async (
     where: {
       company: { id: currentUser.companyId },
     },
-    relations: ["stock", "project","createdBy","updatedBy","company"],
+    relations: ["stock", "project", "createdBy", "updatedBy", "company"],
     //order: { transactionDate: "DESC" },
   });
 
@@ -156,7 +158,7 @@ export const getCompanyOrderById = async (
       id,
       company: { id: currentUser.companyId },
     },
-    relations: ["stock", "project","createdBy","updatedBy","company"],
+    relations: ["stock", "project", "createdBy", "updatedBy", "company"],
   });
 
   if (!order) {
@@ -178,7 +180,7 @@ export const getCompanyOrdersByProjectId = async (
       project: { id: projectId, company: { id: currentUser.companyId } },
       company: { id: currentUser.companyId },
     },
-    relations: ["stock", "project", "createdBy", "updatedBy","company"],
+    relations: ["stock", "project", "createdBy", "updatedBy", "company"],
   });
 
   if (!order) {

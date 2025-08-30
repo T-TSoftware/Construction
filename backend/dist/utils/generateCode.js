@@ -7,6 +7,9 @@ exports.generateUserCode = generateUserCode;
 exports.generateNextEstimatedCostCode = generateNextEstimatedCostCode;
 exports.generateNextProjectCode = generateNextProjectCode;
 exports.generateNextBarterCode = generateNextBarterCode;
+exports.nextSequence = nextSequence;
+exports.generateEntityCode = generateEntityCode;
+const Company_1 = require("../entities/Company");
 const ProjectSupplier_1 = require("../entities/ProjectSupplier"); // ya da ProjectSubcontractor
 const ProjectSubcontractor_1 = require("../entities/ProjectSubcontractor");
 const CompanyBarterAgreement_1 = require("../entities/CompanyBarterAgreement");
@@ -204,7 +207,7 @@ const generateNextBarterAgreementItemCode = async (manager, barterAgreementCode,
         SERVICE: "HİZMET",
         ASSET: "VARLIK",
         CASH: "NAKİT",
-        CHECK: "ÇEK"
+        CHECK: "ÇEK",
     };
     const labelTR = itemTypeMap[itemType];
     if (!labelTR) {
@@ -217,7 +220,9 @@ const generateNextBarterAgreementItemCode = async (manager, barterAgreementCode,
         .orderBy("item.code", "DESC")
         .getOne();
     const nextNumber = latest
-        ? (parseInt(latest.code.replace(prefix, "")) + 1).toString().padStart(3, "0")
+        ? (parseInt(latest.code.replace(prefix, "")) + 1)
+            .toString()
+            .padStart(3, "0")
         : "001";
     return `${prefix}${nextNumber}`;
 };
@@ -256,4 +261,60 @@ async function generateNextBarterCode(manager, params) {
         return m ? parseInt(m[1], 10) + 1 : 1;
     })();
     return `${prefix}${String(nextNum).padStart(3, "0")}`;
+}
+/**
+ * Burada entity adlarını Türkçe etikete mapliyoruz.
+ * Serviste sadece entityKey geçirip çağıracağız.
+ */
+const ENTITY_TR_LABEL = {
+    ProjectSubcontractor: "TASERON",
+    ProjectSupplier: "TEDARIK",
+    ProjectQuantity: "METRAJ",
+    CompanyOrder: "SATIS",
+    CompanyCheck: "CEK",
+    CompanyLoan: "KREDI",
+    CompanyBalance: "HESAP",
+    CompanyLoanPayment: "TAKSIT",
+    CompanyFinanceTransaction: "FINANS",
+    CompanyStock: "STOK",
+    CompanyEmployee: "PERSONEL",
+    CompanyBarterAgreement: "TAKAS",
+    CompanyBarterAgreementItem: "TAKASKALEM",
+    // ihtiyaca göre ekle
+};
+/**
+ * Sol taraftaki sayıların uzunluğu (örn: 000123 -> 6 hane)
+ */
+const PAD_LEN = 7;
+/**
+ * Atomik şekilde (tek satırda) companyId + entityKey için seq arttır.
+ * Postgres ON CONFLICT upsert ile “insert or increment” yapıyoruz.
+ */
+async function nextSequence(manager, companyId, entityKey) {
+    const sql = `
+    INSERT INTO artikonsept.entitysequences (company_id, entity_key, seq)
+    VALUES ($1, $2, 1)
+    ON CONFLICT (company_id, entity_key)
+    DO UPDATE SET seq = artikonsept.entitysequences.seq + 1
+    RETURNING seq;
+  `;
+    const rows = await manager.query(sql, [companyId, entityKey]);
+    return Number(rows[0].seq); // pg bigint -> string döner
+}
+/**
+ * Generic Code Generator
+ * companyCode-entity-sequnece
+ * Ex: ART-TASERON-0000123
+ */
+async function generateEntityCode(manager, companyId, entityKey) {
+    // 1) Şirket kodunu al
+    const companyRepo = manager.getRepository(Company_1.Company);
+    const company = await companyRepo.findOneByOrFail({ id: companyId });
+    // 2) Türkçe label’i bul
+    const trLabel = ENTITY_TR_LABEL[entityKey] ?? entityKey.toUpperCase();
+    // 3) Sekansı atomik olarak arttır
+    const seq = await nextSequence(manager, companyId, entityKey);
+    // 4) Kod birleştir
+    const code = `${company.code}-${trLabel}-${String(seq).padStart(PAD_LEN, "0")}`;
+    return code;
 }

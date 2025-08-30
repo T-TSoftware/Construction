@@ -4,6 +4,7 @@ import { CompanyBarterAgreement } from "../entities/CompanyBarterAgreement";
 import { CompanyProject } from "../entities/CompanyProject";
 import { Company } from "../entities/Company";
 import {
+  generateEntityCode,
   generateNextBarterCode,
   generateNextEntityCode,
 } from "../utils/generateCode";
@@ -41,11 +42,12 @@ export const createCompanyBarterAgreement = async (
     },
   });
 
-  const code = await generateNextBarterCode(manager, {
+  /*const code = await generateNextBarterCode(manager, {
     companyId: currentUser.companyId,
     projectCode: project.code, // İZM001 gibi
     counterpartyType: data.counterpartyType.toUpperCase(), // SUPPLIER | SUBCONTRACTOR | ...
-  });
+  });*/
+  const code = await generateEntityCode(manager, currentUser.companyId, "CompanyBarterAgreement");
 
   // ✅ Yeni takas anlaşması nesnesi oluşturuluyor
   const agreement = agreementRepo.create({

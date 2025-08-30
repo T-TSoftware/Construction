@@ -110,6 +110,9 @@ export class CompanyFinanceTransaction {
   @JoinColumn({ name: "barteritemid" })
   barterItem?: CompanyBarterAgreementItem | null;
 
+  @Column({ nullable: true, name: "transfergroupid" })
+  transferGroupId?: string;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: "createdby" })
   createdBy!: User;

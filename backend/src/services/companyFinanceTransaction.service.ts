@@ -2,6 +2,7 @@ import { EntityManager } from "typeorm";
 import { CompanyFinanceTransaction } from "../entities/CompanyFinance";
 import { CompanyBalance } from "../entities/CompanyBalance";
 import { CompanyProject } from "../entities/CompanyProject";
+import { v4 as uuidv4 } from "uuid";
 
 import { AppDataSource } from "../config/data-source";
 
@@ -101,6 +102,8 @@ export const createCompanyFinanceTransaction = async (
       code: data.toAccountCode,
     });
 
+    const groupId = uuidv4();
+
     const outCode = await generateFinanceTransactionCode(
       "TRANSFER",
       data.transactionDate,
@@ -130,6 +133,7 @@ export const createCompanyFinanceTransaction = async (
       invoiceYN: data.invoiceYN ?? "N",
       invoiceCode: data.invoiceCode,
       referenceCode: data.referenceCode,
+      transferGroupId: groupId,
       description: `Transfer to ${toAccount.name}`,
       company: { id: currentUser.companyId },
       project: project ? { id: project.id } : null,
@@ -144,6 +148,7 @@ export const createCompanyFinanceTransaction = async (
       amount: data.amount,
       currency: data.currency,
       fromAccount: { id: toAccount.id },
+      toAccount: { id: fromAccount.id },
       targetType: "BANK",
       targetId: fromAccount.id,
       targetName: fromAccount.name,
@@ -151,6 +156,8 @@ export const createCompanyFinanceTransaction = async (
       method: data.method,
       category: data.category,
       invoiceYN: "N",
+      referenceCode: data.referenceCode,
+      transferGroupId: groupId,
       description: `Transfer from ${fromAccount.name}`,
       company: { id: currentUser.companyId },
       project: project ? { id: project.id } : null,

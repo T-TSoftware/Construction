@@ -8,6 +8,8 @@ const generatedFieldMessages: Record<UniqueViolationKey, string> = {
     "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen taşeron kaydı zaten mevcut.",
   "ProjectSupplier.projectid_category_unit":
     "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen tedarik kaydı zaten mevcut.",
+  "ProjectQuantity.companyid_projectid_category_unit":
+    "Bu metraj bu proje için zaten mevcut",
   "CompanyCheck.companyid_checknumber":
     "Bu Çek Numarasıyla bir Çek zaten mevcut.",
   "CompanyEmployee.companyid_code": "Bu çalışan zaten mevcut",

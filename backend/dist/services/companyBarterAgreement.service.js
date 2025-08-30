@@ -19,11 +19,12 @@ const createCompanyBarterAgreement = async (data, currentUser, manager = data_so
             company: { id: currentUser.companyId },
         },
     });
-    const code = await (0, generateCode_1.generateNextBarterCode)(manager, {
-        companyId: currentUser.companyId,
-        projectCode: project.code, // İZM001 gibi
-        counterpartyType: data.counterpartyType.toUpperCase(), // SUPPLIER | SUBCONTRACTOR | ...
-    });
+    /*const code = await generateNextBarterCode(manager, {
+      companyId: currentUser.companyId,
+      projectCode: project.code, // İZM001 gibi
+      counterpartyType: data.counterpartyType.toUpperCase(), // SUPPLIER | SUBCONTRACTOR | ...
+    });*/
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyBarterAgreement");
     // ✅ Yeni takas anlaşması nesnesi oluşturuluyor
     const agreement = agreementRepo.create({
         code,
