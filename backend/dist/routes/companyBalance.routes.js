@@ -12,10 +12,10 @@ router.use(authMiddleware_1.authMiddleware);
 // 📌 GET → Tüm yetkili kullanıcılar
 router.get("/", companyBalance_controller_1.getCompanyBalancesHandler);
 // 📌 POST → Sadece super_admin
-router.post("/", (0, requestValidation_1.validate)(companyBalance_validation_1.balanceCreateSchema), companyBalance_controller_1.postCompanyBalanceHandler);
+router.post("/", (0, requestValidation_1.validateArray)(companyBalance_validation_1.balanceCreateSchema), companyBalance_controller_1.postCompanyBalanceHandler);
 // 📌 PUT → Sadece super_admin
 router.put("/:id", (0, requestValidation_1.validate)(companyBalance_validation_1.balanceUpdateSchema), companyBalance_controller_1.putCompanyBalanceHandler);
-router.put("/", companyBalance_controller_1.putCompanyBalanceBulkHandler);
+router.put("/", (0, requestValidation_1.validateArray)(companyBalance_validation_1.balanceUpdateSchema), companyBalance_controller_1.putCompanyBalanceBulkHandler);
 // 📌 DELETE → Sadece super_admin
 router.delete("/:id", companyBalance_controller_1.deleteCompanyBalanceHandler);
 exports.default = router;
