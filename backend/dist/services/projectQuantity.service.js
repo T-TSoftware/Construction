@@ -9,6 +9,8 @@ const ProjectSupplier_1 = require("../entities/ProjectSupplier");
 const generateCode_1 = require("../utils/generateCode");
 const ProjectSubcontractor_1 = require("../entities/ProjectSubcontractor");
 const errorHandler_1 = require("../utils/errorHandler");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const projectQuantityRepo = data_source_1.AppDataSource.getRepository(ProjectQuantity_1.ProjectQuantity);
 const projectRepo = data_source_1.AppDataSource.getRepository(CompanyProject_1.CompanyProject);
 const quantityItemRepo = data_source_1.AppDataSource.getRepository(QuantityItem_1.QuantityItem);
@@ -27,8 +29,10 @@ const createProjectQuantity = async (projectId, data, currentUser, manager = dat
     const quantityItem = data.quantityItemCode
         ? await projectRepo.findOneByOrFail({ code: data.quantityItemCode })
         : null;
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "ProjectQuantity");
     // ✅ Yeni metraj kaydı oluşturuluyor
     const newRecord = projectQuantityRepo.create({
+        code,
         project: { id: project.id },
         quantityItem: quantityItem ? { id: quantityItem.id } : null,
         quantity: data.quantity,
@@ -39,7 +43,8 @@ const createProjectQuantity = async (projectId, data, currentUser, manager = dat
         createdBy: { id: currentUser.userId },
         updatedBy: { id: currentUser.userId },
     });
-    const savedQuantity = await projectQuantityRepo.save(newRecord);
+    //const savedQuantity = await projectQuantityRepo.save(newRecord);
+    const savedQuantity = await (0, errorHandler_1.handleSaveWithUniqueConstraint)(() => projectQuantityRepo.save(newRecord), "ProjectQuantity");
     /*
     // Eğer supplier tarafı otomatik oluşturulursa bu kısım da açılabilir
     const supplierCode = await generateNextEntityCode(
@@ -88,7 +93,17 @@ const createProjectQuantity = async (projectId, data, currentUser, manager = dat
     });
     //await projectSubcontractorRepo.save(autoSubcontractor);
     await (0, errorHandler_1.handleSaveWithUniqueConstraint)(() => projectSubcontractorRepo.save(autoSubcontractor), "ProjectSubcontractor");
-    return savedQuantity;
+    const full = await projectQuantityRepo.findOneOrFail({
+        where: { id: savedQuantity.id, company: { id: currentUser.companyId } },
+        relations: [
+            "company",
+            "project",
+            "createdBy",
+            "updatedBy",
+        ],
+    });
+    //return savedQuantity;
+    return (0, sanitize_1.sanitizeEntity)(full, "ProjectQuantity", sanitizeRules_1.sanitizeRules);
 };
 exports.createProjectQuantity = createProjectQuantity;
 const getProjectQuantities = async (projectId, currentUser // ✅ companyId alındı

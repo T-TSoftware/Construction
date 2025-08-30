@@ -21,8 +21,14 @@ const createProjectSubcontractor = async (data, currentUser, manager = data_sour
             company: { id: currentUser.companyId },
         },
     });
-    const code = await (0, generateCode_1.generateNextEntityCode)(manager, project.code, data.category, "TAS", // Taşeron tipi kod
-    "ProjectSubcontractor");
+    /*const code = await generateNextEntityCode(
+      manager,
+      project.code,
+      data.category,
+      "TAS", // Taşeron tipi kod
+      "ProjectSubcontractor"
+    );*/
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "ProjectSubcontractor");
     const normalizedCategory = data.category.trim().toUpperCase();
     const normalizedUnit = data.unit.trim().toUpperCase();
     const subcontractor = subcontractorRepo.create({

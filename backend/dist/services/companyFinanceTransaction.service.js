@@ -4,6 +4,7 @@ exports.updateCompanyFinanceTransactionNew = exports.updateCompanyFinanceTransac
 const CompanyFinance_1 = require("../entities/CompanyFinance");
 const CompanyBalance_1 = require("../entities/CompanyBalance");
 const CompanyProject_1 = require("../entities/CompanyProject");
+const uuid_1 = require("uuid");
 const data_source_1 = require("../config/data-source");
 // Eğer ayrı bir dosyada tutuyorsan import edebilirsin
 const generateCode_1 = require("../utils/generateCode");
@@ -51,6 +52,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
         const toAccount = await balanceRepo.findOneByOrFail({
             code: data.toAccountCode,
         });
+        const groupId = (0, uuid_1.v4)();
         const outCode = await (0, generateCode_1.generateFinanceTransactionCode)("TRANSFER", data.transactionDate, manager, "OUT");
         const inCode = await (0, generateCode_1.generateFinanceTransactionCode)("TRANSFER", data.transactionDate, manager, "IN");
         const outTransaction = transactionRepo.create({
@@ -69,6 +71,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             invoiceYN: data.invoiceYN ?? "N",
             invoiceCode: data.invoiceCode,
             referenceCode: data.referenceCode,
+            transferGroupId: groupId,
             description: `Transfer to ${toAccount.name}`,
             company: { id: currentUser.companyId },
             project: project ? { id: project.id } : null,
@@ -82,6 +85,7 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             amount: data.amount,
             currency: data.currency,
             fromAccount: { id: toAccount.id },
+            toAccount: { id: fromAccount.id },
             targetType: "BANK",
             targetId: fromAccount.id,
             targetName: fromAccount.name,
@@ -89,6 +93,8 @@ const createCompanyFinanceTransaction = async (data, currentUser, manager = data
             method: data.method,
             category: data.category,
             invoiceYN: "N",
+            referenceCode: data.referenceCode,
+            transferGroupId: groupId,
             description: `Transfer from ${fromAccount.name}`,
             company: { id: currentUser.companyId },
             project: project ? { id: project.id } : null,

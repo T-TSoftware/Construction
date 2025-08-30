@@ -2,7 +2,7 @@ import { AppDataSource } from "../config/data-source";
 import { EntityManager } from "typeorm";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
 import { CompanyProject } from "../entities/CompanyProject";
-import { generateNextEntityCode } from "../utils/generateCode";
+import { generateEntityCode, generateNextEntityCode } from "../utils/generateCode";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { ProjectEstimatedCost } from "../entities/ProjectEstimatedCost";
@@ -59,13 +59,14 @@ export const createProjectSupplier = async (
     : null;
 
   // ✅ Kod üretimi
-  const code = await generateNextEntityCode(
+  /*const code = await generateNextEntityCode(
     manager,
     project.code,
     data.category,
     "TED",
     "ProjectSupplier"
-  );
+  );*/
+  const code = await generateEntityCode(manager, currentUser.companyId, "ProjectSupplier");
 
   const normalizedCategory = data.category.trim().toUpperCase();
   const normalizedUnit = data.unit.trim().toUpperCase();

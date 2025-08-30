@@ -20,6 +20,7 @@ import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
 import { sanitizeEntity } from "../utils/sanitize";
 import { sanitizeRules } from "../utils/sanitizeRules";
 import { saveRefetchSanitize } from "../utils/persist";
+import { generateEntityCode } from "../utils/generateCode";
 
 export const createCompanyLoanPayment = async (
   loanId: string,
@@ -51,10 +52,18 @@ export const createCompanyLoanPayment = async (
     relations: ["bank", "project"],
   });
 
+  //const code = `${loan.code}-TAKSIT:${data.installmentNumber}`,
+
+  const code = await generateEntityCode(
+    manager,
+    currentUser.companyId,
+    "CompanyLoanPayment"
+  );
+
   // 🧾 LoanPayment oluşturuluyor
   const payment = paymentRepo.create({
     loan: { id: loan.id },
-    code: `${loan.code}-TAKSIT:${data.installmentNumber}`,
+    code,
     installmentNumber: data.installmentNumber,
     dueDate: data.dueDate,
     totalAmount: data.principalAmount + data.interestAmount, //data.totalAmount,

@@ -4,6 +4,7 @@ import {
   createBalance,
   updateBalance,
   deleteBalance,
+  updateManyCompanyBalances,
 } from "../services/companyBalance.service";
 import { AppDataSource } from "../config/data-source";
 
@@ -136,5 +137,42 @@ export const deleteCompanyBalanceHandler = async (
   } catch (error) {
     console.error("❌ DELETE balance error:", error);
     res.status(500).json({ error: "Bakiye silinemedi." });
+  }
+};
+
+export const putCompanyBalanceBulkHandler = async (req: Request, res: Response) => {
+  if (req.user?.role !== "superadmin") {
+    res.status(403).json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  const qr = AppDataSource.createQueryRunner();
+  await qr.connect();
+  await qr.startTransaction();
+
+  try {
+    const body = req.body;
+    if (!Array.isArray(body)) {
+      throw new Error("Gövde (body) bir dizi olmalıdır.");
+    }
+    // her elemanda id olmalı
+    for (const item of body) {
+      if (!item?.id || typeof item.id !== "string") {
+        throw new Error("Her güncelleme nesnesi için geçerli bir 'id' zorunludur.");
+      }
+    }
+
+    const currentUser = { userId: req.user!.userId.toString(), companyId: req.user!.companyId };
+
+    const updated = await updateManyCompanyBalances(qr.manager, body, currentUser);
+
+    await qr.commitTransaction();
+    res.status(200).json(updated);
+  } catch (err: any) {
+    await qr.rollbackTransaction();
+    console.error("❌ BULK PUT balances error:", err);
+    res.status(400).json({ errorMessage: err.message || "Bakiyeler güncellenemedi." });
+  } finally {
+    await qr.release();
   }
 };

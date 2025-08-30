@@ -6,6 +6,7 @@ import {
   postCompanyBalanceHandler,
   putCompanyBalanceHandler,
   deleteCompanyBalanceHandler,
+  putCompanyBalanceBulkHandler,
 } from "../controllers/companyBalance.controller";
 import { validate } from "../middlewares/requestValidation";
 import {
@@ -26,6 +27,8 @@ router.post("/", validate(balanceCreateSchema), postCompanyBalanceHandler);
 
 // 📌 PUT → Sadece super_admin
 router.put("/:id", validate(balanceUpdateSchema), putCompanyBalanceHandler);
+
+router.put("/", putCompanyBalanceBulkHandler);
 
 // 📌 DELETE → Sadece super_admin
 router.delete("/:id", deleteCompanyBalanceHandler);

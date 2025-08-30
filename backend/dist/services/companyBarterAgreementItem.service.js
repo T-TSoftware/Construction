@@ -41,7 +41,12 @@ const postCompanyBarterAgreementItem = async (agreementId, data, currentUser, ma
             company: { id: currentUser.companyId },
         })
         : null;
-    const code = await (0, generateCode_1.generateNextBarterAgreementItemCode)(manager, agreement.code, data.itemType);
+    /*const code = await generateNextBarterAgreementItemCode(
+      manager,
+      agreement.code,
+      data.itemType
+    );*/
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyBarterAgreementItem");
     const item = itemRepo.create({
         code,
         barterAgreement: agreement,

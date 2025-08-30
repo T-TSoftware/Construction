@@ -84,5 +84,11 @@ __decorate([
     __metadata("design:type", Date)
 ], ProjectQuantity.prototype, "updatedatetime", void 0);
 exports.ProjectQuantity = ProjectQuantity = __decorate([
-    (0, typeorm_1.Entity)({ name: "projectquantities" })
+    (0, typeorm_1.Entity)({ name: "projectquantities" }),
+    (0, typeorm_1.Unique)("uq_company_projectquantity", [
+        "company",
+        "project",
+        "category",
+        "unit",
+    ])
 ], ProjectQuantity);

@@ -8,6 +8,7 @@ import { CompanyProject } from "../entities/CompanyProject";
 import { sanitizeRules } from "../utils/sanitizeRules";
 import { saveRefetchSanitize } from "../utils/persist";
 import { sanitizeEntity } from "../utils/sanitize";
+import { generateEntityCode } from "../utils/generateCode";
 
 export const createCompanyCheck = async (
   data: {
@@ -39,9 +40,17 @@ export const createCompanyCheck = async (
   // 🔄 Duruma göre otomatik transaction oluştur
   let transaction = null;
 
+  //const code = `CEK-${data.checkNo}`,
+
+  const code = await generateEntityCode(
+      manager,
+      currentUser.companyId,
+      "CompanyCheck"
+    );
+
   // 🧾 Check oluşturuluyor
   const check = repo.create({
-    code: `CEK-${data.checkNo}`,
+    code,
     checkNo: data.checkNo,
     checkDate: data.checkDate,
     //transactionDate: data.dueDate, //data.transactionDate,

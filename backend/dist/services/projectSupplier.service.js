@@ -35,7 +35,14 @@ const createProjectSupplier = async (data, currentUser, manager = data_source_1.
         })
         : null;
     // ✅ Kod üretimi
-    const code = await (0, generateCode_1.generateNextEntityCode)(manager, project.code, data.category, "TED", "ProjectSupplier");
+    /*const code = await generateNextEntityCode(
+      manager,
+      project.code,
+      data.category,
+      "TED",
+      "ProjectSupplier"
+    );*/
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "ProjectSupplier");
     const normalizedCategory = data.category.trim().toUpperCase();
     const normalizedUnit = data.unit.trim().toUpperCase();
     // ✅ Yeni tedarikçi oluştur

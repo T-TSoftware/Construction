@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCompanyFinanceTransactionByIdHandler = exports.getCompanyFinanceTransactionByIdHandler = exports.getCompanyFinanceTransactionsHandler = exports.patchCompanyFinanceTransactionHandler = exports.postCompanyFinanceTransactionHandler = void 0;
+exports.deleteCompanyFinanceTransactionByIdHandler = exports.getCompanyFinanceTransactionByBankIdHandler = exports.getCompanyFinanceTransactionByIdHandler = exports.getCompanyFinanceTransactionsHandler = exports.patchCompanyFinanceTransactionHandler = exports.postCompanyFinanceTransactionHandler = void 0;
 const data_source_1 = require("../config/data-source");
 const companyFinance_service_1 = require("../services/companyFinance.service");
 const companyFinanceTransaction_service_1 = require("../services/companyFinanceTransaction.service");
@@ -137,10 +137,35 @@ const getCompanyFinanceTransactionByIdHandler = async (req, res) => {
     }
 };
 exports.getCompanyFinanceTransactionByIdHandler = getCompanyFinanceTransactionByIdHandler;
+const getCompanyFinanceTransactionByBankIdHandler = async (req, res) => {
+    if (req.user?.role !== "superadmin") {
+        res.status(403).json({ error: "Yalnızca superadmin işlem yapabilir." });
+        return;
+    }
+    try {
+        const { bankId } = req.params;
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const transaction = await (0, companyFinance_service_1.getCompanyFinanceTransactionByBankId)(bankId, {
+            userId,
+            companyId,
+        });
+        res.status(200).json(transaction);
+    }
+    catch (error) {
+        console.error("❌ GET finance transaction by ID error:", error);
+        res.status(500).json({
+            error: error.message || "Finansal işlem bilgisi alınamadı.",
+        });
+    }
+};
+exports.getCompanyFinanceTransactionByBankIdHandler = getCompanyFinanceTransactionByBankIdHandler;
 // 📌 Silme – Sadece superadmin
 const deleteCompanyFinanceTransactionByIdHandler = async (req, res) => {
     if (req.user?.role !== "superadmin") {
-        res.status(403).json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+        res
+            .status(403)
+            .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
         return;
     }
     const qr = data_source_1.AppDataSource.createQueryRunner();
@@ -153,9 +178,9 @@ const deleteCompanyFinanceTransactionByIdHandler = async (req, res) => {
         }
         const userId = req.user.userId.toString();
         const companyId = req.user.companyId;
-        await (0, companyFinance_service_1.deleteCompanyFinanceTransactionById)(id, { userId, companyId }, qr.manager);
+        const result = await (0, companyFinance_service_1.deleteCompanyFinanceTransactionById)(id, { userId, companyId }, qr.manager);
         await qr.commitTransaction(); // ✅ kalıcılaştır
-        res.status(204).send(); // ✅ DELETE için ideal yanıt
+        res.status(200).send(result); // ✅ DELETE için ideal yanıt
     }
     catch (error) {
         await qr.rollbackTransaction(); // 🔙 geri al

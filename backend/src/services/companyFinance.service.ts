@@ -8,9 +8,18 @@ import { AppDataSource } from "../config/data-source";
 // Eğer ayrı bir dosyada tutuyorsan import edebilirsin
 import { generateFinanceTransactionCode } from "../utils/generateCode";
 import { CompanyOrder } from "../entities/CompanyOrder";
-import { updateOrderPaymentStatus, updateOrderPaymentStatusNew } from "./companyOrder.service";
+import {
+  updateOrderPaymentStatus,
+  updateOrderPaymentStatusNew,
+} from "./companyOrder.service";
 import { sanitizeEntity } from "../utils/sanitize";
 import { sanitizeRules } from "../utils/sanitizeRules";
+import { IsNull, Not } from "typeorm";
+import { updateBarterItemPaymentStatusNew } from "./companyBarterAgreementItem.service";
+import { updateCheckPaymentStatusNew } from "./companyCheck.service";
+import { updateLoanPaymentStatusNew } from "./companyLoanPayment.service";
+import { updateProjectSubcontractorStatusNew } from "./projectSubcontractor.service";
+import { updateProjectSupplierStatusNew } from "./projectSupplier.service";
 
 const transactionRepo = AppDataSource.getRepository(CompanyFinanceTransaction);
 const balanceRepo = AppDataSource.getRepository(CompanyBalance);
@@ -456,6 +465,41 @@ export const getCompanyFinanceTransactionById = async (
   return sanitizeEntity(transaction, "CompanyFinance", sanitizeRules);
 };
 
+export const getCompanyFinanceTransactionByBankId = async (
+  bankId: string,
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const repo = manager.getRepository(CompanyFinanceTransaction);
+
+  const transaction = await repo.find({
+    where: {
+      company: { id: currentUser.companyId },
+      fromAccount: { id: bankId },
+    },
+    relations: [
+      "company",
+      "project",
+      "fromAccount",
+      "toAccount",
+      "check",
+      "order",
+      "loanPayment",
+      "subcontractor",
+      "supplier",
+      "barterItem",
+      "createdBy",
+      "updatedBy",
+    ],
+  });
+
+  if (!transaction) {
+    throw new Error("Banka için finansal işlem bulunamadı.");
+  }
+
+  return sanitizeEntity(transaction, "CompanyFinance", sanitizeRules);
+};
+
 export const createLoanTransactionFromPaymentData = async (
   payment: {
     paymentCode: string;
@@ -598,13 +642,6 @@ export const createBarterTransactionFromCashDetailData = async (
   return { message: "Finans kaydı başarıyla silindi." };
 };*/
 
-import { IsNull, Not } from "typeorm";
-import { updateBarterItemPaymentStatusNew } from "./companyBarterAgreementItem.service";
-import { updateCheckPaymentStatusNew } from "./companyCheck.service";
-import { updateLoanPaymentStatusNew } from "./companyLoanPayment.service";
-import { updateProjectSubcontractorStatusNew } from "./projectSubcontractor.service";
-import { updateProjectSupplierStatusNew } from "./projectSupplier.service";
-
 export const deleteCompanyFinanceTransactionById = async (
   id: string,
   currentUser: { userId: string; companyId: string },
@@ -618,112 +655,87 @@ export const deleteCompanyFinanceTransactionById = async (
     relations: ["company", "fromAccount", "toAccount"],
   });
 
-  // --- TRANSFER özel mantık ---
-  /*if (tx.type === "TRANSFER") {
-    // İsteğe bağlı sıkılaştırma (tarih eşleştirmesi):
-    const sameDay = tx.transactionDate;
+  // ---------------------------------------------------------------------------
+  // TRANSFER ise: aynı transferGroupId'deki iki bacağı birlikte sil + bakiyeyi
+  // OUT bacağı yönünde TEK SEFERDE reverse et
+  // ---------------------------------------------------------------------------
+  if (tx.type === "TRANSFER") {
+    // Aynı gruptaki bacakları çek
+    const legs = tx.transferGroupId
+      ? await txRepo.find({
+          where: {
+            company: { id: currentUser.companyId },
+            type: "TRANSFER",
+            transferGroupId: tx.transferGroupId,
+          },
+          relations: ["fromAccount", "toAccount"],
+          order: { createdatetime: "ASC" }, // Out önce kaydedilmiş olur genelde
+        })
+      : [];
 
-    if (tx.toAccount) {
-      // ============ OUT BACAĞI ============
-      // IN bacağını deterministik ara:
-      // - type TRANSFER
-      // - id != OUT.id
-      // - fromAccount.id = OUT.toAccount.id
-      // - toAccount IS NULL
-      // - amount & currency aynı
-      // - (opsiyonel) transactionDate aynı
-      // - targetId = OUT.fromAccount.id  (kritik eşleştirme)
-      const inLeg = await txRepo.findOne({
-        where: {
-          company: { id: currentUser.companyId },
-          type: "TRANSFER",
-          id: Not(tx.id),
-          fromAccount: { id: tx.toAccount.id },
-          toAccount: IsNull(),
-          amount: tx.amount,
-          currency: tx.currency,
-          // transactionDate: sameDay, // istersen aç
-          targetId: tx.fromAccount?.id,
-        },
-        relations: ["fromAccount", "toAccount"],
-      });
+    // Yardımcı: OUT bacağını seç (öncelik: TRFOUT -> en eski kayıt -> tx’nin kendisi)
+    const pickOutLeg = (
+      a: CompanyFinanceTransaction,
+      b?: CompanyFinanceTransaction
+    ) => {
+      if (a?.code?.includes("TRFOUT")) return a;
+      if (b?.code?.includes("TRFOUT")) return b!;
+      // Gruplu sorguda order ASC olduğu için ilk kayıtı OUT varsay
+      return a;
+    };
 
-      // Bakiyeyi sadece bir kez geri al: OUT bacağının from/to bilgileri yeterli
+    if (legs.length >= 2) {
+      const outLeg = pickOutLeg(legs[0], legs[1]);
+      const fromId = outLeg.fromAccount?.id ?? null;
+      const toId = outLeg.toAccount?.id ?? null;
+
+      // 1) Bakiyeyi reverse (tek sefer OUT yönünde)
       await updateCompanyBalanceAfterTransaction(
         "TRANSFER",
-        tx.fromAccount?.id ?? null,
-        tx.toAccount?.id ?? null,
-        tx.amount,
+        fromId,
+        toId,
+        outLeg.amount,
         manager,
         true
       );
 
-      // IN varsa onu da sil, sonra OUT'u sil
-      if (inLeg) {
-        await txRepo.delete({ id: inLeg.id });
-      }
-      await txRepo.delete({ id: tx.id });
+      // 2) İki bacağı birlikte sil
+      await txRepo.delete(legs.map((l) => l.id));
 
-      return { message: "Transfer işlemi (OUT+IN) başarıyla silindi." };
-    } else {
-      // ============ IN BACAĞI ============
-      // OUT bacağını deterministik ara:
-      // - type TRANSFER
-      // - toAccount NOT NULL
-      // - amount & currency aynı
-      // - (opsiyonel) transactionDate aynı
-      // - fromAccount.id = IN.targetId        (OUT kaynağı = IN.targetId)
-      // - toAccount.id   = IN.fromAccount.id  (OUT hedefi  = IN.fromAccount)
-      const outLeg = await txRepo.findOne({
-        where: {
-          company: { id: currentUser.companyId },
-          type: "TRANSFER",
-          id: Not(tx.id),
-          toAccount: Not(IsNull()),
-          amount: tx.amount,
-          currency: tx.currency,
-          // transactionDate: sameDay, // istersen aç
-          fromAccount: { id: String(tx.targetId) },
-          toAccount: { id: tx.fromAccount?.id },
-        },
-        relations: ["fromAccount", "toAccount"],
-      });
-
-      if (outLeg?.fromAccount && outLeg?.toAccount) {
-        // OUT bacağı bulunduysa onun from/to bilgileriyle reverse et
-        await updateCompanyBalanceAfterTransaction(
-          "TRANSFER",
-          outLeg.fromAccount.id,
-          outLeg.toAccount.id,
-          tx.amount,
-          manager,
-          true
-        );
-        await txRepo.delete({ id: outLeg.id });
-      } else {
-        // OUT bacağı bulunamadıysa yine de reverse edebilmek için,
-        // IN tarafındaki işaretlerden türet:
-        //  - OUT.fromAccount.id = IN.targetId
-        //  - OUT.toAccount.id   = IN.fromAccount.id
-        const reverseFrom = String(tx.targetId) || null;
-        const reverseTo = tx.fromAccount?.id || null;
-
-        await updateCompanyBalanceAfterTransaction(
-          "TRANSFER",
-          reverseFrom,
-          reverseTo,
-          tx.amount,
-          manager,
-          true
-        );
-      }
-
-      await txRepo.delete({ id: tx.id });
-      return { message: "Transfer işlemi (IN+OUT) başarıyla silindi." };
+      return { message: "Transfer işlemi (iki bacak) başarıyla silindi." };
     }
-  }*/
 
-  // --- TRANSFER dışı (PAYMENT/COLLECTION) ---
+    // transferGroupId var ama tek bacak bulunabildi (olağandışı senaryo)
+    // veya transferGroupId yok (eski kayıt) — tek bacak üzerinden doğru reverse yapalım.
+    const single = legs[0] ?? tx;
+
+    // Eğer tek bacak IN ise reverse’i OUT yönünde yapmak için from/to’yu SWAP’le
+    const looksLikeIn = single.code?.includes("TRFIN");
+    const fromId = looksLikeIn
+      ? single.toAccount?.id ?? null
+      : single.fromAccount?.id ?? null;
+    const toId = looksLikeIn
+      ? single.fromAccount?.id ?? null
+      : single.toAccount?.id ?? null;
+
+    await updateCompanyBalanceAfterTransaction(
+      "TRANSFER",
+      fromId,
+      toId,
+      single.amount,
+      manager,
+      true
+    );
+
+    await txRepo.delete({ id: single.id });
+    return { message: "Transfer işlemi (tek bacak) başarıyla silindi." };
+  }
+
+  // ---------------------------------------------------------------------------
+  // TRANSFER DIŞI (PAYMENT / COLLECTION):
+  // ---------------------------------------------------------------------------
+
+  // 1) Bakiye reverse
   await updateCompanyBalanceAfterTransaction(
     tx.type,
     tx.fromAccount?.id ?? null,
@@ -733,7 +745,7 @@ export const deleteCompanyFinanceTransactionById = async (
     true
   );
 
-  // Kategoriye bağlı geri alma (varsa)
+  // 2) Kategoriye bağlı geri alma (varsa)
   if (tx.category === "SUBCONTRACTOR" && tx.referenceCode) {
     await updateProjectSubcontractorStatusNew(
       tx.referenceCode,
@@ -790,6 +802,7 @@ export const deleteCompanyFinanceTransactionById = async (
     );
   }
 
+  // 3) Sil
   await txRepo.delete({ id: tx.id });
   return { message: "Finans kaydı başarıyla silindi." };
 };

@@ -8,6 +8,7 @@ const CompanyProject_1 = require("../entities/CompanyProject");
 const persist_1 = require("../utils/persist");
 const sanitizeRules_1 = require("../utils/sanitizeRules");
 const sanitize_1 = require("../utils/sanitize");
+const generateCode_1 = require("../utils/generateCode");
 const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const loanRepo = manager.getRepository(CompanyLoan_1.CompanyLoan);
     const balanceRepo = manager.getRepository(CompanyBalance_1.CompanyBalance);
@@ -26,10 +27,12 @@ const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppD
             },
         });
     }
-    const code = `KRD-${data.name
-        .toUpperCase()
-        .replace(/\s+/g, "-") // boşlukları tireye çevir
-        .replace(/[^A-Z0-9\-]/g, "")}`; // Türkçe karakterleri, özel sembolleri vs. temizle
+    /*const code = `KRD-${data.name
+      .toUpperCase()
+      .replace(/\s+/g, "-") // boşlukları tireye çevir
+      .replace(/[^A-Z0-9\-]/g, "")}`; // Türkçe karakterleri, özel sembolleri vs. temizle
+      */
+    const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyLoan");
     const loan = loanRepo.create({
         code, //data.code,
         name: data.name,
@@ -58,13 +61,7 @@ const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppD
         save: () => loanRepo.save(loan),
         refetch: () => loanRepo.findOneOrFail({
             where: { id: loan.id, company: { id: currentUser.companyId } },
-            relations: [
-                "bank",
-                "project",
-                "company",
-                "createdBy",
-                "updatedBy",
-            ],
+            relations: ["bank", "project", "company", "createdBy", "updatedBy"],
         }),
         rules: sanitizeRules_1.sanitizeRules,
         defaultError: "Kredi kaydı oluşturulamadı.",

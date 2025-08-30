@@ -399,4 +399,27 @@ exports.sanitizeRules = {
             toAccount: "toAccount",
         },
     },
+    ProjectQuantity: {
+        include: [
+            "id",
+            "code",
+            "company",
+            "project",
+            "quantityItem",
+            "quantity",
+            "unit",
+            "description",
+            "category",
+            "createdBy",
+            "updatedBy",
+            "createdatetime",
+            "updatedatetime",
+        ],
+        relations: {
+            company: "Company",
+            createdBy: "User",
+            updatedBy: "User",
+            project: "project",
+        },
+    },
 };

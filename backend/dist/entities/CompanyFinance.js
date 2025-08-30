@@ -139,6 +139,10 @@ __decorate([
     __metadata("design:type", Object)
 ], CompanyFinanceTransaction.prototype, "barterItem", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true, name: "transfergroupid" }),
+    __metadata("design:type", String)
+], CompanyFinanceTransaction.prototype, "transferGroupId", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => User_1.User),
     (0, typeorm_1.JoinColumn)({ name: "createdby" }),
     __metadata("design:type", User_1.User)

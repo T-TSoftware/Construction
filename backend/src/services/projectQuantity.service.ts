@@ -4,9 +4,11 @@ import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { CompanyProject } from "../entities/CompanyProject";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
-import { generateNextEntityCode } from "../utils/generateCode";
+import { generateEntityCode, generateNextEntityCode } from "../utils/generateCode";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { sanitizeEntity } from "../utils/sanitize";
 
 const projectQuantityRepo = AppDataSource.getRepository(ProjectQuantity);
 const projectRepo = AppDataSource.getRepository(CompanyProject);
@@ -45,8 +47,11 @@ export const createProjectQuantity = async (
     ? await projectRepo.findOneByOrFail({ code: data.quantityItemCode })
     : null;
 
+  const code = await generateEntityCode(manager, currentUser.companyId, "ProjectQuantity");
+
   // ✅ Yeni metraj kaydı oluşturuluyor
   const newRecord = projectQuantityRepo.create({
+    code,
     project: { id: project.id },
     quantityItem: quantityItem ? { id: quantityItem.id } : null,
     quantity: data.quantity,
@@ -58,7 +63,12 @@ export const createProjectQuantity = async (
     updatedBy: { id: currentUser.userId },
   });
 
-  const savedQuantity = await projectQuantityRepo.save(newRecord);
+  //const savedQuantity = await projectQuantityRepo.save(newRecord);
+
+  const savedQuantity = await handleSaveWithUniqueConstraint(
+    () => projectQuantityRepo.save(newRecord),
+    "ProjectQuantity"
+  );
 
   /*
   // Eğer supplier tarafı otomatik oluşturulursa bu kısım da açılabilir
@@ -122,7 +132,18 @@ export const createProjectQuantity = async (
     "ProjectSubcontractor"
   );
 
-  return savedQuantity;
+  const full = await projectQuantityRepo.findOneOrFail({
+    where: { id: savedQuantity.id, company: { id: currentUser.companyId } },
+    relations: [
+      "company",
+      "project",
+      "createdBy",
+      "updatedBy",
+    ],
+  });
+
+  //return savedQuantity;
+  return sanitizeEntity(full, "ProjectQuantity", sanitizeRules);
 };
 
 export const getProjectQuantities = async (

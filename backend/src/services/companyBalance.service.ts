@@ -1,10 +1,20 @@
 import { AppDataSource } from "../config/data-source";
 import { CompanyBalance } from "../entities/CompanyBalance";
-import { generateNextBalanceCode } from "../utils/generateCode";
+import {
+  generateEntityCode,
+  generateNextBalanceCode,
+} from "../utils/generateCode";
 import { Company } from "../entities/Company";
-import { EntityManager } from "typeorm";
+import { EntityManager, In } from "typeorm";
 
 const balanceRepo = AppDataSource.getRepository(CompanyBalance);
+
+type BalanceUpdateInput = {
+  id: string;
+  name?: string;
+  amount?: number;
+  currency?: string;
+};
 
 export const createBalance = async (
   data: {
@@ -19,7 +29,8 @@ export const createBalance = async (
   manager: EntityManager = AppDataSource.manager
 ) => {
   const balanceRepo = manager.getRepository(CompanyBalance);
-  const prefix = data.name.slice(0, 3).toUpperCase();
+
+  /*const prefix = data.name.slice(0, 3).toUpperCase();
 
   const latest = await balanceRepo
     .createQueryBuilder("balance")
@@ -28,7 +39,13 @@ export const createBalance = async (
     .limit(1)
     .getOne();
 
-  const code = generateNextBalanceCode(latest?.code ?? null, prefix);
+  const code = generateNextBalanceCode(latest?.code ?? null, prefix);*/
+
+  const code = await generateEntityCode(
+    manager,
+    currentUser.companyId,
+    "CompanyBalance"
+  );
 
   const balance = balanceRepo.create({
     code,
@@ -75,9 +92,9 @@ export const deleteBalance = async (id: number): Promise<boolean> => {
 export const getCompanyBalances = async (
   currentUser: { companyId: string },
   query: {
-    name?:string;
-    currency?:string;
-    code?:string
+    name?: string;
+    currency?: string;
+    code?: string;
   }
 ) => {
   const conditions: string[] = [`companyId = $1`];
@@ -108,4 +125,59 @@ export const getCompanyBalances = async (
   `;
 
   return await AppDataSource.manager.query(sql, params);
+};
+
+export const updateManyCompanyBalances = async (
+  manager: EntityManager,
+  updates: BalanceUpdateInput[],
+  currentUser: { userId: string; companyId: string }
+): Promise<CompanyBalance[]> => {
+  if (!Array.isArray(updates) || updates.length === 0) {
+    throw new Error("Güncelleme için en az bir kayıt gönderilmelidir.");
+  }
+
+  const repo = manager.getRepository(CompanyBalance);
+  const ids = updates.map((u) => u.id);
+
+  // Mevcutları tek sorguda çek (tenant filtresiyle)
+  const existing = await repo.find({
+    where: { id: In(ids), company: { id: currentUser.companyId } },
+    relations: ["company"],
+  });
+
+  if (existing.length !== ids.length) {
+    // Hangi kayıt yok/başkasına ait, tespit etmek istersen:
+    const foundIds = new Set(existing.map((e) => e.id));
+    const missing = ids.filter((x) => !foundIds.has(x));
+    throw new Error(
+      `Bazı bakiye kayıtları bulunamadı veya yetkiniz yok. ID'ler: ${missing.join(
+        ", "
+      )}`
+    );
+  }
+
+  // Map ile hızlı erişim
+  const byId = new Map(existing.map((e) => [e.id, e]));
+
+  // Sadece izin verilen alanları ata
+  for (const patch of updates) {
+    const entity = byId.get(patch.id)!;
+
+    if (patch.name !== undefined) {
+      entity.name = patch.name.trim();
+    }
+    if (patch.amount !== undefined) {
+      entity.amount = Number(patch.amount);
+    }
+    if (patch.currency !== undefined) {
+      entity.currency = patch.currency.trim().toUpperCase();
+    }
+
+    entity.updatedBy = currentUser.userId;
+    // updatedatetime, @UpdateDateColumn ile otomatik güncellenir
+  }
+
+  // Toplu kaydet
+  const saved = await repo.save(existing);
+  return saved;
 };
