@@ -6,6 +6,10 @@ import {
 } from "../utils/generateCode";
 import { Company } from "../entities/Company";
 import { EntityManager, In } from "typeorm";
+import { saveRefetchSanitize } from "../utils/persist";
+import { sanitizeRules } from "../utils/sanitizeRules";
+import { User } from "../entities/User";
+import { sanitizeEntity } from "../utils/sanitize";
 
 const balanceRepo = AppDataSource.getRepository(CompanyBalance);
 
@@ -30,17 +34,6 @@ export const createBalance = async (
 ) => {
   const balanceRepo = manager.getRepository(CompanyBalance);
 
-  /*const prefix = data.name.slice(0, 3).toUpperCase();
-
-  const latest = await balanceRepo
-    .createQueryBuilder("balance")
-    .where("balance.code LIKE :prefix", { prefix: `${prefix}%` })
-    .orderBy("balance.code", "DESC")
-    .limit(1)
-    .getOne();
-
-  const code = generateNextBalanceCode(latest?.code ?? null, prefix);*/
-
   const code = await generateEntityCode(
     manager,
     currentUser.companyId,
@@ -53,26 +46,43 @@ export const createBalance = async (
     amount: data.amount,
     currency: data.currency,
     company: { id: currentUser.companyId },
-    createdBy: currentUser.userId,
-    updatedBy: currentUser.userId,
+    createdBy: { id: currentUser.userId },
+    updatedBy: { id: currentUser.userId },
   });
 
-  return await balanceRepo.save(balance);
+  return await saveRefetchSanitize({
+    entityName: "CompanyBalance",
+    save: () => balanceRepo.save(balance),
+    refetch: () =>
+      balanceRepo.findOneOrFail({
+        where: { id: balance.id, company: { id: currentUser.companyId } },
+        relations: ["company", "createdBy", "updatedBy"],
+      }),
+    rules: sanitizeRules,
+    defaultError: "Hesap kaydı oluşturulamadı.",
+  });
 };
 
 export const updateBalance = async (
   id: string,
   fields: Partial<CompanyBalance>,
-  updatedBy: string
+  currentUser: {
+    userId: string;
+    companyId: string;
+  },
+  manager: EntityManager = AppDataSource.manager
 ): Promise<CompanyBalance | null> => {
   try {
-    const balance = await balanceRepo.findOne({ where: { id } });
+    const balance = await balanceRepo.findOne({
+      where: { id },
+      relations: ["company", "createdBy", "updatedBy"],
+    });
     if (!balance) return null;
 
     Object.assign(balance, fields);
-    balance.updatedBy = updatedBy;
+    balance.updatedBy = { id: currentUser.userId } as User;
 
-    return await balanceRepo.save(balance);
+    return sanitizeEntity(balance, "CompanyBalance", sanitizeRules);
   } catch (error) {
     console.error("❌ [updateBalance] error:", error);
     throw new Error("Bakiye güncellenemedi.");
@@ -173,7 +183,7 @@ export const updateManyCompanyBalances = async (
       entity.currency = patch.currency.trim().toUpperCase();
     }
 
-    entity.updatedBy = currentUser.userId;
+    entity.updatedBy = { id: currentUser.userId } as User;
     // updatedatetime, @UpdateDateColumn ile otomatik güncellenir
   }
 

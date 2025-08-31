@@ -33,7 +33,7 @@ __decorate([
     __metadata("design:type", Company_1.Company)
 ], CompanyLoanPayment.prototype, "company", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "code", type: "varchar", length: 100, unique: true }),
+    (0, typeorm_1.Column)({ name: "code", type: "varchar", length: 100 }),
     __metadata("design:type", String)
 ], CompanyLoanPayment.prototype, "code", void 0);
 __decorate([
@@ -116,5 +116,10 @@ __decorate([
     __metadata("design:type", Date)
 ], CompanyLoanPayment.prototype, "updatedatetime", void 0);
 exports.CompanyLoanPayment = CompanyLoanPayment = __decorate([
-    (0, typeorm_1.Entity)({ name: "companyloanpayment" })
+    (0, typeorm_1.Entity)({ name: "companyloanpayment" }),
+    (0, typeorm_1.Unique)("uq_companyloanpayment_companyid_loanid_installmentnumber", [
+        "company",
+        "loan",
+        "installmentNumber",
+    ])
 ], CompanyLoanPayment);

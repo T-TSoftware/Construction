@@ -12,7 +12,20 @@ export const sanitizeRules: SanitizeMap = {
   },
 
   CompanyProject: {
-    include: ["id", "code", "name", "company","createdBy","updatedBy"],
+    include: [
+      "id",
+      "code",
+      "name",
+      "estimatedStartDate",
+      "estimatedEndDate",
+      "actualStartDate",
+      "actualEndDate",
+      "site",
+      "status",
+      "company",
+      "createdBy",
+      "updatedBy",
+    ],
     relations: {
       company: "Company",
       createdBy: "User",
@@ -56,7 +69,15 @@ export const sanitizeRules: SanitizeMap = {
       "currency",
       "createdatetime",
       "updatedatetime",
+      "createdBy",
+      "updatedBy",
+      "company",
     ],
+    relations: {
+      company: "Company",
+      createdBy: "User",
+      updatedBy: "User",
+    },
   },
 
   CompanyLoan: {
@@ -106,6 +127,7 @@ export const sanitizeRules: SanitizeMap = {
       "paymentAmount",
       "remainingAmount",
       "penaltyAmount",
+      "description",
       "status",
       "paymentDate",
       "createdatetime",
@@ -415,7 +437,7 @@ export const sanitizeRules: SanitizeMap = {
     },
   },
 
-ProjectQuantity: {
+  ProjectQuantity: {
     include: [
       "id",
       "code",

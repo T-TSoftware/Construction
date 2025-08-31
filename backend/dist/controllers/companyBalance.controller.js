@@ -59,7 +59,7 @@ const postCompanyBalanceHandler = async (req, res) => {
         await queryRunner.rollbackTransaction();
         console.error("❌ POST balance error:", error);
         res.status(500).json({
-            errorMessage: error.message || "Bakiyeler oluşturulamadı.",
+            errorMessage: error.message || "Hesaplar oluşturulamadı.",
         });
     }
     finally {
@@ -74,10 +74,11 @@ const putCompanyBalanceHandler = async (req, res) => {
         return;
     }
     try {
-        const updatedBy = req.user.userId.toString();
         const balanceId = req.params.id;
         const fields = req.body;
-        const updated = await (0, companyBalance_service_1.updateBalance)(balanceId, fields, updatedBy);
+        const userId = req.user.userId.toString();
+        const companyId = req.user.companyId;
+        const updated = await (0, companyBalance_service_1.updateBalance)(balanceId, fields, { userId, companyId });
         if (!updated) {
             res.status(404).json({ error: "Bakiye bulunamadı." });
             return;

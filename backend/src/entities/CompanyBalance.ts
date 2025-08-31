@@ -13,6 +13,7 @@ import { Company } from "./Company";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
 import { CompanyCheck } from "./CompanyCheck";
 import { CompanyLoan } from "./CompanyLoan";
+import { User } from "./User";
 
 @Entity({ name: "companybalances" })
 @Index("uqx_companybalances_companyid_upper_name", { synchronize: false }) // DB side
@@ -38,11 +39,13 @@ export class CompanyBalance {
   @Column()
   currency!: string;
 
-  @Column({ name: "createdby" })
-  createdBy!: string;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "createdby" })
+  createdBy!: User;
 
-  @Column({ name: "updatedby" })
-  updatedBy!: string;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "updatedby" })
+  updatedBy!: User;
 
   @CreateDateColumn({
     type: "timestamp",

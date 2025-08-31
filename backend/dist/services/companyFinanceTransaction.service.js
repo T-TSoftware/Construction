@@ -503,6 +503,7 @@ const updateCompanyFinanceTransactionNew = async (id, data, currentUser, manager
     const nextCategory = data.category ?? existing.category;
     const nextRefCode = data.referenceCode ?? existing.referenceCode;
     existing.category = nextCategory;
+    existing.source = data.source ?? existing.source;
     existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
     existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
     existing.referenceCode = nextRefCode;

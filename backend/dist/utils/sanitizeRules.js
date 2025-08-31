@@ -10,7 +10,20 @@ exports.sanitizeRules = {
         include: ["id", "name", "code"],
     },
     CompanyProject: {
-        include: ["id", "code", "name", "company", "createdBy", "updatedBy"],
+        include: [
+            "id",
+            "code",
+            "name",
+            "estimatedStartDate",
+            "estimatedEndDate",
+            "actualStartDate",
+            "actualEndDate",
+            "site",
+            "status",
+            "company",
+            "createdBy",
+            "updatedBy",
+        ],
         relations: {
             company: "Company",
             createdBy: "User",
@@ -52,7 +65,15 @@ exports.sanitizeRules = {
             "currency",
             "createdatetime",
             "updatedatetime",
+            "createdBy",
+            "updatedBy",
+            "company",
         ],
+        relations: {
+            company: "Company",
+            createdBy: "User",
+            updatedBy: "User",
+        },
     },
     CompanyLoan: {
         include: [
@@ -100,6 +121,7 @@ exports.sanitizeRules = {
             "paymentAmount",
             "remainingAmount",
             "penaltyAmount",
+            "description",
             "status",
             "paymentDate",
             "createdatetime",

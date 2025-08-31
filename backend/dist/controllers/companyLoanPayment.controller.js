@@ -67,9 +67,9 @@ const patchCompanyLoanPaymentHandler = async (req, res) => {
             throw new Error("Geçerli bir 'id' parametresi gereklidir.");
         }
         // 🔁 Taksit güncelleme işlemi
-        await (0, companyLoanPayment_service_1.updateCompanyLoanPayment)(id, body, { userId, companyId }, queryRunner.manager);
+        const updated = await (0, companyLoanPayment_service_1.updateCompanyLoanPayment)(id, body, { userId, companyId }, queryRunner.manager);
         await queryRunner.commitTransaction();
-        res.status(200).json({ message: "Taksit başarıyla güncellendi." });
+        res.status(200).json(updated);
         return;
     }
     catch (error) {
