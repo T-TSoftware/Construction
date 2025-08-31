@@ -95,12 +95,7 @@ const createProjectQuantity = async (projectId, data, currentUser, manager = dat
     await (0, errorHandler_1.handleSaveWithUniqueConstraint)(() => projectSubcontractorRepo.save(autoSubcontractor), "ProjectSubcontractor");
     const full = await projectQuantityRepo.findOneOrFail({
         where: { id: savedQuantity.id, company: { id: currentUser.companyId } },
-        relations: [
-            "company",
-            "project",
-            "createdBy",
-            "updatedBy",
-        ],
+        relations: ["company", "project", "createdBy", "updatedBy"],
     });
     //return savedQuantity;
     return (0, sanitize_1.sanitizeEntity)(full, "ProjectQuantity", sanitizeRules_1.sanitizeRules);
@@ -113,22 +108,9 @@ const getProjectQuantities = async (projectId, currentUser // ✅ companyId alı
             project: { id: projectId },
             company: { id: currentUser.companyId }, // ✅ sadece kullanıcının şirketine ait kayıtlar
         },
-        relations: ["quantityItem", "createdBy", "updatedBy"],
+        relations: ["quantityItem", "createdBy", "updatedBy", "project"],
         order: { createdatetime: "DESC" },
     });
-    return items.map((item) => ({
-        id: item.id,
-        code: item.code ?? null,
-        quantityItemCode: item.quantityItem?.code,
-        quantityItemName: item.quantityItem?.name,
-        quantity: item.quantity,
-        unit: item.unit,
-        description: item.description,
-        category: item.category,
-        createdBy: item.createdBy?.name ?? null,
-        updatedBy: item.updatedBy?.name ?? null,
-        createdatetime: item.createdatetime,
-        updatedatetime: item.updatedatetime,
-    }));
+    return (0, sanitize_1.sanitizeEntity)(items, "ProjectQuantity", sanitizeRules_1.sanitizeRules);
 };
 exports.getProjectQuantities = getProjectQuantities;

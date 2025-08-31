@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleSaveWithUniqueConstraint = void 0;
 const generatedFieldMessages = {
-    "CompanyLoanPayment.code": "Kredi için taksit bu numarası zaten mevcut.",
+    "CompanyLoanPayment.companyid_loanid_installmentnumber": "Kredi için taksit bu numarası zaten mevcut.",
     "CompanyLoan.name": "Bu isimde bir kredi zaten mevcut.",
     "CompanyStock.companyid_category_name": "Bu stok zaten mevcut.",
     "ProjectSubcontractor.projectid_category_unit": "Bu proje için aynı kategori ve birim kombinasyonuna sahip bir metrajdan gelen taşeron kaydı zaten mevcut.",
@@ -10,7 +10,8 @@ const generatedFieldMessages = {
     "ProjectQuantity.companyid_projectid_category_unit": "Bu metraj bu proje için zaten mevcut",
     "CompanyCheck.companyid_checknumber": "Bu Çek Numarasıyla bir Çek zaten mevcut.",
     "CompanyEmployee.companyid_code": "Bu çalışan zaten mevcut",
-    "CompanyProjects.companyid_code": "Bu proje zaten mevcut",
+    "CompanyProject.companyid_code": "Bu proje zaten mevcut",
+    "CompanyBalance.": "Bu Banka/Kasa zaten mevcut",
     // ...
 };
 const handleSaveWithUniqueConstraint = async (saveFn, entityName, defaultMessage = "Kayıt oluşturulurken bir hata oluştu.") => {

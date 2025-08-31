@@ -757,6 +757,7 @@ export const updateCompanyFinanceTransactionNew = async (
     transactionDate?: Date;
     method?: string;
     category?: string;
+    source?: string;
     invoiceYN?: "Y" | "N";
     invoiceCode?: string;
     referenceCode?: string;
@@ -891,6 +892,7 @@ export const updateCompanyFinanceTransactionNew = async (
   const nextRefCode = data.referenceCode ?? existing.referenceCode;
 
   existing.category = nextCategory;
+  existing.source = data.source ?? existing.source;
   existing.invoiceYN = data.invoiceYN ?? existing.invoiceYN;
   existing.invoiceCode = data.invoiceCode ?? existing.invoiceCode;
   existing.referenceCode = nextRefCode;

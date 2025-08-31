@@ -4,7 +4,10 @@ import { ProjectQuantity } from "../entities/ProjectQuantity";
 import { CompanyProject } from "../entities/CompanyProject";
 import { QuantityItem } from "../entities/QuantityItem";
 import { ProjectSupplier } from "../entities/ProjectSupplier";
-import { generateEntityCode, generateNextEntityCode } from "../utils/generateCode";
+import {
+  generateEntityCode,
+  generateNextEntityCode,
+} from "../utils/generateCode";
 import { ProjectSubcontractor } from "../entities/ProjectSubcontractor";
 import { handleSaveWithUniqueConstraint } from "../utils/errorHandler";
 import { sanitizeRules } from "../utils/sanitizeRules";
@@ -47,7 +50,11 @@ export const createProjectQuantity = async (
     ? await projectRepo.findOneByOrFail({ code: data.quantityItemCode })
     : null;
 
-  const code = await generateEntityCode(manager, currentUser.companyId, "ProjectQuantity");
+  const code = await generateEntityCode(
+    manager,
+    currentUser.companyId,
+    "ProjectQuantity"
+  );
 
   // ✅ Yeni metraj kaydı oluşturuluyor
   const newRecord = projectQuantityRepo.create({
@@ -134,12 +141,7 @@ export const createProjectQuantity = async (
 
   const full = await projectQuantityRepo.findOneOrFail({
     where: { id: savedQuantity.id, company: { id: currentUser.companyId } },
-    relations: [
-      "company",
-      "project",
-      "createdBy",
-      "updatedBy",
-    ],
+    relations: ["company", "project", "createdBy", "updatedBy"],
   });
 
   //return savedQuantity;
@@ -155,22 +157,9 @@ export const getProjectQuantities = async (
       project: { id: projectId },
       company: { id: currentUser.companyId }, // ✅ sadece kullanıcının şirketine ait kayıtlar
     },
-    relations: ["quantityItem", "createdBy", "updatedBy"],
+    relations: ["quantityItem", "createdBy", "updatedBy", "project"],
     order: { createdatetime: "DESC" },
   });
 
-  return items.map((item) => ({
-    id: item.id,
-    code: item.code ?? null,
-    quantityItemCode: item.quantityItem?.code,
-    quantityItemName: item.quantityItem?.name,
-    quantity: item.quantity,
-    unit: item.unit,
-    description: item.description,
-    category: item.category,
-    createdBy: item.createdBy?.name ?? null,
-    updatedBy: item.updatedBy?.name ?? null,
-    createdatetime: item.createdatetime,
-    updatedatetime: item.updatedatetime,
-  }));
+  return sanitizeEntity(items, "ProjectQuantity", sanitizeRules);
 };

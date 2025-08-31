@@ -97,7 +97,7 @@ export const patchCompanyLoanPaymentHandler = async (
     }
 
     // 🔁 Taksit güncelleme işlemi
-    await updateCompanyLoanPayment(
+    const updated = await updateCompanyLoanPayment(
       id,
       body,
       { userId, companyId },
@@ -105,7 +105,7 @@ export const patchCompanyLoanPaymentHandler = async (
     );
 
     await queryRunner.commitTransaction();
-    res.status(200).json({ message: "Taksit başarıyla güncellendi." });
+    res.status(200).json(updated);
     return;
   } catch (error: any) {
     await queryRunner.rollbackTransaction();

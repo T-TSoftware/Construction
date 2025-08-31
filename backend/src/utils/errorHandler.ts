@@ -1,7 +1,8 @@
 type UniqueViolationKey = `${string}.${string}`; // örnek: "CompanyLoanPayment.code"
 
 const generatedFieldMessages: Record<UniqueViolationKey, string> = {
-  "CompanyLoanPayment.code": "Kredi için taksit bu numarası zaten mevcut.",
+  "CompanyLoanPayment.companyid_loanid_installmentnumber":
+    "Kredi için taksit bu numarası zaten mevcut.",
   "CompanyLoan.name": "Bu isimde bir kredi zaten mevcut.",
   "CompanyStock.companyid_category_name": "Bu stok zaten mevcut.",
   "ProjectSubcontractor.projectid_category_unit":
@@ -13,7 +14,8 @@ const generatedFieldMessages: Record<UniqueViolationKey, string> = {
   "CompanyCheck.companyid_checknumber":
     "Bu Çek Numarasıyla bir Çek zaten mevcut.",
   "CompanyEmployee.companyid_code": "Bu çalışan zaten mevcut",
-  "CompanyProjects.companyid_code": "Bu proje zaten mevcut",
+  "CompanyProject.companyid_code": "Bu proje zaten mevcut",
+  "CompanyBalance.": "Bu Banka/Kasa zaten mevcut",
   // ...
 };
 export const handleSaveWithUniqueConstraint = async <T>(

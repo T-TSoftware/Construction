@@ -5,19 +5,12 @@ const data_source_1 = require("../config/data-source");
 const CompanyBalance_1 = require("../entities/CompanyBalance");
 const generateCode_1 = require("../utils/generateCode");
 const typeorm_1 = require("typeorm");
+const persist_1 = require("../utils/persist");
+const sanitizeRules_1 = require("../utils/sanitizeRules");
+const sanitize_1 = require("../utils/sanitize");
 const balanceRepo = data_source_1.AppDataSource.getRepository(CompanyBalance_1.CompanyBalance);
 const createBalance = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const balanceRepo = manager.getRepository(CompanyBalance_1.CompanyBalance);
-    /*const prefix = data.name.slice(0, 3).toUpperCase();
-  
-    const latest = await balanceRepo
-      .createQueryBuilder("balance")
-      .where("balance.code LIKE :prefix", { prefix: `${prefix}%` })
-      .orderBy("balance.code", "DESC")
-      .limit(1)
-      .getOne();
-  
-    const code = generateNextBalanceCode(latest?.code ?? null, prefix);*/
     const code = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "CompanyBalance");
     const balance = balanceRepo.create({
         code,
@@ -25,20 +18,32 @@ const createBalance = async (data, currentUser, manager = data_source_1.AppDataS
         amount: data.amount,
         currency: data.currency,
         company: { id: currentUser.companyId },
-        createdBy: currentUser.userId,
-        updatedBy: currentUser.userId,
+        createdBy: { id: currentUser.userId },
+        updatedBy: { id: currentUser.userId },
     });
-    return await balanceRepo.save(balance);
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyBalance",
+        save: () => balanceRepo.save(balance),
+        refetch: () => balanceRepo.findOneOrFail({
+            where: { id: balance.id, company: { id: currentUser.companyId } },
+            relations: ["company", "createdBy", "updatedBy"],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Hesap kaydı oluşturulamadı.",
+    });
 };
 exports.createBalance = createBalance;
-const updateBalance = async (id, fields, updatedBy) => {
+const updateBalance = async (id, fields, currentUser, manager = data_source_1.AppDataSource.manager) => {
     try {
-        const balance = await balanceRepo.findOne({ where: { id } });
+        const balance = await balanceRepo.findOne({
+            where: { id },
+            relations: ["company", "createdBy", "updatedBy"],
+        });
         if (!balance)
             return null;
         Object.assign(balance, fields);
-        balance.updatedBy = updatedBy;
-        return await balanceRepo.save(balance);
+        balance.updatedBy = { id: currentUser.userId };
+        return (0, sanitize_1.sanitizeEntity)(balance, "CompanyBalance", sanitizeRules_1.sanitizeRules);
     }
     catch (error) {
         console.error("❌ [updateBalance] error:", error);
@@ -112,7 +117,7 @@ const updateManyCompanyBalances = async (manager, updates, currentUser) => {
         if (patch.currency !== undefined) {
             entity.currency = patch.currency.trim().toUpperCase();
         }
-        entity.updatedBy = currentUser.userId;
+        entity.updatedBy = { id: currentUser.userId };
         // updatedatetime, @UpdateDateColumn ile otomatik güncellenir
     }
     // Toplu kaydet

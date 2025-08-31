@@ -123,31 +123,43 @@ const updateCompanyLoanPayment = async (id, data, currentUser, manager = data_so
         where: { id: payment.loan.id, company: { id: currentUser.companyId } },
         relations: ["bank", "project"],
     });
-    const oldStatus = payment.status;
-    const newStatus = data.status ?? oldStatus;
-    const oldAmount = payment.paymentAmount ??
-        payment.interestAmount + payment.penaltyAmount + payment.principalAmount;
-    const newAmount = data.paymentAmount ?? data.totalAmount ?? oldAmount;
-    const principal = data.principalAmount ?? payment.principalAmount ?? 0;
-    const interest = data.interestAmount ?? payment.interestAmount ?? 0;
-    const penalty = data.penaltyAmount ?? payment.penaltyAmount ?? 0;
-    const newPaymentAmount = principal + interest + penalty;
-    console.log(newPaymentAmount, "    !!!");
-    const code = payment.code;
+    if (data.installmentNumber !== undefined)
+        payment.installmentNumber = data.installmentNumber;
+    if (data.dueDate !== undefined)
+        payment.dueDate = data.dueDate;
+    if (data.totalAmount !== undefined)
+        payment.totalAmount = data.totalAmount;
+    if (data.interestAmount !== undefined)
+        payment.interestAmount = data.interestAmount;
+    if (data.principalAmount !== undefined)
+        payment.principalAmount = data.principalAmount;
+    if (data.paymentAmount !== undefined)
+        payment.paymentAmount = data.paymentAmount;
+    if (data.status !== undefined)
+        payment.status = data.status;
+    //if (data.paymentDate !== undefined) payment.paymentDate = data.paymentDate;
+    if (data.penaltyAmount !== undefined)
+        payment.penaltyAmount = data.penaltyAmount;
+    if (data.description !== undefined)
+        payment.description = data.description;
+    payment.updatedBy = { id: currentUser.userId };
     // const code = payment.code; ❌ bunu tamamen sil
-    // 🧾 Son olarak payment kaydını güncelle
-    await paymentRepo.update({ id }, {
-        dueDate: data.dueDate,
-        totalAmount: data.totalAmount,
-        interestAmount: data.interestAmount,
-        principalAmount: data.principalAmount,
-        paymentAmount: data.paymentAmount,
-        status: data.status,
-        paymentDate: data.paymentDate,
-        penaltyAmount: data.penaltyAmount,
-        description: data.description, // Burada hata oluyorsa entity'de name kontrolü yap
-        updatedBy: { id: currentUser.userId },
-        updatedatetime: new Date(),
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyLoanPayment",
+        save: () => paymentRepo.save(payment),
+        refetch: () => paymentRepo.findOneOrFail({
+            where: { id: payment.id, company: { id: currentUser.companyId } },
+            relations: [
+                "loan",
+                "loan.bank",
+                "loan.project",
+                "loan.company",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "Taksit kaydı oluşturulamadı.",
     });
 };
 exports.updateCompanyLoanPayment = updateCompanyLoanPayment;

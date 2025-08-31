@@ -8,6 +8,7 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from "typeorm";
 import { CompanyLoan } from "./CompanyLoan";
 import { CompanyFinanceTransaction } from "./CompanyFinance";
@@ -15,6 +16,11 @@ import { User } from "./User";
 import { Company } from "./Company";
 
 @Entity({ name: "companyloanpayment" })
+@Unique("uq_companyloanpayment_companyid_loanid_installmentnumber", [
+  "company",
+  "loan",
+  "installmentNumber",
+])
 export class CompanyLoanPayment {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -27,7 +33,7 @@ export class CompanyLoanPayment {
   @JoinColumn({ name: "companyid" })
   company!: Company;
 
-  @Column({ name: "code", type: "varchar", length: 100, unique: true })
+  @Column({ name: "code", type: "varchar", length: 100 })
   code!: string; // e.g., HALKKGFFATURA1-TAKSİT:1
 
   @Column({ name: "installmentnumber", type: "int" })

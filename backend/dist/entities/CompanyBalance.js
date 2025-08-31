@@ -15,6 +15,7 @@ const Company_1 = require("./Company");
 const CompanyFinance_1 = require("./CompanyFinance");
 const CompanyCheck_1 = require("./CompanyCheck");
 const CompanyLoan_1 = require("./CompanyLoan");
+const User_1 = require("./User");
 let CompanyBalance = class CompanyBalance {
 };
 exports.CompanyBalance = CompanyBalance;
@@ -46,12 +47,14 @@ __decorate([
     __metadata("design:type", String)
 ], CompanyBalance.prototype, "currency", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "createdby" }),
-    __metadata("design:type", String)
+    (0, typeorm_1.ManyToOne)(() => User_1.User),
+    (0, typeorm_1.JoinColumn)({ name: "createdby" }),
+    __metadata("design:type", User_1.User)
 ], CompanyBalance.prototype, "createdBy", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "updatedby" }),
-    __metadata("design:type", String)
+    (0, typeorm_1.ManyToOne)(() => User_1.User),
+    (0, typeorm_1.JoinColumn)({ name: "updatedby" }),
+    __metadata("design:type", User_1.User)
 ], CompanyBalance.prototype, "updatedBy", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({
