@@ -18,15 +18,12 @@ const createCompanyLoan = async (data, currentUser, manager = data_source_1.AppD
         company: { id: currentUser.companyId },
     });
     // 2. Project opsiyonel
-    let project = null;
-    if (data.projectId) {
-        project = await projectRepo.findOneOrFail({
-            where: {
-                id: data.projectId,
-                company: { id: currentUser.companyId },
-            },
-        });
-    }
+    const project = data.projectId
+        ? await projectRepo.findOneByOrFail({
+            id: data.projectId,
+            company: { id: currentUser.companyId },
+        })
+        : null;
     /*const code = `KRD-${data.name
       .toUpperCase()
       .replace(/\s+/g, "-") // boşlukları tireye çevir

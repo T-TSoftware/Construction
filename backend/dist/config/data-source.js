@@ -84,5 +84,5 @@ exports.AppDataSource = new typeorm_1.DataSource({
 });
 //export default AppDataSource;
 // npx tsc
-//npx typeorm-ts-node-commonjs migration:generate src/migrations/UQX2_companybalances --dataSource src/config/data-source.ts
+//npx typeorm-ts-node-commonjs migration:generate src/migrations/UQX3_companybalances --dataSource src/config/data-source.ts
 //npx typeorm-ts-node-commonjs migration:run --dataSource src/config/data-source.ts

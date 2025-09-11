@@ -8,6 +8,7 @@ const companyEmployeeLeave_validation_1 = require("../validations/companyEmploye
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authMiddleware);
 router.post("/:employeeId", (0, requestValidation_1.validate)(companyEmployeeLeave_validation_1.employeeLeaveCreateSchema), companyEmployeeLeave_controller_1.postCompanyEmployeeLeaveHandler);
+router.post("/", (0, requestValidation_1.validate)(companyEmployeeLeave_validation_1.employeeLeaveCreateSchemaWEmployeeId), companyEmployeeLeave_controller_1.postCompanyEmployeeLeaveWEmployeeIdHandler);
 router.patch("/:leaveId", (0, requestValidation_1.validate)(companyEmployeeLeave_validation_1.employeeLeaveUpdateSchema), companyEmployeeLeave_controller_1.patchCompanyEmployeeLeaveHandler);
 router.get("/", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesHandler);
 router.get("/employee/:employeeId", companyEmployeeLeave_controller_1.getCompanyEmployeeLeavesByEmployeeIdHandler);

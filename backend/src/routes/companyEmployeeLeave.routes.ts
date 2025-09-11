@@ -12,10 +12,12 @@ import {
   getCompanyEmployeeLeavesHandler,
   patchCompanyEmployeeLeaveHandler,
   postCompanyEmployeeLeaveHandler,
+  postCompanyEmployeeLeaveWEmployeeIdHandler,
 } from "../controllers/companyEmployeeLeave.controller";
 import { validate } from "../middlewares/requestValidation";
 import {
   employeeLeaveCreateSchema,
+  employeeLeaveCreateSchemaWEmployeeId,
   employeeLeaveUpdateSchema,
 } from "../validations/companyEmployeeLeave.validation";
 
@@ -27,6 +29,12 @@ router.post(
   "/:employeeId",
   validate(employeeLeaveCreateSchema),
   postCompanyEmployeeLeaveHandler
+);
+
+router.post(
+  "/",
+  validate(employeeLeaveCreateSchemaWEmployeeId),
+  postCompanyEmployeeLeaveWEmployeeIdHandler
 );
 
 router.patch(

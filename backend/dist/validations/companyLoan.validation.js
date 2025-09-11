@@ -37,6 +37,7 @@ exports.loanCreateSchema = zod_1.z
     accountNo: AccountNo,
     //bankId: UUID,
     //projectId: UUID.optional(),
+    projectId: zod_1.z.string().uuid("Geçerli bir proje ID giriniz.").optional(),
     totalAmount: zod_1.z
         .number({
         required_error: "Toplam kredi tutarı zorunludur.",

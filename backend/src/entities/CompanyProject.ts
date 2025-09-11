@@ -108,7 +108,7 @@ export class CompanyProject {
   checks!: CompanyCheck;
 
   @OneToMany(() => CompanyLoan, (loan) => loan.project)
-  loans!: CompanyLoan;
+  loans!: CompanyLoan[];
 
   @OneToMany(() => CompanyEmployeeProject, (employee) => employee.project, {
     cascade: true,

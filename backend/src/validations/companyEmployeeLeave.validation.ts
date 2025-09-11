@@ -42,6 +42,51 @@ export const employeeLeaveCreateSchema = z
     }
   });
 
+export const employeeLeaveCreateSchemaWEmployeeId = z
+  .object({
+    startDate: z.coerce.date({
+      required_error: "Başlangıç tarihi zorunludur.",
+      invalid_type_error: "Geçerli bir başlangıç tarihi giriniz.",
+    }),
+    endDate: z.coerce.date({
+      required_error: "Bitiş tarihi zorunludur.",
+      invalid_type_error: "Geçerli bir bitiş tarihi giriniz.",
+    }),
+    type: LeaveTypeEnum, // "PAID" | "UNPAID" | "SICK" | "ROAD" | "EXCUSE"
+    description: z
+      .string({ invalid_type_error: "Açıklama metin olmalıdır." })
+      .trim()
+      .max(1000, "Açıklama 1000 karakteri geçemez.")
+      .optional(),
+    // leaveDayCount: İSTEMEYELİM — backend zaten hesaplıyor
+    employeeId: z
+    .string()
+    .uuid("Geçerli bir Çalışan giriniz.")
+    .optional(),
+  })
+  .superRefine((data, ctx) => {
+    // tarih sırası
+    if (data.endDate.getTime() < data.startDate.getTime()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endDate"],
+        message: "Bitiş tarihi, başlangıç tarihinden önce olamaz.",
+      });
+    }
+
+    // en az 1 gün (hesabı kesin backend yapıyor ama bariz hatayı önden yakalayalım)
+    const diffMs = data.endDate.getTime() - data.startDate.getTime();
+    const day = 24 * 60 * 60 * 1000;
+    const approxDays = Math.floor(diffMs / day); // (başlangıç+bitiş dahil senaryosu yaygın)
+    if (approxDays <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endDate"],
+        message: "İzin süresi 0'dan büyük olmalıdır.",
+      });
+    }
+  });
+
 export const employeeLeaveUpdateSchema = z
   .object({
     startDate: z
