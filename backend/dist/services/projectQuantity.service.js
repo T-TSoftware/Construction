@@ -74,7 +74,7 @@ const createProjectQuantity = async (projectId, data, currentUser, manager = dat
     await projectSupplierRepo.save(autoSupplier);
     */
     // ✅ Otomatik taşeron kaydı oluşturuluyor
-    const subcontractorCode = await (0, generateCode_1.generateNextEntityCode)(manager, project.code, data.category, "TAS", "ProjectSubcontractor");
+    const subcontractorCode = await (0, generateCode_1.generateEntityCode)(manager, currentUser.companyId, "ProjectSubcontractor");
     const autoSubcontractor = projectSubcontractorRepo.create({
         code: subcontractorCode,
         project: { id: projectId },
