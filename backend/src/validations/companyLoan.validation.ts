@@ -41,6 +41,7 @@ export const loanCreateSchema = z
     //bankId: UUID,
 
     //projectId: UUID.optional(),
+    projectId: z.string().uuid("Geçerli bir proje ID giriniz.").optional(),
 
     totalAmount: z
       .number({

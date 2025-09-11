@@ -6,6 +6,7 @@ import {
   getCompanyEmployeeLeaves,
   getCompanyEmployeeLeavesByEmployeeId,
   postCompanyEmployeeLeave,
+  postCompanyEmployeeLeaveWEmployeeId,
   updateCompanyEmployeeLeave,
 } from "../services/companyEmployeeLeave.service";
 
@@ -38,6 +39,59 @@ export const postCompanyEmployeeLeaveHandler = async (
     const newLeave = await postCompanyEmployeeLeave(
       employeeId,
       {
+        startDate,
+        endDate,
+        leaveDayCount, // leaveDayCount hesaplanıyor zaten
+        type,
+        description,
+      },
+      { userId, companyId },
+      queryRunner.manager
+    );
+
+    await queryRunner.commitTransaction();
+    res.status(201).json(newLeave);
+    return;
+  } catch (error: any) {
+    await queryRunner.rollbackTransaction();
+    console.error("❌ POST employee leave error:", error);
+    res.status(400).json({
+      errorMessage: error.message || "İzin kaydı oluşturulamadı.",
+    });
+    return;
+  } finally {
+    await queryRunner.release();
+  }
+};
+
+export const postCompanyEmployeeLeaveWEmployeeIdHandler = async (
+  req: Request,
+  res: Response
+) => {
+  if (req.user?.role !== "superadmin") {
+    res
+      .status(403)
+      .json({ errorMessage: "Yalnızca superadmin işlem yapabilir." });
+    return;
+  }
+
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    const userId = req.user!.userId.toString();
+    const companyId = req.user!.companyId;
+
+    const { employeeId,startDate, endDate, leaveDayCount, type, description } = req.body;
+
+    if (!startDate || !endDate || !type) {
+      throw new Error("Zorunlu alanlar eksik: startDate, endDate, type");
+    }
+
+    const newLeave = await postCompanyEmployeeLeaveWEmployeeId(
+      {
+        employeeId,
         startDate,
         endDate,
         leaveDayCount, // leaveDayCount hesaplanıyor zaten

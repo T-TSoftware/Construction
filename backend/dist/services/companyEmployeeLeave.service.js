@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.calculateLeaveDayCount = exports.deleteCompanyEmployeeLeave = exports.getCompanyEmployeeLeaveById = exports.getCompanyEmployeeLeavesByEmployeeId = exports.getCompanyEmployeeLeaves = exports.updateCompanyEmployeeLeave = exports.postCompanyEmployeeLeave = void 0;
+exports.calculateLeaveDayCount = exports.deleteCompanyEmployeeLeave = exports.getCompanyEmployeeLeaveById = exports.getCompanyEmployeeLeavesByEmployeeId = exports.getCompanyEmployeeLeaves = exports.updateCompanyEmployeeLeave = exports.postCompanyEmployeeLeaveWEmployeeId = exports.postCompanyEmployeeLeave = void 0;
 const data_source_1 = require("../config/data-source");
 const CompanyEmployee_1 = require("../entities/CompanyEmployee");
 const CompanyEmployeeLeave_1 = require("../entities/CompanyEmployeeLeave");
@@ -46,6 +46,44 @@ const postCompanyEmployeeLeave = async (employeeId, data, currentUser, manager =
     });
 };
 exports.postCompanyEmployeeLeave = postCompanyEmployeeLeave;
+const postCompanyEmployeeLeaveWEmployeeId = async (data, currentUser, manager = data_source_1.AppDataSource.manager) => {
+    const employeeRepo = manager.getRepository(CompanyEmployee_1.CompanyEmployee);
+    const leaveRepo = manager.getRepository(CompanyEmployeeLeave_1.CompanyEmployeeLeave);
+    const employee = await employeeRepo.findOneOrFail({
+        where: { id: data.employeeId, company: { id: currentUser.companyId } },
+    });
+    const calculatedLeaveDayCount = (0, exports.calculateLeaveDayCount)(data.startDate, data.endDate);
+    // 🔄 Leave hakkını azalt
+    await (0, companyEmployee_service_1.updateCompanyEmployeeLeaveChange)(employee.id, calculatedLeaveDayCount, data.type, currentUser.userId, manager, false // izin veriliyor → azalt
+    );
+    const leave = leaveRepo.create({
+        employee,
+        company: { id: currentUser.companyId },
+        startDate: data.startDate,
+        endDate: data.endDate,
+        leaveDayCount: calculatedLeaveDayCount,
+        type: data.type,
+        description: data.description,
+        createdBy: { id: currentUser.userId },
+        updatedBy: { id: currentUser.userId },
+    });
+    return await (0, persist_1.saveRefetchSanitize)({
+        entityName: "CompanyEmployeeLeave",
+        save: () => leaveRepo.save(leave),
+        refetch: () => leaveRepo.findOneOrFail({
+            where: { id: leave.id, company: { id: currentUser.companyId } },
+            relations: [
+                "company",
+                "employee",
+                "createdBy",
+                "updatedBy",
+            ],
+        }),
+        rules: sanitizeRules_1.sanitizeRules,
+        defaultError: "İzin kaydı oluşturulamadı.",
+    });
+};
+exports.postCompanyEmployeeLeaveWEmployeeId = postCompanyEmployeeLeaveWEmployeeId;
 const updateCompanyEmployeeLeave = async (id, data, currentUser, manager = data_source_1.AppDataSource.manager) => {
     const leaveRepo = manager.getRepository(CompanyEmployeeLeave_1.CompanyEmployeeLeave);
     const employeeRepo = manager.getRepository(CompanyEmployee_1.CompanyEmployee);

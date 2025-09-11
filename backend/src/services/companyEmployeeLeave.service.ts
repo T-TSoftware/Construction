@@ -74,6 +74,69 @@ export const postCompanyEmployeeLeave = async (
     });
 };
 
+export const postCompanyEmployeeLeaveWEmployeeId = async (
+  data: {
+    employeeId: string,
+    startDate: Date;
+    endDate: Date;
+    leaveDayCount: number;
+    type: LeaveType;
+    description?: string;
+  },
+  currentUser: { userId: string; companyId: string },
+  manager: EntityManager = AppDataSource.manager
+) => {
+  const employeeRepo = manager.getRepository(CompanyEmployee);
+  const leaveRepo = manager.getRepository(CompanyEmployeeLeave);
+
+  const employee = await employeeRepo.findOneOrFail({
+    where: { id: data.employeeId, company: { id: currentUser.companyId } },
+  });
+  const calculatedLeaveDayCount = calculateLeaveDayCount(
+    data.startDate,
+    data.endDate
+  );
+
+  // 🔄 Leave hakkını azalt
+  await updateCompanyEmployeeLeaveChange(
+    employee.id,
+    calculatedLeaveDayCount,
+    data.type,
+    currentUser.userId,
+    manager,
+    false // izin veriliyor → azalt
+  );
+
+  const leave = leaveRepo.create({
+    employee,
+    company: { id: currentUser.companyId },
+    startDate: data.startDate,
+    endDate: data.endDate,
+    leaveDayCount: calculatedLeaveDayCount,
+    type: data.type,
+    description: data.description,
+    createdBy: { id: currentUser.userId } as User,
+    updatedBy: { id: currentUser.userId } as User,
+  });
+
+  return await saveRefetchSanitize({
+      entityName: "CompanyEmployeeLeave",
+      save: () => leaveRepo.save(leave),
+      refetch: () =>
+        leaveRepo.findOneOrFail({
+          where: { id: leave.id, company: { id: currentUser.companyId } },
+          relations: [
+            "company",
+            "employee",
+            "createdBy",
+            "updatedBy",
+          ],
+        }),
+      rules: sanitizeRules,
+      defaultError: "İzin kaydı oluşturulamadı.",
+    });
+};
+
 export const updateCompanyEmployeeLeave = async (
   id: string,
   data: {

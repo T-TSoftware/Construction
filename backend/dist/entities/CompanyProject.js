@@ -122,7 +122,7 @@ __decorate([
 ], CompanyProject.prototype, "checks", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => CompanyLoan_1.CompanyLoan, (loan) => loan.project),
-    __metadata("design:type", CompanyLoan_1.CompanyLoan)
+    __metadata("design:type", Array)
 ], CompanyProject.prototype, "loans", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => CompanyEmployeeProject_1.CompanyEmployeeProject, (employee) => employee.project, {

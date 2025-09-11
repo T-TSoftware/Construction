@@ -41,15 +41,13 @@ export const createCompanyLoan = async (
   });
 
   // 2. Project opsiyonel
-  let project = null;
-  if (data.projectId) {
-    project = await projectRepo.findOneOrFail({
-      where: {
+  const project = data.projectId
+    ? await projectRepo.findOneByOrFail({
         id: data.projectId,
         company: { id: currentUser.companyId },
-      },
-    });
-  }
+      })
+    : null;
+
 
   /*const code = `KRD-${data.name
     .toUpperCase()
